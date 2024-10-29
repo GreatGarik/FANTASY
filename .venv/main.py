@@ -1,0 +1,2 @@
+import aiogram
+print('OK')
