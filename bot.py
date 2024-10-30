@@ -41,7 +41,6 @@ async def main():
     await set_main_menu(bot)
 
     # Регистрируем все хэндлеры
-    dp.include_router(other_handlers.router)
     dp.include_router(user_handlers.router)
 
     # Запускаем polling
