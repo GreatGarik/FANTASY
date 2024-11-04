@@ -1,2 +1,4 @@
 /.env
 /py_log.log
+/fantasy_old.db
+/fantasy.db
