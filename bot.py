@@ -13,7 +13,6 @@ from aiogram.enums import ParseMode
 # Инициализируем логгер
 logger = logging.getLogger(__name__)
 
-
 # Функция конфигурирования и запуска бота
 async def main():
     # Конфигурируем логирование
