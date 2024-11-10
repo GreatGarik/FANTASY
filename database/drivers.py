@@ -21,5 +21,3 @@ drivers = [{'driver': 'Max Verstappen', 'team': 'Red Bull', 'engine':'Red Bull',
 {'driver': 'Zhou Guanyu', 'team': 'Sauber', 'engine':'Ferrari', 'points': 0, 'nextGP': 'Y'},
 {'driver': 'Logan Sargeant', 'team': 'Williams', 'engine':'Mercedes', 'points': 0, 'nextGP': 'N'},
 {'driver': 'Valtteri Bottas', 'team': 'Sauber', 'engine':'Ferrari', 'points': 0, 'nextGP': 'Y'}]
-
-players = []
