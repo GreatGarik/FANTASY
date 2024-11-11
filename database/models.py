@@ -1,5 +1,5 @@
+from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy import Column, Integer, String
 
 # Создаем базовый класс для моделей
 class Base(DeclarativeBase):
@@ -17,7 +17,6 @@ class User(Base):
     user_team = Column(String)
 
 
-
 # Определяем модель гонщиков
 class Driver(Base):
     __tablename__ = 'drivers'
@@ -29,17 +28,26 @@ class Driver(Base):
     driver_engine = Column(String)
     driver_nextgp = Column(String(1))
 
+
+class Predict(Base):
+    __tablename__ = 'predicts'
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    first_driver = Column(String)
+    second_driver = Column(String)
+    third_driver = Column(String)
+    fourth_driver = Column(String)
+    driver_team = Column(String)
+    driver_engine = Column(String)
+    gap = Column(Integer)
+    lapped = Column(Integer)
+
+
 # Определяем модель гран-при
-
-
 class Grandprix(Base):
     __tablename__ = 'grandprix'
 
     id = Column(Integer, primary_key=True, index=True)
     gp_name = Column(String)
     year = Column(Integer)
-
-
-
-# Создаем таблицы в базе данных
-Base.metadata.create_all(bind=engine)
