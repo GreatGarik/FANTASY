@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import DeclarativeBase
 
+
 # Создаем базовый класс для моделей
 class Base(DeclarativeBase):
     pass
@@ -42,6 +43,7 @@ class Predict(Base):
     driver_engine = Column(String)
     gap = Column(Integer)
     lapped = Column(Integer)
+    gp = Column(Integer, ForeignKey('grandprix.id'))
 
 
 # Определяем модель гран-при

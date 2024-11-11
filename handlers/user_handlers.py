@@ -150,12 +150,15 @@ async def warning_not_name(message: Message):
 # Этот хэндлер срабатывает на команду /predict
 @router.message(Command(commands=['predict']), StateFilter(default_state))
 async def process_predict_command(message: Message, state: FSMContext):
-    drivers_for_choose = [i.driver_name for i in select_drivers()]
-    await message.answer(
-        text='Выберите первого пилота',
-        reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()])
-    )
-    await state.set_state(FSMFillForm.select_first)
+    if get_users(message.from_user.id):
+        drivers_for_choose = [i.driver_name for i in select_drivers()]
+        await message.answer(
+            text='Выберите первого пилота',
+            reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()])
+        )
+        await state.set_state(FSMFillForm.select_first)
+    else:
+        await message.answer(text='Вы не зарегистрированы')
 
 
 # Сохранение первого
@@ -240,15 +243,10 @@ async def process_name_sent(message: CallbackQuery, state: FSMContext):
 
     # Завершаем машину состояний
     await state.clear()
-    # Отправляем в чат сообщение о выходе из машины состояний
-    await message.answer(
-        text='Спасибо! Ваши данные сохранены!\n\n'
-             'Вы вышли из машины состояний'
-    )
     # Отправляем в чат сообщение с предложением посмотреть свою анкету
     await message.answer(
-        text='Чтобы посмотреть данные вашей '
-             'анкеты - отправьте команду /showdata'
+        text='Чтобы посмотреть свой прогноз '
+             ' - отправьте команду /viewpredict'
     )
 
 
