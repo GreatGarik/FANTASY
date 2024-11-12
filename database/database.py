@@ -18,7 +18,7 @@ def select_drivers(start=None, stop=None):
         return db_object[start:stop]
 
 
-def update_user(user_id, name, second_name, vk_id):
+def update_user(user_id, name: str, second_name: str, vk_id):
     with Session() as session:
         try:
             session.add(User(name=name + ' ' + second_name, id_telegram=user_id, vk_link=vk_id))
