@@ -17,6 +17,12 @@ def select_drivers(start=None, stop=None):
         db_object = session.scalars(statement).all()
         return db_object[start:stop]
 
+def select_team_engine(pilot):
+    with Session() as session:
+        statement = select(Driver).where(Driver.driver_name == pilot)
+        db_object = session.scalars(statement).one()
+        return db_object.driver_team, db_object.driver_engine
+
 
 def update_user(user_id, name: str, second_name: str, vk_id):
     with Session() as session:
@@ -34,6 +40,24 @@ def send_predict(tg_id, first_driver, second_driver, third_driver, fourth_driver
             session.add(Predict(user_id=tg_id, first_driver=first_driver, second_driver=second_driver,
                                 third_driver=third_driver, fourth_driver=fourth_driver, driver_team=driver_team,
                                 driver_engine=driver_engine, gap=gap, lapped=lapped))
+            session.commit()
+        except Exception as e:
+            print(e)
+
+def get_predict(gp=None):
+    with Session() as session:
+        statement = select(Predict).where()
+        db_object = session.scalars(statement).all()
+        return db_object
+
+def add_predict(tg_id, first_driver: int, second_driver: int, third_driver: int, fourth_driver: int, driver_team: int, driver_engine: int, gap: int,
+                 lapped: int):
+    total = sum([first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap, lapped])
+    with Session() as session:
+        try:
+            session.add(Predict(user_id=tg_id, first_driver=first_driver, second_driver=second_driver,
+                                third_driver=third_driver, fourth_driver=fourth_driver, driver_team=driver_team,
+                                driver_engine=driver_engine, gap=gap, lapped=lapped, total=total))
             session.commit()
         except Exception as e:
             print(e)

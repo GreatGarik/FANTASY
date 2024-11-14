@@ -30,21 +30,38 @@ class Driver(Base):
     driver_engine: Mapped[str] = mapped_column(String(60))
     driver_nextgp: Mapped[str] = mapped_column(String(1))
 
+# Определяем модель гонщиков
+class result(Base):
+    __tablename__ = 'results'
 
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id = mapped_column(Integer, ForeignKey('users.id'))
+    first_driver: Mapped[int] = mapped_column()
+    second_driver: Mapped[int] = mapped_column()
+    third_driver: Mapped[int] = mapped_column()
+    fourth_driver: Mapped[int] = mapped_column()
+    driver_team: Mapped[int] = mapped_column()
+    driver_engine: Mapped[int] = mapped_column()
+    gap: Mapped[int] = mapped_column(Integer)
+    lapped: Mapped[int] = mapped_column(Integer)
+    gp: Mapped[int] = mapped_column(ForeignKey('grandprix.id'))
+
+
+# Определяем модель прогнозов
 class Predict(Base):
     __tablename__ = 'predicts'
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey('users.id'))
-    first_driver = Column(String)
-    second_driver = Column(String)
-    third_driver = Column(String)
-    fourth_driver = Column(String)
-    driver_team = Column(String)
-    driver_engine = Column(String)
-    gap = Column(Integer)
-    lapped = Column(Integer)
-    gp = Column(Integer, ForeignKey('grandprix.id'))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id = mapped_column(Integer, ForeignKey('users.id'))
+    first_driver: Mapped[str] = mapped_column(String)
+    second_driver: Mapped[str] = mapped_column(String)
+    third_driver: Mapped[str] = mapped_column(String)
+    fourth_driver: Mapped[str] = mapped_column(String)
+    driver_team: Mapped[str] = mapped_column(String)
+    driver_engine: Mapped[str] = mapped_column(String)
+    gap: Mapped[int] = mapped_column(Integer)
+    lapped: Mapped[int] = mapped_column(Integer)
+    gp: Mapped[int] = mapped_column(ForeignKey('grandprix.id'))
 
 
 # Определяем модель гран-при

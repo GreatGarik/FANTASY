@@ -3,10 +3,12 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 from aiogram.filters import Command, CommandStart, StateFilter
 from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
-from database.database import select_drivers, update_user, get_users, send_predict
+from database.database import select_drivers, update_user, get_users, send_predict, get_predict, add_predict
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from aiogram.fsm.storage.redis import RedisStorage, Redis
+from dataprocessing.get_data import get_res_gp
+
 
 router: Router = Router()
 
@@ -272,6 +274,26 @@ async def process_showdata_command(message: Message):
                              disable_web_page_preview=True)
     else:
         await message.answer(text='Вы не зарегистрированы')
+
+# Этот хэндлер будет срабатывать на отправку команды /calculation
+# и отправлять в чат данные анкеты, либо сообщение об отсутствии данных
+@router.message(Command(commands='calculation'), StateFilter(default_state))
+async def process_showdata_command(message: Message):
+    print('eee')
+    deltas = {0: 10, 1: 7, 2: 5, 3: 3, 4: 2, 5: 1}
+    predicts_from_db = get_predict()
+    print(1, predicts_from_db)
+    results_predict_gp = get_res_gp()
+    print(2, results_predict_gp)
+    for predict in predicts_from_db:
+        delta_gap = abs(results_predict_gp['gap'] - predicts_from_db.gap)
+        delta_laps = abs(results_predict_gp['laps'] - predicts_from_db.lapped)
+        print('ttt')
+        add_predict(results_predict_gp.get(predict.id), results_predict_gp.get(predict.first_driver),
+                    results_predict_gp.get(predict.second_driver), results_predict_gp.get(predict.third_driver),
+                    results_predict_gp.get(predict.fourth_driver), results_predict_gp.get(predict.driver_team),
+                    results_predict_gp.get(predict.driver_engine), deltas.get(delta_gap, 0), deltas.get(delta_laps, 0))
+
 
 
 # # Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
