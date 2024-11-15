@@ -31,20 +31,21 @@ class Driver(Base):
     driver_nextgp: Mapped[str] = mapped_column(String(1))
 
 # Определяем модель гонщиков
-class result(Base):
+class Result(Base):
     __tablename__ = 'results'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id = mapped_column(Integer, ForeignKey('users.id'))
+    user_id: Mapped[int] = mapped_column()
     first_driver: Mapped[int] = mapped_column()
     second_driver: Mapped[int] = mapped_column()
     third_driver: Mapped[int] = mapped_column()
     fourth_driver: Mapped[int] = mapped_column()
     driver_team: Mapped[int] = mapped_column()
     driver_engine: Mapped[int] = mapped_column()
-    gap: Mapped[int] = mapped_column(Integer)
-    lapped: Mapped[int] = mapped_column(Integer)
-    gp: Mapped[int] = mapped_column(ForeignKey('grandprix.id'))
+    gap: Mapped[int] = mapped_column()
+    lapped: Mapped[int] = mapped_column()
+    total: Mapped[int] = mapped_column()
+    gp: Mapped[int] = mapped_column()
 
 
 # Определяем модель прогнозов
@@ -52,7 +53,7 @@ class Predict(Base):
     __tablename__ = 'predicts'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id = mapped_column(Integer, ForeignKey('users.id'))
+    user_id: Mapped[int] = mapped_column()
     first_driver: Mapped[str] = mapped_column(String)
     second_driver: Mapped[str] = mapped_column(String)
     third_driver: Mapped[str] = mapped_column(String)
@@ -61,14 +62,43 @@ class Predict(Base):
     driver_engine: Mapped[str] = mapped_column(String)
     gap: Mapped[int] = mapped_column(Integer)
     lapped: Mapped[int] = mapped_column(Integer)
-    gp: Mapped[int] = mapped_column(ForeignKey('grandprix.id'))
+    gp: Mapped[int] = mapped_column()
 
 
 # Определяем модель гран-при
 class Grandprix(Base):
     __tablename__ = 'grandprix'
 
-    id = Column(Integer, primary_key=True, index=True)
-    gp_name = Column(String)
-    year = Column(Integer)
-    nextgp = Column(Boolean)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    gp_name: Mapped[str] = mapped_column(String)
+    year: Mapped[int] = mapped_column(Integer)
+    nextgp: Mapped[bool] = mapped_column(Boolean)
+
+class ResultsGp(Base):
+    __tablename__ = 'resultsgp'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    event: Mapped[str] = mapped_column(String(12))
+    first: Mapped[int] = mapped_column()
+    second: Mapped[int] = mapped_column()
+    third: Mapped[int] = mapped_column()
+    fourth: Mapped[int] = mapped_column()
+    fifth: Mapped[int] = mapped_column()
+    sixth: Mapped[int] = mapped_column()
+    seventh: Mapped[int] = mapped_column()
+    eighth: Mapped[int] = mapped_column()
+    ninth: Mapped[int] = mapped_column()
+    tenth: Mapped[int] = mapped_column()
+    eleventh: Mapped[int] = mapped_column()
+    twelfth: Mapped[int] = mapped_column()
+    thirteenth: Mapped[int] = mapped_column()
+    fourteenth: Mapped[int] = mapped_column()
+    fifteenth: Mapped[int] = mapped_column()
+    sixteenth: Mapped[int] = mapped_column()
+    seventeenth: Mapped[int] = mapped_column()
+    eighteenth: Mapped[int] = mapped_column()
+    nineteenth: Mapped[int] = mapped_column()
+    twentieth: Mapped[int] = mapped_column()
+    gap: Mapped[int] = mapped_column()
+    lapped: Mapped[int] = mapped_column()
+    gp: Mapped[int] = mapped_column()

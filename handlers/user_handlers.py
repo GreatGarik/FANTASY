@@ -3,7 +3,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 from aiogram.filters import Command, CommandStart, StateFilter
 from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
-from database.database import select_drivers, update_user, get_users, send_predict, get_predict, add_predict
+from database.database import select_drivers, update_user, get_users, send_predict, get_predict, add_result
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from aiogram.fsm.storage.redis import RedisStorage, Redis
@@ -279,20 +279,24 @@ async def process_showdata_command(message: Message):
 # и отправлять в чат данные анкеты, либо сообщение об отсутствии данных
 @router.message(Command(commands='calculation'), StateFilter(default_state))
 async def process_showdata_command(message: Message):
-    print('eee')
     deltas = {0: 10, 1: 7, 2: 5, 3: 3, 4: 2, 5: 1}
     predicts_from_db = get_predict()
-    print(1, predicts_from_db)
     results_predict_gp = get_res_gp()
-    print(2, results_predict_gp)
     for predict in predicts_from_db:
-        delta_gap = abs(results_predict_gp['gap'] - predicts_from_db.gap)
-        delta_laps = abs(results_predict_gp['laps'] - predicts_from_db.lapped)
-        print('ttt')
-        add_predict(results_predict_gp.get(predict.id), results_predict_gp.get(predict.first_driver),
-                    results_predict_gp.get(predict.second_driver), results_predict_gp.get(predict.third_driver),
-                    results_predict_gp.get(predict.fourth_driver), results_predict_gp.get(predict.driver_team),
-                    results_predict_gp.get(predict.driver_engine), deltas.get(delta_gap, 0), deltas.get(delta_laps, 0))
+        delta_gap = abs(results_predict_gp['gap'] - predict.gap)
+        delta_laps = abs(results_predict_gp['laps'] - predict.lapped)
+        user_id: int = predict.user_id
+        first_driver: int = results_predict_gp.get(predict.first_driver)
+        second_driver: int = results_predict_gp.get(predict.second_driver)
+        third_driver: int = results_predict_gp.get(predict.third_driver)
+        fourth_driver: int = results_predict_gp.get(predict.fourth_driver)
+        driver_team: int = results_predict_gp.get('team_' + predict.driver_team)
+        driver_engine: int = results_predict_gp.get('engine_' + predict.driver_engine)
+        dtg: int = deltas.get(delta_gap, 0)
+        dtl: int = deltas.get(delta_laps, 0)
+        #add_result(1,2,3,4,5,6,7,8,9,10)
+        add_result(user_id, first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine,
+                   dtg, dtl, 11)
 
 
 

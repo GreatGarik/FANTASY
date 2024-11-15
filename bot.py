@@ -5,7 +5,7 @@ import random
 from aiogram import Bot, Dispatcher
 
 from config_data.config import Config, load_config
-from handlers import user_handlers, other_handlers
+from handlers import user_handlers, other_handlers, admin_handlers
 from keyboards.menu_button import set_main_menu
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -40,6 +40,7 @@ async def main():
     await set_main_menu(bot)
 
     # Регистрируем все хэндлеры
+    dp.include_router(admin_handlers.router)
     dp.include_router(user_handlers.router)
 
     # Запускаем polling

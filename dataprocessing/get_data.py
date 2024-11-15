@@ -45,3 +45,6 @@ def get_res_gp():
             results_gp['engine_' + engine] = results_gp.get('engine_' + engine, 0) + POINTS_QUALI_TE.get(num, 0)
 
     return results_gp
+
+if __name__ == '__main__':
+    print(get_res_gp())
