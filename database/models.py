@@ -45,6 +45,17 @@ class Result(Base):
     gap: Mapped[int] = mapped_column()
     lapped: Mapped[int] = mapped_column()
     total: Mapped[int] = mapped_column()
+    counter_best: Mapped[int] = mapped_column()
+    max1_best: Mapped[int] = mapped_column()
+    max2_best: Mapped[int] = mapped_column()
+    max3_best: Mapped[int] = mapped_column()
+    max1_not_best: Mapped[int] = mapped_column()
+    max2_not_best: Mapped[int] = mapped_column()
+    max3_not_best: Mapped[int] = mapped_column()
+    max4_not_best: Mapped[int] = mapped_column()
+    max_lap_gap: Mapped[int] = mapped_column()
+    counter_lap_gap: Mapped[int] = mapped_column()
+    penalty: Mapped[int] = mapped_column()
     gp: Mapped[int] = mapped_column()
 
 
@@ -62,6 +73,7 @@ class Predict(Base):
     driver_engine: Mapped[str] = mapped_column(String)
     gap: Mapped[int] = mapped_column(Integer)
     lapped: Mapped[int] = mapped_column(Integer)
+    penalty: Mapped[int] = mapped_column(Integer)
     gp: Mapped[int] = mapped_column()
 
 
@@ -74,31 +86,25 @@ class Grandprix(Base):
     year: Mapped[int] = mapped_column(Integer)
     nextgp: Mapped[bool] = mapped_column(Boolean)
 
-class ResultsGp(Base):
-    __tablename__ = 'resultsgp'
+# Определяем модель команд
+class Team(Base):
+    __tablename__ = 'teams'
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    event: Mapped[str] = mapped_column(String(12))
-    first: Mapped[int] = mapped_column()
-    second: Mapped[int] = mapped_column()
-    third: Mapped[int] = mapped_column()
-    fourth: Mapped[int] = mapped_column()
-    fifth: Mapped[int] = mapped_column()
-    sixth: Mapped[int] = mapped_column()
-    seventh: Mapped[int] = mapped_column()
-    eighth: Mapped[int] = mapped_column()
-    ninth: Mapped[int] = mapped_column()
-    tenth: Mapped[int] = mapped_column()
-    eleventh: Mapped[int] = mapped_column()
-    twelfth: Mapped[int] = mapped_column()
-    thirteenth: Mapped[int] = mapped_column()
-    fourteenth: Mapped[int] = mapped_column()
-    fifteenth: Mapped[int] = mapped_column()
-    sixteenth: Mapped[int] = mapped_column()
-    seventeenth: Mapped[int] = mapped_column()
-    eighteenth: Mapped[int] = mapped_column()
-    nineteenth: Mapped[int] = mapped_column()
-    twentieth: Mapped[int] = mapped_column()
-    gap: Mapped[int] = mapped_column()
-    lapped: Mapped[int] = mapped_column()
-    gp: Mapped[int] = mapped_column()
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String)
+    first: Mapped[int] = mapped_column(Integer, ForeignKey(User.id))
+    second: Mapped[int] = mapped_column(Integer, ForeignKey(User.id))
+    thirst: Mapped[int] = mapped_column(Integer, ForeignKey(User.id))
+    logo: Mapped[str] = mapped_column(String)
+    captain: Mapped[int] = mapped_column(Integer, ForeignKey(User.id))
+
+# Определяем модель Очков
+class Point(Base):
+    __tablename__ = 'points'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey(User.id))
+    race_id: Mapped[int] = mapped_column(ForeignKey(Grandprix.id))
+    year: Mapped[int] = mapped_column(Integer)
+    points: Mapped[int] = mapped_column()
+
