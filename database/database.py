@@ -60,6 +60,15 @@ def get_predict(gp=None):
         return db_object
 
 
+def add_points(user_id, year, points, gp=None):
+    with Session() as session:
+        try:
+            session.add(Point(user_id=user_id, race_id=gp, year=year, points=points))
+            session.commit()
+        except Exception as e:
+            print(e)
+
+
 def add_result(tg_id, first_driver: int, second_driver: int, third_driver: int, fourth_driver: int, driver_team: int,
                driver_engine: int, gap: int,
                lapped: int, counter_best, max1_best, max2_best, max3_best, max1_not_best, max2_not_best, max3_not_best,

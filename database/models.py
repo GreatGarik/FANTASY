@@ -1,6 +1,6 @@
 from typing import Optional
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 # Создаем базовый класс для моделей
@@ -17,6 +17,8 @@ class User(Base):
     vk_link: Mapped[str] = mapped_column(String(60))
     name: Mapped[str] = mapped_column(String(60))
     user_team: Mapped[Optional[str]] = mapped_column(String(60))
+
+    points = relationship('Point', back_populates='user')
 
 
 # Определяем модель гонщиков
@@ -105,6 +107,8 @@ class Point(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey(User.id))
     race_id: Mapped[int] = mapped_column(ForeignKey(Grandprix.id))
-    year: Mapped[int] = mapped_column(Integer)
+    year: Mapped[int] = mapped_column()
     points: Mapped[int] = mapped_column()
+
+    user = relationship('User', back_populates='points')
 
