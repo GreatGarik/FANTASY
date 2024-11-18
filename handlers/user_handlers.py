@@ -149,6 +149,7 @@ async def warning_not_name(message: Message):
              'Если вы хотите прервать заполнение анкеты - '
              'отправьте команду /cancel')
 
+
 '''
 
 //... ХЭНДЛЕРЫ ПРОГНОЗА НАЧАЛО ///
@@ -175,7 +176,8 @@ async def predict_engine(callback: CallbackQuery, state: FSMContext):
     await state.update_data(driver_team=callback.data)
     await callback.message.delete()
     await callback.message.answer(text='Спасибо!\nТеперь выберите двигатель',
-                                  reply_markup=create_inline_kb(1, *sorted({i.driver_engine for i in select_drivers()})))
+                                  reply_markup=create_inline_kb(1,
+                                                                *sorted({i.driver_engine for i in select_drivers()})))
     await state.set_state(FSMFillForm.select_first)
 
 
@@ -194,8 +196,9 @@ async def predict_first(callback: CallbackQuery, state: FSMContext):
 async def predict_second(callback: CallbackQuery, state: FSMContext):
     await state.update_data(first_driver=callback.data)
     await callback.message.delete()
+    predict = await state.get_data()
     await callback.message.answer(text='Спасибо!\nТеперь выберите второго пилота',
-                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers() if i.driver_name != callback.data]))
+                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()  not in [*predict.values()]]))
     await state.set_state(FSMFillForm.select_third)
 
 
@@ -206,7 +209,8 @@ async def predict_third(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     predict = await state.get_data()
     await callback.message.answer(text='Спасибо!\nТеперь выберите третьего пилота',
-                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()[10:] if i.driver_name not in[*predict.values()]]))
+                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()[10:] if
+                                                                     i.driver_name not in [*predict.values()]]))
     await state.set_state(FSMFillForm.select_fourth)
 
 
@@ -218,12 +222,13 @@ async def predict_fourth(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     predict = await state.get_data()
     await callback.message.answer(text='Спасибо!\nТеперь выберите четвертого пилота',
-                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()[15:] if i.driver_name not in[*predict.values()]]))
+                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()[15:] if
+                                                                     i.driver_name not in [*predict.values()]]))
     await state.set_state(FSMFillForm.select_gap)
 
 
 # Сохраняем четвертого пилота, отправляем текст с выбором отставания от лидера
-@router.callback_query(StateFilter(FSMFillForm.select_gap),  F.data.in_([i.driver_name for i in select_drivers()][15:]))
+@router.callback_query(StateFilter(FSMFillForm.select_gap), F.data.in_([i.driver_name for i in select_drivers()][15:]))
 async def predict_gap(callback: CallbackQuery, state: FSMContext):
     await state.update_data(fourth_driver=callback.data)
     await callback.message.delete()
@@ -232,7 +237,7 @@ async def predict_gap(callback: CallbackQuery, state: FSMContext):
 
 
 # Сохраняем отставание, отправляем текст с выбором количества круговых
-@router.message(StateFilter(FSMFillForm.select_lapped),  F.text.isdigit())
+@router.message(StateFilter(FSMFillForm.select_lapped), F.text.isdigit())
 async def predict_gap(message: CallbackQuery, state: FSMContext):
     await state.update_data(gap=message.text)
     await message.answer(text='Спасибо!\nТеперь введите количество круговых')
@@ -260,14 +265,12 @@ async def predict_lap(message: CallbackQuery, state: FSMContext):
              ' - отправьте команду /viewpredict'
     )
 
+
 '''
 
 ///ХЭНДЛЕРЫ ПРОГНОЗА КОНЕЦ///
 
 '''
-
-
-
 
 
 # Этот хэндлер будет срабатывать на отправку команды /showdata
