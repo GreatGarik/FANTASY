@@ -34,6 +34,7 @@ class FSMFillForm(StatesGroup):
     select_engine = State()
     select_gap = State()
     select_lapped = State()
+    end_select = State()
 
 
 # Этот хэндлер срабатывает на команду /start
@@ -148,98 +149,102 @@ async def warning_not_name(message: Message):
              'Если вы хотите прервать заполнение анкеты - '
              'отправьте команду /cancel')
 
+'''
 
-# Этот хэндлер срабатывает на команду /predict
+//... ХЭНДЛЕРЫ ПРОГНОЗА НАЧАЛО ///
+
+'''
+
+
+# Этот хэндлер срабатывает на команду /predict и начинаем собирать прогноз
+# Проверяем зарегистрирован ли пользователь и отправляем кнопки с Командами по алфавиту
 @router.message(Command(commands=['predict']), StateFilter(default_state))
-async def process_predict_command(message: Message, state: FSMContext):
+async def predict_team(message: Message, state: FSMContext):
     if get_users(message.from_user.id):
         await message.answer(
-            text='Выберите первого пилота',
-            reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()])
-        )
-        await state.set_state(FSMFillForm.select_first)
+            text='Выберите Команду',
+            reply_markup=create_inline_kb(1, *sorted({i.driver_team for i in select_drivers()})))
+        await state.set_state(FSMFillForm.select_engine)
     else:
         await message.answer(text='Вы не зарегистрированы')
 
 
-# Сохранение первого
-@router.callback_query(StateFilter(FSMFillForm.select_first), F.data.in_([i.driver_name for i in select_drivers()]))
-async def process_name_sent(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(first_driver=callback.data)
+# Сохраняем команду, отправляем кнопки с двигателями
+@router.callback_query(StateFilter(FSMFillForm.select_engine), F.data.in_({i.driver_team for i in select_drivers()}))
+async def predict_engine(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(driver_team=callback.data)
     await callback.message.delete()
-    await callback.message.answer(text='Спасибо!\n\nА теперь введите второго пилота',
+    await callback.message.answer(text='Спасибо!\nТеперь выберите двигатель',
+                                  reply_markup=create_inline_kb(1, *sorted({i.driver_engine for i in select_drivers()})))
+    await state.set_state(FSMFillForm.select_first)
+
+
+# Сохраняем двигатель, отправляем кнопки с выбором первого пилота
+@router.callback_query(StateFilter(FSMFillForm.select_first), F.data.in_({i.driver_engine for i in select_drivers()}))
+async def predict_first(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(driver_engine=callback.data)
+    await callback.message.delete()
+    await callback.message.answer(text='Спасибо!\nТеперь выберите первого пилота',
                                   reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()]))
     await state.set_state(FSMFillForm.select_second)
 
 
-# Сохранение второго
+# Сохраняем первого пилота, отправляем кнопки с выбором второго пилота
 @router.callback_query(StateFilter(FSMFillForm.select_second), F.data.in_([i.driver_name for i in select_drivers()]))
-async def process_name_sent(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(second_driver=callback.data)
+async def predict_second(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(first_driver=callback.data)
     await callback.message.delete()
-    await callback.message.answer(text='Спасибо!\n\nА теперь введите третьего пилота',
-                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()][10:]))
+    await callback.message.answer(text='Спасибо!\nТеперь выберите второго пилота',
+                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()]))
     await state.set_state(FSMFillForm.select_third)
 
 
-# Сохранение третьего
-@router.callback_query(StateFilter(FSMFillForm.select_third),
-                       F.data.in_([i.driver_name for i in select_drivers()][10:]))
-async def process_name_sent(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(third_driver=callback.data)
+# Сохраняем второго пилота, отправляем кнопки с выбором третьего пилота
+@router.callback_query(StateFilter(FSMFillForm.select_third), F.data.in_([i.driver_name for i in select_drivers()]))
+async def predict_third(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(second_driver=callback.data)
     await callback.message.delete()
-    await callback.message.answer(text='Спасибо!\n\nА теперь введите четвертого пилота',
-                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()][15:]))
+    await callback.message.answer(text='Спасибо!\nТеперь выберите третьего пилота',
+                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()][10:]))
     await state.set_state(FSMFillForm.select_fourth)
 
 
-# Сохранение четвертого
+# Сохраняем третьего пилота, отправляем кнопки с выбором четвертого пилота
 @router.callback_query(StateFilter(FSMFillForm.select_fourth),
-                       F.data.in_([i.driver_name for i in select_drivers()][15:]))
-async def process_name_sent(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(fourth_driver=callback.data)
+                       F.data.in_([i.driver_name for i in select_drivers()][10:]))
+async def predict_fourth(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(third_driver=callback.data)
     await callback.message.delete()
-    await callback.message.answer(text='Спасибо!\n\nА теперь введите команду',
-                                  reply_markup=create_inline_kb(1, *{i.driver_team for i in select_drivers()}))
-    await state.set_state(FSMFillForm.select_team)
-
-
-# Сохранение команды
-@router.callback_query(StateFilter(FSMFillForm.select_team), F.data.in_({i.driver_team for i in select_drivers()}))
-async def process_name_sent(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(driver_team=callback.data)
-    await callback.message.delete()
-    await callback.message.answer(text='Спасибо!\n\nА теперь введите двигатель',
-                                  reply_markup=create_inline_kb(1, *{i.driver_engine for i in select_drivers()}))
-    await state.set_state(FSMFillForm.select_engine)
-
-
-# Сохранение двигателя
-@router.callback_query(StateFilter(FSMFillForm.select_engine), F.data.in_({i.driver_engine for i in select_drivers()}))
-async def process_name_sent(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(driver_engine=callback.data)
-    await callback.message.delete()
-    await callback.message.answer(text='Спасибо!\n\nА теперь введите отставание')
-    await state.set_state(FSMFillForm.select_engine)
-
-
-# Сохранение отставания
-@router.message(StateFilter(FSMFillForm.select_engine), F.text.isdigit())
-async def process_name_sent(message: CallbackQuery, state: FSMContext):
-    await state.update_data(gap=message.text)
-    await message.answer(text='Спасибо!\n\nА теперь введите количество круговых')
+    await callback.message.answer(text='Спасибо!\nТеперь выберите четвертого пилота',
+                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()][15:]))
     await state.set_state(FSMFillForm.select_gap)
 
 
-# Сохранение количества круговых
-@router.message(StateFilter(FSMFillForm.select_gap), F.text.isdigit())
-async def process_name_sent(message: CallbackQuery, state: FSMContext):
-    await state.update_data(lapped=message.text)
-    await message.answer(text='Спасибо!\n\nА вроде все')
+# Сохраняем четвертого пилота, отправляем текст с выбором отставания от лидера
+@router.callback_query(StateFilter(FSMFillForm.select_gap),  F.data.in_([i.driver_name for i in select_drivers()][15:]))
+async def predict_gap(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(fourth_driver=callback.data)
+    await callback.message.delete()
+    await callback.message.answer(text='Спасибо!\nТеперь введите отставание от лидера')
     await state.set_state(FSMFillForm.select_lapped)
-    user = await state.get_data()
-    await message.answer(text=f'Спасибо!\n Вы выбрали {user}')
+
+
+# Сохраняем отставание, отправляем текст с выбором количества круговых
+@router.message(StateFilter(FSMFillForm.select_lapped),  F.text.isdigit())
+async def predict_gap(message: CallbackQuery, state: FSMContext):
+    await state.update_data(gap=message.text)
+    await message.answer(text='Спасибо!\nТеперь введите количество круговых')
+    await state.set_state(FSMFillForm.end_select)
+
+
+# Сохранение количества круговых и запись прогноза в БД, выход
+@router.message(StateFilter(FSMFillForm.end_select), F.text.isdigit())
+async def predict_lap(message: CallbackQuery, state: FSMContext):
+    await state.update_data(lapped=message.text)
+    await message.answer(text='Спасибо!\nВроде все')
     await state.update_data(penalty=0)
+    user = await state.get_data()
+    await message.answer(text=f'Спасибо!\nВы выбрали {user}')
 
     # Пишем прогноз в базу
     gp = get_actual_gp()
@@ -252,6 +257,15 @@ async def process_name_sent(message: CallbackQuery, state: FSMContext):
         text='Чтобы посмотреть свой прогноз '
              ' - отправьте команду /viewpredict'
     )
+
+'''
+
+///ХЭНДЛЕРЫ ПРОГНОЗА КОНЕЦ///
+
+'''
+
+
+
 
 
 # Этот хэндлер будет срабатывать на отправку команды /showdata
