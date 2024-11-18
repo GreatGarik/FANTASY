@@ -204,8 +204,9 @@ async def predict_second(callback: CallbackQuery, state: FSMContext):
 async def predict_third(callback: CallbackQuery, state: FSMContext):
     await state.update_data(second_driver=callback.data)
     await callback.message.delete()
+    predict = await state.get_data()
     await callback.message.answer(text='Спасибо!\nТеперь выберите третьего пилота',
-                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()][10:]))
+                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()[10:] if i.driver_name not in[*predict.values()]]))
     await state.set_state(FSMFillForm.select_fourth)
 
 
@@ -215,8 +216,9 @@ async def predict_third(callback: CallbackQuery, state: FSMContext):
 async def predict_fourth(callback: CallbackQuery, state: FSMContext):
     await state.update_data(third_driver=callback.data)
     await callback.message.delete()
+    predict = await state.get_data()
     await callback.message.answer(text='Спасибо!\nТеперь выберите четвертого пилота',
-                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()][15:]))
+                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()[15:] if i.driver_name not in[*predict.values()]]))
     await state.set_state(FSMFillForm.select_gap)
 
 
@@ -243,12 +245,12 @@ async def predict_lap(message: CallbackQuery, state: FSMContext):
     await state.update_data(lapped=message.text)
     await message.answer(text='Спасибо!\nВроде все')
     await state.update_data(penalty=0)
-    user = await state.get_data()
-    await message.answer(text=f'Спасибо!\nВы выбрали {user}')
+    predict = await state.get_data()
+    await message.answer(text=f'Спасибо!\nВы выбрали {predict}')
 
     # Пишем прогноз в базу
     gp = get_actual_gp()
-    send_predict(message.from_user.id, gp, **user)
+    send_predict(message.from_user.id, gp, **predict)
 
     # Завершаем машину состояний
     await state.clear()
