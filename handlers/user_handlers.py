@@ -198,7 +198,8 @@ async def predict_second(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
     predict = await state.get_data()
     await callback.message.answer(text='Спасибо!\nТеперь выберите второго пилота',
-                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()  not in [*predict.values()]]))
+                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers() if
+                                                                     i.driver_name not in [*predict.values()]]))
     await state.set_state(FSMFillForm.select_third)
 
 
