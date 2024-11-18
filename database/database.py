@@ -88,8 +88,12 @@ def add_result(tg_id, first_driver: int, second_driver: int, third_driver: int, 
         except Exception as e:
             print(e)
 
+def show_points():
+    with Session() as session:
+        result = session.query(User).join(Point).all()
+        return result
 
-def show_result(gp=None):
+def get_result(gp=None):
     with Session() as session:
         query = session.query(User, Result).where(Result.gp == gp)
         # query = query.join(User, Result.user_id == User.id_telegram).order_by(Result.total.desc(),  case((Result.first_driver > Result.second_driver, Result.first_driver), else_=Result.second_driver).desc(), Result.third_driver.desc(), Result.fourth_driver.desc(), Result.driver_team.desc(), Result.driver_engine.desc(), Result.gap.desc(), Result.lapped.desc(), Result.id)
@@ -103,9 +107,31 @@ def show_result(gp=None):
                                                                               Result.max3_not_best.desc(),
                                                                               Result.max4_not_best.desc(),
                                                                               Result.counter_lap_gap.desc(),
-                                                                              Result.max_lap_gap.desc(), Result.id)
-        return query.all()
+                                                                              Result.max_lap_gap.desc(), Result.id).all()
 
+
+
+        return query
+
+def show_result(gp=None):
+    with Session() as session:
+        query = session.query(User, Result, Point).where(Result.gp == gp, Point.race_id == gp)
+        # query = query.join(User, Result.user_id == User.id_telegram).order_by(Result.total.desc(),  case((Result.first_driver > Result.second_driver, Result.first_driver), else_=Result.second_driver).desc(), Result.third_driver.desc(), Result.fourth_driver.desc(), Result.driver_team.desc(), Result.driver_engine.desc(), Result.gap.desc(), Result.lapped.desc(), Result.id)
+        query = query.join(User, Result.user_id == User.id_telegram).order_by(Result.total.desc(),
+                                                                              Result.counter_best.desc(),
+                                                                              Result.max1_best.desc(),
+                                                                              Result.max2_best.desc(),
+                                                                              Result.max3_best.desc(),
+                                                                              Result.max1_not_best.desc(),
+                                                                              Result.max2_not_best.desc(),
+                                                                              Result.max3_not_best.desc(),
+                                                                              Result.max4_not_best.desc(),
+                                                                              Result.counter_lap_gap.desc(),
+                                                                              Result.max_lap_gap.desc(), Result.id).outerjoin(Point).all()
+
+
+
+        return query
 
 def get_users(id_telegram=None):
     with Session() as session:
@@ -119,3 +145,13 @@ def get_users(id_telegram=None):
             statement = select(User)
             db_object = session.scalars(statement).all()
             return db_object
+
+
+def check_res(gp):
+    with Session() as session:
+        statement = select(Point).where(Point.race_id == gp)
+        res = session.scalars(statement).all()
+        if res:
+            return True
+        else:
+                return
