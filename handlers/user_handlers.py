@@ -313,11 +313,11 @@ async def process_championship_command(message: Message):
 # Этот хэндлер будет срабатывать на отправку команды /calculation
 @router.message(Command(commands='calculation'), StateFilter(default_state))
 async def process_calculation_command(message: Message):
-    deltas = {0: 10, 1: 7, 2: 5, 3: 3, 4: 2, 5: 1}
     gp = get_actual_gp()
     if check_res(gp):
         await message.answer(f'Вы уже сделали расчет для этого GP', isable_web_page_preview=True)
     else:
+        deltas = {0: 10, 1: 7, 2: 5, 3: 3, 4: 2, 5: 1}
         predicts_from_db = get_predict(gp)
         results_predict_gp = get_res_gp()
 
