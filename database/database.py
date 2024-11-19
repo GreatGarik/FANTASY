@@ -88,17 +88,17 @@ def add_result(tg_id, first_driver: int, second_driver: int, third_driver: int, 
         except Exception as e:
             print(e)
 
-# Показ очков
+# Возврат списка мз пользователей и их очков
 def show_points():
     with Session() as session:
-        points_list = []
         result = session.query(User).outerjoin(Point).all()
-        for user in result:
-            st = {}
-            st.setdefault('User', user.name)
-            for point in user.points:
-                st.setdefault(point.race_id, point.points)
-            points_list.append(st)
+        points_list = [
+            {
+                'User': user.name,
+                **{point.race_id: point.points for point in user.points}
+            }
+            for user in result
+        ]
         return points_list
 
 # Получение результатов GP без очков чемпионата
