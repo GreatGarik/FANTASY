@@ -91,13 +91,15 @@ def add_result(tg_id, first_driver: int, second_driver: int, third_driver: int, 
 # Показ очков
 def show_points():
     with Session() as session:
+        points_list = []
         result = session.query(User).outerjoin(Point).all()
         for user in result:
-            print(f'User: {user.name}')
+            st = {}
+            st.setdefault('User', user.name)
             for point in user.points:
-                print(f'  Point: {point.value}')
-
-        return result
+                st.setdefault(point.race_id, point.points)
+            points_list.append(st)
+        return points_list
 
 # Получение результатов GP без очков чемпионата
 def get_result(gp=None):

@@ -303,10 +303,11 @@ async def process_viewresult_command(message: Message):
 # Этот хэндлер будет срабатывать на отправку команды /championship
 @router.message(Command(commands='championship'), StateFilter(default_state))
 async def process_championship_command(message: Message):
-    points_all = show_points()
-    text_for_answer = f'POS|DRIVER              |D1|D2|D3|D4|TM|EN|DF|LP|PN|PTS|CPT|\n'
-    for index, user in enumerate(points_all, 1):
-        text_for_answer += f'{index:<3}|{user.name:<20}|{user.name:<3}|\n'
+    points_all: dict = show_points()
+    print(points_all)
+    text_for_answer = f'POS|DRIVER              |PTS|\n'
+    for index, user in enumerate(sorted(points_all, key=lambda x: sum([i for i in x.values() if isinstance(i, int)]), reverse=True), 1):
+        text_for_answer += f'{index:<3}|{user['User']:<20}|{sum([i for i in user.values() if isinstance(i, int)]):<3}|\n'
     await message.answer(f'<code>{text_for_answer}</code>', isable_web_page_preview=True)
 
 # Этот хэндлер будет срабатывать на отправку команды /calculation

@@ -1,73 +1,50 @@
-from sqlalchemy import create_engine, Integer, String, ForeignKey
-from sqlalchemy.orm import relationship, sessionmaker, Mapped, mapped_column, declarative_base
 from typing import Optional, List
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy import create_engine, select, update, case
+from sqlalchemy.orm import Session, sessionmaker
 
 # Создаем базовый класс для моделей
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
+# Подключаемся к базе данных
+engine = create_engine("sqlite:///fantasy.db", echo=False)
 
-# Определяем модель User
+# Создаем сессию
+Session = sessionmaker(engine)
+# Определяем модель пользователей
 class User(Base):
     __tablename__ = 'users'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id_telegram: Mapped[int] = mapped_column(Integer, unique=True)
+    vk_link: Mapped[str] = mapped_column(String(60))
     name: Mapped[str] = mapped_column(String(60))
+    user_team: Mapped[Optional[str]] = mapped_column(String(60))
 
-    # Связь с моделью Point
     points: Mapped[List['Point']] = relationship('Point', back_populates='user')
 
-
-# Определяем модель Point
+# Определяем модель Очков
 class Point(Base):
     __tablename__ = 'points'
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
-    value: Mapped[int] = mapped_column(Integer)
+    race_id: Mapped[int] = mapped_column(ForeignKey('grandprix.id'))
+    year: Mapped[int] = mapped_column(Integer)
+    points: Mapped[int] = mapped_column(Integer)
 
-    # Связь с моделью User
     user: Mapped[User] = relationship('User', back_populates='points')
 
-
-# Создаем базу данных и сессию
-engine = create_engine('sqlite:///:memory:')  # Используйте вашу строку подключения
-Base.metadata.create_all(engine)
-Session = sessionmaker(bind=engine)
-
-
-# Функция для добавления данных
-def add_data():
+# Показ очков
+def show_points():
     with Session() as session:
-        user1 = User(name='Alice')
-        user2 = User(name='Bob')
-
-        point1 = Point(value=10, user=user1)
-        point2 = Point(value=20, user=user1)
-        point3 = Point(value=15, user=user2)
-
-        session.add(user1)
-        session.add(user2)
-        session.add(point1)
-        session.add(point2)
-        session.add(point3)
-        session.commit()
-
-
-# Добавляем данные
-add_data()
-
-
-# Функция для получения пользователей и их очков
-def get_users_with_points():
-    with Session() as session:
-        results = session.query(User).outerjoin(Point).all()
-        for user in results:
-            print(user.__dict__)
+        result = session.query(User).outerjoin(Point).all()
+        for user in result:
             print(f'User: {user.name}')
             for point in user.points:
-                print(point.__dict__)
-                print(f'  Point: {point.value}')
+                print(f'  Point: {point.points}')
 
 
-# Получаем пользователей и их очки
-get_users_with_points()
+show_points()
