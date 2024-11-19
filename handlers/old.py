@@ -1,92 +1,73 @@
-from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, PhotoSize
-from aiogram.filters import Command, CommandStart, StateFilter
-from lexicon.lexicon_ru import LEXICON_RU
-from keyboards.inline_keyboards import create_inline_kb
-from database.database import select_drivers
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import default_state, State, StatesGroup
-from aiogram.fsm.storage.redis import RedisStorage, Redis
+from sqlalchemy import create_engine, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship, sessionmaker, Mapped, mapped_column, declarative_base
+from typing import Optional, List
 
-router: Router = Router()
-
-# Инициализируем Redis
-redis = Redis(host='127.0.0.1')
-
-# Инициализируем хранилище (создаем экземпляр класса MemoryStorage)
-storage = RedisStorage(redis=redis)
-
-class FSMFillForm(StatesGroup):
-    # Создаем экземпляры класса State, последовательно
-    # перечисляя возможные состояния, в которых будет находиться
-    # бот в разные моменты взаимодейтсвия с пользователем
-    fill_name = State()        # Состояние ожидания ввода имени
-    fill_age = State()         # Состояние ожидания ввода возраста
-    fill_gender = State()      # Состояние ожидания выбора пола
-    upload_photo = State()     # Состояние ожидания загрузки фото
-    fill_education = State()   # Состояние ожидания выбора образования
-    fill_wish_news = State()   # Состояние ожидания выбора получать ли новости
+# Создаем базовый класс для моделей
+Base = declarative_base()
 
 
-# Этот хэндлер срабатывает на команду /start
-@router.message(CommandStart(), StateFilter(default_state))
-async def process_start_command(message: Message):
-    await message.answer(text=LEXICON_RU['start_answer'])
+# Определяем модель User
+class User(Base):
+    __tablename__ = 'users'
 
-# Этот хэндлер будет срабатывать на команду "/cancel" в любых состояниях,
-# кроме состояния по умолчанию, и отключать машину состояний
-@router.message(Command(commands='cancel'), ~StateFilter(default_state))
-async def process_cancel_command_state(message: Message, state: FSMContext):
-    await message.answer(
-        text='Вы вышли из машины состояний\n\n'
-             'Чтобы снова перейти к заполнению анкеты - '
-             'отправьте команду /fillform'
-    )
-    # Сбрасываем состояние и очищаем данные, полученные внутри состояний
-    await state.clear()
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(60))
+
+    # Связь с моделью Point
+    points: Mapped[List['Point']] = relationship('Point', back_populates='user')
 
 
-# Этот хэндлер срабатывает на команду /help
-@router.message(Command(commands=['help']))
-async def process_help_command(message: Message):
-    await message.answer(text=LEXICON_RU['help_answer'])
+# Определяем модель Point
+class Point(Base):
+    __tablename__ = 'points'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    value: Mapped[int] = mapped_column(Integer)
+
+    # Связь с моделью User
+    user: Mapped[User] = relationship('User', back_populates='points')
 
 
-# Этот хэндлер срабатывает на команду /predict
-@router.message(Command(commands=['predict']), StateFilter(default_state))
-async def process_predict_command(message: Message, state: FSMContext):
-    drivers_for_choose = [i.driver_name for i in select_drivers()]
-    await message.answer(
-        text='Выберите первого пилота',
-        reply_markup=create_inline_kb(1, *drivers_for_choose)
-    )
-    await state.set_state(FSMFillForm.fill_name)
-
-# Этот хэндлер будет срабатывать, если введено корректное имя
-# и переводить в состояние ожидания ввода возраста
-@router.message(StateFilter(FSMFillForm.fill_name))
-async def process_name_sent(callback: CallbackQuery, state: FSMContext):
-    print('test')
-    # Cохраняем введенное имя в хранилище по ключу "name"
-    await state.update_data(gender=callback.data)
-    await callback.message.delete()
-    await message.answer(text='Спасибо!\n\nА теперь введите второго пилота')
-    # Устанавливаем состояние ожидания ввода возраста
-    await state.set_state(FSMFillForm.fill_age)
+# Создаем базу данных и сессию
+engine = create_engine('sqlite:///:memory:')  # Используйте вашу строку подключения
+Base.metadata.create_all(engine)
+Session = sessionmaker(bind=engine)
 
 
-# Этот хэндлер будет срабатывать, если во время ввода имени
-# будет введено что-то некорректное
-@router.message(StateFilter(FSMFillForm.fill_name))
-async def warning_not_name(message: Message):
-    await message.answer(
-        text='То, что вы отправили не похоже на имя\n\n'
-             'Пожалуйста, введите ваше имя\n\n'
-             'Если вы хотите прервать заполнение анкеты - '
-             'отправьте команду /cancel')
+# Функция для добавления данных
+def add_data():
+    with Session() as session:
+        user1 = User(name='Alice')
+        user2 = User(name='Bob')
+
+        point1 = Point(value=10, user=user1)
+        point2 = Point(value=20, user=user1)
+        point3 = Point(value=15, user=user2)
+
+        session.add(user1)
+        session.add(user2)
+        session.add(point1)
+        session.add(point2)
+        session.add(point3)
+        session.commit()
 
 
-# # Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
-@router.message()
-async def answer_all(message: Message):
-    await message.answer(text=LEXICON_RU['unknown_command'])
+# Добавляем данные
+add_data()
+
+
+# Функция для получения пользователей и их очков
+def get_users_with_points():
+    with Session() as session:
+        results = session.query(User).outerjoin(Point).all()
+        for user in results:
+            print(user.__dict__)
+            print(f'User: {user.name}')
+            for point in user.points:
+                print(point.__dict__)
+                print(f'  Point: {point.value}')
+
+
+# Получаем пользователей и их очки
+get_users_with_points()

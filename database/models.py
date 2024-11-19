@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -12,13 +12,13 @@ class Base(DeclarativeBase):
 class User(Base):
     __tablename__ = 'users'
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    id_telegram: Mapped[int] = mapped_column(unique=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id_telegram: Mapped[int] = mapped_column(Integer, unique=True)
     vk_link: Mapped[str] = mapped_column(String(60))
     name: Mapped[str] = mapped_column(String(60))
     user_team: Mapped[Optional[str]] = mapped_column(String(60))
 
-    points = relationship('Point', back_populates='user')
+    points: Mapped[List['Point']] = relationship('Point', back_populates='user')
 
 
 # Определяем модель гонщиков
@@ -27,38 +27,42 @@ class Driver(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     driver_name: Mapped[str] = mapped_column(String(60))
-    driver_points: Mapped[int] = mapped_column()
+    driver_points: Mapped[int] = mapped_column(Integer)
     driver_team: Mapped[str] = mapped_column(String(60))
     driver_engine: Mapped[str] = mapped_column(String(60))
     driver_nextgp: Mapped[str] = mapped_column(String(1))
+
+
+
 
 # Определяем модель гонщиков
 class Result(Base):
     __tablename__ = 'results'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column()
-    first_driver: Mapped[int] = mapped_column()
-    second_driver: Mapped[int] = mapped_column()
-    third_driver: Mapped[int] = mapped_column()
-    fourth_driver: Mapped[int] = mapped_column()
-    driver_team: Mapped[int] = mapped_column()
-    driver_engine: Mapped[int] = mapped_column()
-    gap: Mapped[int] = mapped_column()
-    lapped: Mapped[int] = mapped_column()
-    total: Mapped[int] = mapped_column()
-    counter_best: Mapped[int] = mapped_column()
-    max1_best: Mapped[int] = mapped_column()
-    max2_best: Mapped[int] = mapped_column()
-    max3_best: Mapped[int] = mapped_column()
-    max1_not_best: Mapped[int] = mapped_column()
-    max2_not_best: Mapped[int] = mapped_column()
-    max3_not_best: Mapped[int] = mapped_column()
-    max4_not_best: Mapped[int] = mapped_column()
-    max_lap_gap: Mapped[int] = mapped_column()
-    counter_lap_gap: Mapped[int] = mapped_column()
-    penalty: Mapped[int] = mapped_column()
-    gp: Mapped[int] = mapped_column()
+    user_id: Mapped[int] = mapped_column(Integer)
+    first_driver: Mapped[int] = mapped_column(Integer)
+    second_driver: Mapped[int] = mapped_column(Integer)
+    third_driver: Mapped[int] = mapped_column(Integer)
+    fourth_driver: Mapped[int] = mapped_column(Integer)
+    driver_team: Mapped[int] = mapped_column(Integer)
+    driver_engine: Mapped[int] = mapped_column(Integer)
+    gap: Mapped[int] = mapped_column(Integer)
+    lapped: Mapped[int] = mapped_column(Integer)
+    total: Mapped[int] = mapped_column(Integer)
+    counter_best: Mapped[int] = mapped_column(Integer)
+    max1_best: Mapped[int] = mapped_column(Integer)
+    max2_best: Mapped[int] = mapped_column(Integer)
+    max3_best: Mapped[int] = mapped_column(Integer)
+    max1_not_best: Mapped[int] = mapped_column(Integer)
+    max2_not_best: Mapped[int] = mapped_column(Integer)
+    max3_not_best: Mapped[int] = mapped_column(Integer)
+    max4_not_best: Mapped[int] = mapped_column(Integer)
+    max_lap_gap: Mapped[int] = mapped_column(Integer)
+    counter_lap_gap: Mapped[int] = mapped_column(Integer)
+    penalty: Mapped[int] = mapped_column(Integer)
+    gp: Mapped[int] = mapped_column(Integer)
+
 
 
 # Определяем модель прогнозов
@@ -66,7 +70,7 @@ class Predict(Base):
     __tablename__ = 'predicts'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column()
+    user_id: Mapped[int] = mapped_column(Integer)
     first_driver: Mapped[str] = mapped_column(String)
     second_driver: Mapped[str] = mapped_column(String)
     third_driver: Mapped[str] = mapped_column(String)
@@ -76,7 +80,8 @@ class Predict(Base):
     gap: Mapped[int] = mapped_column(Integer)
     lapped: Mapped[int] = mapped_column(Integer)
     penalty: Mapped[int] = mapped_column(Integer)
-    gp: Mapped[int] = mapped_column()
+    gp: Mapped[int] = mapped_column(Integer)
+
 
 
 # Определяем модель гран-при
@@ -88,27 +93,31 @@ class Grandprix(Base):
     year: Mapped[int] = mapped_column(Integer)
     nextgp: Mapped[bool] = mapped_column(Boolean)
 
+    race = relationship('Point', back_populates='gp')
+
 # Определяем модель команд
 class Team(Base):
     __tablename__ = 'teams'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String)
-    first: Mapped[int] = mapped_column(Integer, ForeignKey(User.id))
-    second: Mapped[int] = mapped_column(Integer, ForeignKey(User.id))
-    thirst: Mapped[int] = mapped_column(Integer, ForeignKey(User.id))
+    first: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
+    second: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
+    third: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
     logo: Mapped[str] = mapped_column(String)
-    captain: Mapped[int] = mapped_column(Integer, ForeignKey(User.id))
+    captain: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
+
 
 # Определяем модель Очков
 class Point(Base):
     __tablename__ = 'points'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey(User.id))
-    race_id: Mapped[int] = mapped_column(ForeignKey(Grandprix.id))
-    year: Mapped[int] = mapped_column()
-    points: Mapped[int] = mapped_column()
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
+    race_id: Mapped[int] = mapped_column(ForeignKey('grandprix.id'))
+    year: Mapped[int] = mapped_column(Integer)
+    points: Mapped[int] = mapped_column(Integer)
 
-    user = relationship('User', back_populates='points')
+    user: Mapped[User] = relationship('User', back_populates='points')
+    gp: Mapped[Grandprix] = relationship('Grandprix', back_populates='race')
 

@@ -289,22 +289,29 @@ async def process_showdata_command(message: Message):
         await message.answer(text='Вы не зарегистрированы')
 
 
-# Этот хэндлер будет срабатывать на отправку команды /calculation
+# Этот хэндлер будет срабатывать на отправку команды /viewresult
 @router.message(Command(commands='viewresult'), StateFilter(default_state))
-async def process_showdata_command(message: Message):
+async def process_viewresult_command(message: Message):
     gp = get_actual_gp()
     data = show_result(gp)
 
-    text_for_answer = f''
+    text_for_answer = f'POS|DRIVER              |D1|D2|D3|D4|TM|EN|DF|LP|PN|PTS|CPT|\n'
     for index, (user, result, points) in enumerate(data, 1):
-        text_for_answer += f'{index:<2}) {user.name:<20}| {result.first_driver:<2}| {result.second_driver:<2}| {result.third_driver:<2}| {result.fourth_driver:<2}| {result.driver_team:<2}| {result.driver_engine:<2}| {result.gap:<2}| {result.lapped:<2}| {result.penalty:<2}| {result.total:<3}| {points.points:<3}| \n'
-        # print(user.name, result.first_driver, result.second_driver, result.third_driver, result.fourth_driver,
-        #     result.driver_team, result.driver_engine, result.gap, result.lapped, result.total)
+        text_for_answer += f'{index:<3}|{user.name:<20}|{result.first_driver:<2}|{result.second_driver:<2}|{result.third_driver:<2}|{result.fourth_driver:<2}|{result.driver_team:<2}|{result.driver_engine:<2}|{result.gap:<2}|{result.lapped:<2}|{result.penalty:<2}|{result.total:<3}|{points.points:<3}|\n'
     await message.answer(f'<code>{text_for_answer}</code>', isable_web_page_preview=True)
 
+# Этот хэндлер будет срабатывать на отправку команды /championship
+@router.message(Command(commands='championship'), StateFilter(default_state))
+async def process_championship_command(message: Message):
+    points_all = show_points()
+    text_for_answer = f'POS|DRIVER              |D1|D2|D3|D4|TM|EN|DF|LP|PN|PTS|CPT|\n'
+    for index, user in enumerate(points_all, 1):
+        text_for_answer += f'{index:<3}|{user.name:<20}|{user.name:<3}|\n'
+    await message.answer(f'<code>{text_for_answer}</code>', isable_web_page_preview=True)
 
+# Этот хэндлер будет срабатывать на отправку команды /calculation
 @router.message(Command(commands='calculation'), StateFilter(default_state))
-async def process_showdata_command(message: Message):
+async def process_calculation_command(message: Message):
     deltas = {0: 10, 1: 7, 2: 5, 3: 3, 4: 2, 5: 1}
     gp = get_actual_gp()
     if check_res(gp):

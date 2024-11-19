@@ -4,34 +4,34 @@ from sqlalchemy import create_engine, select, update, case
 from sqlalchemy.orm import Session, sessionmaker
 from database.models import *
 
-# Создаем базу данных
+# Подключаемся к базе данных
 engine = create_engine("sqlite:///fantasy.db", echo=False)
 
 # Создаем сессию
 Session = sessionmaker(engine)
 
-
+# Выбор гонщиков для прогноза со срезами по местам
 def select_drivers(start=None, stop=None):
     with Session() as session:
         statement = select(Driver).where(Driver.driver_nextgp == 'Y')
         db_object = session.scalars(statement).all()
         return db_object[start:stop]
 
-
+# Выбор команд и моторов для прогноза
 def select_team_engine(pilot):
     with Session() as session:
-        statement = select(Driver).where(Driver.driver_name == pilot)
+        statement = select(Driver).where(Driver.driver_name == pilot, Driver.driver_nextgp == 'Y')
         db_object = session.scalars(statement).one()
         return db_object.driver_team, db_object.driver_engine
 
-
+# Запрос актуального GP
 def get_actual_gp():
     with Session() as session:
         statement = select(Grandprix).where(Grandprix.nextgp)
         db_object = session.scalars(statement).one()
         return db_object.id
 
-
+# Добавление юзера
 def update_user(user_id, name: str, second_name: str, vk_id: str):
     with Session() as session:
         try:
@@ -40,26 +40,26 @@ def update_user(user_id, name: str, second_name: str, vk_id: str):
         except:
             pass
 
-
+# Запись прогноза на гонку
 def send_predict(tg_id, gp, first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap,
                  lapped, penalty):
     with Session() as session:
         try:
             session.add(Predict(user_id=tg_id, first_driver=first_driver, second_driver=second_driver,
                                 third_driver=third_driver, fourth_driver=fourth_driver, driver_team=driver_team,
-                                driver_engine=driver_engine, gap=gap, lapped=lapped, gp=gp,  penalty=penalty))
+                                driver_engine=driver_engine, gap=gap, lapped=lapped, gp=gp, penalty=penalty))
             session.commit()
         except Exception as e:
             print(e)
 
-
+# Получение прогноза на гонку
 def get_predict(gp=None):
     with Session() as session:
         statement = select(Predict).where(Predict.gp == gp)
         db_object = session.scalars(statement).all()
         return db_object
 
-
+# Заполнение таблицы с очками по этапам
 def add_points(user_id, year, points, gp=None):
     with Session() as session:
         try:
@@ -68,7 +68,7 @@ def add_points(user_id, year, points, gp=None):
         except Exception as e:
             print(e)
 
-
+# Заполнение таблицы результатов GP
 def add_result(tg_id, first_driver: int, second_driver: int, third_driver: int, fourth_driver: int, driver_team: int,
                driver_engine: int, gap: int,
                lapped: int, counter_best, max1_best, max2_best, max3_best, max1_not_best, max2_not_best, max3_not_best,
@@ -88,11 +88,18 @@ def add_result(tg_id, first_driver: int, second_driver: int, third_driver: int, 
         except Exception as e:
             print(e)
 
+# Показ очков
 def show_points():
     with Session() as session:
-        result = session.query(User).join(Point).all()
+        result = session.query(User).outerjoin(Point).all()
+        for user in result:
+            print(f'User: {user.name}')
+            for point in user.points:
+                print(f'  Point: {point.value}')
+
         return result
 
+# Получение результатов GP без очков чемпионата
 def get_result(gp=None):
     with Session() as session:
         query = session.query(User, Result).where(Result.gp == gp)
@@ -107,12 +114,12 @@ def get_result(gp=None):
                                                                               Result.max3_not_best.desc(),
                                                                               Result.max4_not_best.desc(),
                                                                               Result.counter_lap_gap.desc(),
-                                                                              Result.max_lap_gap.desc(), Result.id).all()
-
-
+                                                                              Result.max_lap_gap.desc(),
+                                                                              Result.id).all()
 
         return query
 
+# Получение результатов GP вместе с очками чемпионата
 def show_result(gp=None):
     with Session() as session:
         query = session.query(User, Result, Point).where(Result.gp == gp, Point.race_id == gp)
@@ -127,12 +134,12 @@ def show_result(gp=None):
                                                                               Result.max3_not_best.desc(),
                                                                               Result.max4_not_best.desc(),
                                                                               Result.counter_lap_gap.desc(),
-                                                                              Result.max_lap_gap.desc(), Result.id).outerjoin(Point).all()
-
-
+                                                                              Result.max_lap_gap.desc(),
+                                                                              Result.id).outerjoin(Point).all()
 
         return query
 
+# Получение пользователя по его id в телеграме или всех, если id не задан
 def get_users(id_telegram=None):
     with Session() as session:
         if id_telegram:
@@ -147,6 +154,7 @@ def get_users(id_telegram=None):
             return db_object
 
 
+# Проверка просчитаны ли уже результаты на заданный GP
 def check_res(gp):
     with Session() as session:
         statement = select(Point).where(Point.race_id == gp)
@@ -154,4 +162,4 @@ def check_res(gp):
         if res:
             return True
         else:
-                return
+            return
