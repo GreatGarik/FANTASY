@@ -1,9 +1,6 @@
 import asyncio
 import logging
-import random
-
 from aiogram import Bot, Dispatcher
-
 from config_data.config import Config, load_config
 from handlers import user_handlers, other_handlers, admin_handlers
 from keyboards.menu_button import set_main_menu

@@ -1,8 +1,7 @@
-import csv
 from openpyxl import Workbook
 import os
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, PhotoSize, FSInputFile
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, FSInputFile
 from aiogram.filters import Command, CommandStart, StateFilter
 from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
@@ -11,7 +10,6 @@ from database.database import select_drivers, update_user, get_users, send_predi
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from aiogram.fsm.storage.redis import RedisStorage, Redis
-from dataprocessing.get_data import get_res_gp
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 
 router: Router = Router()
@@ -180,6 +178,7 @@ async def predict_team(message: Message, state: FSMContext):
                        F.data.in_({i.driver_team + ' (' + i.driver_engine + ')' for i in select_drivers()}))
 async def predict_engine(callback: CallbackQuery, state: FSMContext):
     await state.update_data(driver_team=callback.data.split()[0])
+    await state.update_data(select1_engine=callback.data.split()[-1].strip('()'))
     await callback.message.delete()
     await callback.message.answer(text='Спасибо!\nТеперь выберите двигатель',
                                   reply_markup=create_inline_kb(1,
@@ -191,56 +190,78 @@ async def predict_engine(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(StateFilter(FSMFillForm.select_first), F.data.in_({i.driver_engine for i in select_drivers()}))
 async def predict_first(callback: CallbackQuery, state: FSMContext):
     await state.update_data(driver_engine=callback.data)
+    await state.update_data(select2_engine=callback.data)
     await callback.message.delete()
     await callback.message.answer(text='Спасибо!\nТеперь выберите первого пилота',
-                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()]))
+                                  reply_markup=create_inline_kb(1, *[i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers()]))
     await state.set_state(FSMFillForm.select_second)
 
 
 # Сохраняем первого пилота, отправляем кнопки с выбором второго пилота
-@router.callback_query(StateFilter(FSMFillForm.select_second), F.data.in_([i.driver_name for i in select_drivers()]))
+@router.callback_query(StateFilter(FSMFillForm.select_second), F.data.in_([i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers()]))
 async def predict_second(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(first_driver=callback.data)
+    await state.update_data(first_driver=callback.data.split('(')[0].strip())
+    await state.update_data(select3_engine=callback.data.split('(')[-1].strip('()'))
     await callback.message.delete()
     predict = await state.get_data()
     await callback.message.answer(text='Спасибо!\nТеперь выберите второго пилота',
-                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers() if
+                                  reply_markup=create_inline_kb(1, *[i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers() if
                                                                      i.driver_name not in [*predict.values()]]))
     await state.set_state(FSMFillForm.select_third)
 
 
 # Сохраняем второго пилота, отправляем кнопки с выбором третьего пилота
-@router.callback_query(StateFilter(FSMFillForm.select_third), F.data.in_([i.driver_name for i in select_drivers()]))
+@router.callback_query(StateFilter(FSMFillForm.select_third), F.data.in_([i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers()]))
 async def predict_third(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(second_driver=callback.data)
+    await state.update_data(second_driver=callback.data.split('(')[0].strip())
+    await state.update_data(select4_engine=callback.data.split('(')[-1].strip('()'))
     await callback.message.delete()
     predict = await state.get_data()
-    await callback.message.answer(text='Спасибо!\nТеперь выберите третьего пилота',
-                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()[10:] if
-                                                                     i.driver_name not in [*predict.values()]]))
-    await state.set_state(FSMFillForm.select_fourth)
+    if len(set([predict['select1_engine'], predict['select2_engine'], predict['select3_engine'],predict['select4_engine']])) == 1:
+        await callback.message.answer(text='Вы выбрали 4 участника с одним мотором, начните выбор заново с команды /predict')
+        await state.clear()
+    else:
+        await callback.message.answer(text='Спасибо!\nТеперь выберите третьего пилота',
+                                      reply_markup=create_inline_kb(1, *[i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers()[10:] if
+                                                                         i.driver_name not in [*predict.values()]]))
+        await state.set_state(FSMFillForm.select_fourth)
 
 
 # Сохраняем третьего пилота, отправляем кнопки с выбором четвертого пилота
 @router.callback_query(StateFilter(FSMFillForm.select_fourth),
-                       F.data.in_([i.driver_name for i in select_drivers()][10:]))
+                       F.data.in_([i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers()][10:]))
 async def predict_fourth(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(third_driver=callback.data)
+    await state.update_data(third_driver=callback.data.split('(')[0].strip())
+    await state.update_data(select5_engine=callback.data.split('(')[-1].strip('()'))
     await callback.message.delete()
     predict = await state.get_data()
-    await callback.message.answer(text='Спасибо!\nТеперь выберите четвертого пилота',
-                                  reply_markup=create_inline_kb(1, *[i.driver_name for i in select_drivers()[15:] if
-                                                                     i.driver_name not in [*predict.values()]]))
-    await state.set_state(FSMFillForm.select_gap)
+    values = [predict['select1_engine'], predict['select2_engine'], predict['select3_engine'], predict['select4_engine'], predict['select5_engine']]
+    if any(values.count(x) == 4 for x in set(values)):
+        await callback.message.answer(
+            text='Вы выбрали 4 участника с одним мотором, начните выбор заново с команды /predict')
+        await state.clear()
+    else:
+        await callback.message.answer(text='Спасибо!\nТеперь выберите четвертого пилота',
+                                      reply_markup=create_inline_kb(1, *[i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers()[15:] if
+                                                                         i.driver_name not in [*predict.values()]]))
+        await state.set_state(FSMFillForm.select_gap)
 
 
 # Сохраняем четвертого пилота, отправляем текст с выбором отставания от лидера
-@router.callback_query(StateFilter(FSMFillForm.select_gap), F.data.in_([i.driver_name for i in select_drivers()][15:]))
+@router.callback_query(StateFilter(FSMFillForm.select_gap), F.data.in_([i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers()][15:]))
 async def predict_gap(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(fourth_driver=callback.data)
+    await state.update_data(fourth_driver=callback.data.split('(')[0].strip())
+    await state.update_data(select6_engine=callback.data.split('(')[-1].strip('()'))
     await callback.message.delete()
-    await callback.message.answer(text='Спасибо!\nТеперь введите отставание от лидера')
-    await state.set_state(FSMFillForm.select_lapped)
+    predict = await state.get_data()
+    values = [predict['select1_engine'], predict['select2_engine'], predict['select3_engine'], predict['select4_engine'], predict['select5_engine'], predict['select6_engine']]
+    if any(values.count(x) == 4 for x in set(values)):
+        await callback.message.answer(
+            text='Вы выбрали 4 участника с одним мотором, начните выбор заново с команды /predict')
+        await state.clear()
+    else:
+        await callback.message.answer(text='Спасибо!\nТеперь введите отставание от лидера')
+        await state.set_state(FSMFillForm.select_lapped)
 
 
 # Сохраняем отставание, отправляем текст с выбором количества круговых
