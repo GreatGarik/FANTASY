@@ -1,5 +1,8 @@
+import csv
+from openpyxl import Workbook
+import os
 from aiogram import Router, F, Bot
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, PhotoSize
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, PhotoSize, FSInputFile
 from aiogram.filters import Command, CommandStart, StateFilter
 from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
@@ -301,15 +304,55 @@ async def process_viewresult_command(message: Message):
         text_for_answer += f'{index:<3}|{user.name:<20}|{result.first_driver:<2}|{result.second_driver:<2}|{result.third_driver:<2}|{result.fourth_driver:<2}|{result.driver_team:<2}|{result.driver_engine:<2}|{result.gap:<2}|{result.lapped:<2}|{result.penalty:<2}|{result.total:<3}|{points.points:<3}|\n'
     await message.answer(f'<code>{text_for_answer}</code>', isable_web_page_preview=True)
 
-# Этот хэндлер будет срабатывать на отправку команды /championship
-@router.message(Command(commands='championship'), StateFilter(default_state))
-async def process_championship_command(message: Message):
-    points_all: dict = show_points()
-    print(points_all)
-    text_for_answer = f'POS|DRIVER              |PTS|\n'
-    for index, user in enumerate(sorted(points_all, key=lambda x: sum([i for i in x.values() if isinstance(i, int)]), reverse=True), 1):
-        text_for_answer += f'{index:<3}|{user['User']:<20}|{sum([i for i in user.values() if isinstance(i, int)]):<3}|\n'
-    await message.answer(f'<code>{text_for_answer}</code>', isable_web_page_preview=True)
+
+# Этот хэндлер будет срабатывать на отправку команды /resultcsv
+@router.message(Command(commands='resultcsv'), StateFilter(default_state))
+async def process_resultcsv_command(message: Message):
+    gp = get_actual_gp()
+    data = show_result(gp)
+
+    # Указываем имя файла
+    xls_filename = 'results.xlsx'
+
+    # Создаем новый Excel файл
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Results"
+
+    # Записываем заголовки
+    headers = ['POS', 'DRIVER', 'DR1', 'DR2', 'DR3', 'DR4', 'TM', 'ENG', 'DIFF', 'LAP', 'PEN', 'PTS', 'CH.PTS']
+    sheet.append(headers)
+
+    # Записываем данные
+    for index, (user, result, points) in enumerate(data, 1):
+        sheet.append([
+            index,
+            user.name,
+            result.first_driver,
+            result.second_driver,
+            result.third_driver,
+            result.fourth_driver,
+            result.driver_team,
+            result.driver_engine,
+            result.gap,
+            result.lapped,
+            result.penalty,
+            result.total,
+            points.points
+        ])
+
+    # Сохраняем файл
+    workbook.save(xls_filename)
+
+    # Отправляем XLS файл
+    await message.answer_document(
+        document=FSInputFile(path=xls_filename),
+        caption='Результаты в формате XLS',
+        filename='results.xlsx'
+    )
+
+    # Удаляем файл после отправки
+    os.remove(xls_filename)
 
 # Этот хэндлер будет срабатывать на отправку команды /calculation
 @router.message(Command(commands='calculation'), StateFilter(default_state))
@@ -320,7 +363,6 @@ async def process_calculation_command(message: Message):
     else:
         calculation_drivers(gp)
         await message.answer(f'Расчет результатов выполнен')
-
 
 
 # # Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
