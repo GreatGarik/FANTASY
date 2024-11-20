@@ -13,7 +13,7 @@ Session = sessionmaker(engine)
 # Выбор гонщиков для прогноза со срезами по местам
 def select_drivers(start=None, stop=None):
     with Session() as session:
-        statement = select(Driver).where(Driver.driver_nextgp == 'Y')
+        statement = select(Driver).where(Driver.driver_nextgp == 'Y').order_by(Driver.driver_points.desc())
         db_object = session.scalars(statement).all()
         return db_object[start:stop]
 
