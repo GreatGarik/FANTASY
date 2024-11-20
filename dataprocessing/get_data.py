@@ -13,7 +13,6 @@ def get_res_gp():
 
     POINTS_QUALI = {1: 10, 2: 8, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1}
     POINTS_QUALI_TE = {1: 5, 2: 3, 3: 1}
-
     with open('race.txt', encoding='UTF-8') as file:
         for num, line in enumerate(file.readlines(), 1):
             if not line.startswith('gap') and not line.startswith('laps') and not line.startswith('bestlap'):
@@ -29,7 +28,6 @@ def get_res_gp():
             else:
                 key, value = line.strip().split()
                 results_gp.setdefault(key, int(value))
-
     with open('sprint.txt', encoding='UTF-8') as file:
         for num, line in enumerate(file.readlines(), 1):
             results_gp[line.strip()] = results_gp.get(line.strip(), 0) + POINTS_SPRINT.get(num, 0)
@@ -43,7 +41,6 @@ def get_res_gp():
             team, engine = select_team_engine(line.strip())
             results_gp['team_' + team] = results_gp.get('team_' + team, 0) + POINTS_QUALI_TE.get(num, 0)
             results_gp['engine_' + engine] = results_gp.get('engine_' + engine, 0) + POINTS_QUALI_TE.get(num, 0)
-
     return results_gp
 
 if __name__ == '__main__':
