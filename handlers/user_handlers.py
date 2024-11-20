@@ -305,8 +305,8 @@ async def process_viewresult_command(message: Message):
     await message.answer(f'<code>{text_for_answer}</code>', isable_web_page_preview=True)
 
 
-# Этот хэндлер будет срабатывать на отправку команды /resultcsv
-@router.message(Command(commands='resultcsv'), StateFilter(default_state))
+# Этот хэндлер будет срабатывать на отправку команды /resultxls
+@router.message(Command(commands='resultxls'), StateFilter(default_state))
 async def process_resultcsv_command(message: Message):
     gp = get_actual_gp()
     data = show_result(gp)
