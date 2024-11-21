@@ -276,10 +276,20 @@ async def predict_gap(message: CallbackQuery, state: FSMContext):
 @router.message(StateFilter(FSMFillForm.end_select), F.text.isdigit())
 async def predict_lap(message: CallbackQuery, state: FSMContext):
     await state.update_data(lapped=message.text)
-    await message.answer(text='Спасибо!\nВроде все')
     await state.update_data(penalty=0)
     predict = await state.get_data()
-    await message.answer(text=f'Спасибо!\nВы выбрали {predict}')
+    await message.answer(text=f'''Спасибо!\nВы выбрали:
+    Команда: <b>{predict['driver_team']}</b> 
+    Двигатель: <b>{predict['driver_engine']}</b>
+    Первый пилот: <b>{predict['first_driver']}</b>
+    Второй пилот: <b>{predict['second_driver']}</b>
+    Третий пилот: <b>{predict['third_driver']}</b>
+    Четвертый пилот: <b>{predict['fourth_driver']}</b>
+    Отставание от лидера: <b>{predict['gap']}</b>
+    Количество круговых: <b>{predict['lapped']}</b>
+    ''')
+
+
 
     # Пишем прогноз в базу
     gp = get_actual_gp()
