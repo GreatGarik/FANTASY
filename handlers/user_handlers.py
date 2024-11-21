@@ -6,7 +6,7 @@ from aiogram.filters import Command, CommandStart, StateFilter
 from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
 from database.database import select_drivers, update_user, get_users, send_predict, get_predict, add_result, \
-    show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res
+    show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from aiogram.fsm.storage.redis import RedisStorage, Redis
@@ -177,7 +177,7 @@ async def predict_team(message: Message, state: FSMContext):
 @router.callback_query(StateFilter(FSMFillForm.select_engine),
                        F.data.in_({i.driver_team + ' (' + i.driver_engine + ')' for i in select_drivers()}))
 async def predict_engine(callback: CallbackQuery, state: FSMContext):
-    await state.update_data(driver_team=callback.data.split()[0])
+    await state.update_data(driver_team=callback.data.split('(')[0].strip())
     await state.update_data(select1_engine=callback.data.split()[-1].strip('()'))
     await callback.message.delete()
     await callback.message.answer(text='Спасибо!\nТеперь выберите двигатель',
@@ -384,6 +384,46 @@ async def process_calculation_command(message: Message):
     else:
         calculation_drivers(gp)
         await message.answer(f'Расчет результатов выполнен')
+
+# Этот хэндлер будет срабатывать на отправку команды /championship
+@router.message(Command(commands='championship'), StateFilter(default_state))
+async def process_championship_command(message: Message):
+    points_all: dict = show_points()
+    text_for_answer = f'POS|DRIVER              |PTS|\n'
+    for index, user in enumerate(sorted(points_all, key=lambda x: sum([i for i in x.values() if isinstance(i, int)]), reverse=True), 1):
+        text_for_answer += f'{index:<3}|{user['User']:<20}|{sum([i for i in user.values() if isinstance(i, int)]):<3}|\n'
+    await message.answer(f'<code>{text_for_answer}</code>', isable_web_page_preview=True)
+
+# Этот хэндлер будет срабатывать на отправку команды /championship_full
+@router.message(Command(commands='championship_full'), StateFilter(default_state))
+async def process_championship_full_command(message: Message):
+    points_list: dict = show_points_all()
+    #print(points_list)
+    for entry in points_list:
+        entry['Total Points'] = sum(entry[key] for key in entry if key != 'User')
+    print(1)
+        # Сортируем по общему количеству очков
+    points_list.sort(key=lambda x: x['Total Points'], reverse=True)
+    print(2)
+    # Заголовки таблицы
+    header = ['Driver'] + [key for key in points_list[0] if key != 'User' and key != 'Total Points'] + ['Total Points']
+    print(3)
+    # Печатаем заголовки
+    print(f"{header[0]:<25} {header[-1]:<10} {' | '.join(header[2:])}")
+    print("-" * 50)
+
+
+    # Печатаем строки с данными
+    for entry in points_list:
+        row = [entry['User'], entry['Total Points']] + [entry[key] for key in header[2:]]
+        print(f"{row[0]:<25}|{row[1]:<10} {' | '.join(map(str, row[2:]))}")
+
+
+    text_for_answer = f'POS|DRIVER              |PTS|\n'
+    for index, user in enumerate(sorted(points_list, key=lambda x: sum([i for i in x.values() if isinstance(i, int)]), reverse=True), 1):
+        text_for_answer += f'{index:<3}|{user['User']:<20}|{sum([i for i in user.values() if isinstance(i, int)]):<3}|\n'
+    #await message.answer(f'<code>{text_for_answer}</code>', isable_web_page_preview=True)
+
 
 
 # # Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
