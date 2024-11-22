@@ -415,7 +415,7 @@ async def process_championship_command(message: Message):
 # Этот хэндлер будет срабатывать на отправку команды /championship_full
 @router.message(Command(commands='championship_full'), StateFilter(default_state))
 async def process_championship_full_command(message: Message):
-    points_list: dict = show_points_all()
+    points_list: dict = show_points_all(2024)
 
     for entry in points_list:
         entry['Total Points'] = sum(entry[key] for key in entry if key != 'User')
