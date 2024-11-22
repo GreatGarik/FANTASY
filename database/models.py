@@ -15,9 +15,12 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     id_telegram: Mapped[int] = mapped_column(Integer, unique=True)
     name: Mapped[str] = mapped_column(String(60))
-    user_team: Mapped[Optional[str]] = mapped_column(String(60))
 
     points: Mapped[List['Point']] = relationship('Point', back_populates='user')
+    # Связи с командами
+    teams_first: Mapped[List['Team']] = relationship('Team', back_populates='first_user', foreign_keys='Team.first')
+    teams_second: Mapped[List['Team']] = relationship('Team', back_populates='second_user', foreign_keys='Team.second')
+    teams_third: Mapped[List['Team']] = relationship('Team', back_populates='third_user', foreign_keys='Team.third')
 
 
 # Определяем модель гонщиков
@@ -100,12 +103,19 @@ class Team(Base):
     __tablename__ = 'teams'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String)
-    first: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
-    second: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
-    third: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
-    logo: Mapped[str] = mapped_column(String)
-    captain: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
+    name: Mapped[str] = mapped_column(String(60))
+    first: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('users.id'))
+    second: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('users.id'))
+    third: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('users.id'))
+    logo: Mapped[str] = mapped_column(String(60))
+    captain: Mapped[bool] = mapped_column(Boolean)
+    number: Mapped[int] = mapped_column(Integer)
+
+    # Связи с пользователями
+    first_user: Mapped[Optional[User]] = relationship('User', back_populates='teams_first', foreign_keys=[first])
+    second_user: Mapped[Optional[User]] = relationship('User', back_populates='teams_second', foreign_keys=[second])
+    third_user: Mapped[Optional[User]] = relationship('User', back_populates='teams_third', foreign_keys=[third])
+
 
 
 # Определяем модель Очков

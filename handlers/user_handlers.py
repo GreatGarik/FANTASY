@@ -9,7 +9,7 @@ from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
-    is_prediced
+    is_prediced, get_user_team, add_team
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from aiogram.fsm.storage.redis import RedisStorage, Redis
@@ -31,7 +31,6 @@ class FSMFillForm(StatesGroup):
     # бот в разные моменты взаимодейтсвия с пользователем
     fill_name = State()  # Состояние ожидания ввода имени
     fill_second_name = State()  # Состояние ожидания ввода фамилии
-    fill_vk = State()  # Состояние ожидания ссылки на аккаунт VK
     select_first = State()
     select_second = State()
     select_third = State()
@@ -41,6 +40,8 @@ class FSMFillForm(StatesGroup):
     select_gap = State()
     select_lapped = State()
     end_select = State()
+    fill_team_name = State()
+    fill_team_number = State()
 
 
 # Этот хэндлер срабатывает на команду /start
@@ -66,6 +67,12 @@ async def process_cancel_command_state(message: Message, state: FSMContext):
 @router.message(Command(commands=['help']))
 async def process_help_command(message: Message):
     await message.answer(text=LEXICON_RU['help_answer'])
+
+'''
+
+///... ХЭНДЛЕРЫ РЕГИСТРАЦИИ НАЧАЛО ///
+
+'''
 
 
 # Этот хэндлер будет срабатывать на команду /registration
@@ -136,10 +143,89 @@ async def warning_not_name(message: Message):
              'Если вы хотите прервать заполнение анкеты - '
              'отправьте команду /cancel')
 
+'''
+
+///... ХЭНДЛЕРЫ РЕГИСТРАЦИИ КОНЕЦ ///
 
 '''
 
-//... ХЭНДЛЕРЫ ПРОГНОЗА НАЧАЛО ///
+'''
+
+///... ХЭНДЛЕРЫ РЕГИСТРАЦИИ КОМАНДЫ НАЧАЛО ///
+
+'''
+
+
+# Этот хэндлер будет срабатывать на команду /createteam
+@router.message(Command(commands='createteam'), StateFilter(default_state))
+async def process_createteam_command(message: Message, state: FSMContext):
+    if get_user_team(message.from_user.id) == 'PERSONAL ENTRY':
+        await message.answer(text='Пожалуйста, введите название команды латинским буквами')
+        await state.set_state(FSMFillForm.fill_team_name)
+    else:
+        await message.answer(text=f'Вы уже находитесь в команде <b>{get_user_team(message.from_user.id)}</b>')
+
+
+# Этот хэндлер будет срабатывать, если введено корректное название
+@router.message(StateFilter(FSMFillForm.fill_team_name), lambda message: all(char in ascii_letters for char in message.text))
+async def process_lastname_sent(message: Message, state: FSMContext):
+    # Сохраняем введенное имя в хранилище по ключу "name"
+    await state.update_data(name=message.text)
+    await message.answer(text='Спасибо!\nВведите номер гонщика')
+    await state.set_state(FSMFillForm.fill_team_number)
+
+
+# Этот хэндлер будет срабатывать, если во время ввода имени
+@router.message(StateFilter(FSMFillForm.fill_team_name))
+async def warning_not_name(message: Message):
+    await message.answer(
+        text='То, что вы отправили не похоже на название команды латинским буквами\n\n'
+             'Пожалуйста, введите название команды\n\n'
+             'Если вы хотите прервать заполнение анкеты - '
+             'отправьте команду /cancel')
+
+
+# Этот хэндлер будет срабатывать на ввод фамилии
+# записывать данные и выводить из машины состояний
+@router.message(StateFilter(FSMFillForm.fill_team_number), F.text.isdigit())
+async def process_wish_news_press(message: Message, state: FSMContext):
+    # Cохраняем данные о вк
+    await state.update_data(number=message.text.upper())
+    # Добавляем в базу данных анкету пользователя
+    # по ключу id пользователя
+    user = await state.get_data()
+    add_team(user_id=message.from_user.id, captain=True, **user)
+
+    # Завершаем машину состояний
+    await state.clear()
+    # Отправляем в чат сообщение о сохранении данных
+    await message.answer(
+        text=f'Спасибо! Ваши команда <b>{get_user_team(message.from_user.id)}</b> зарегистрирована!\n\n'
+    )
+
+
+# Этот хэндлер будет срабатывать, если во время ввода фамилии
+# будет введено что-то некорректное
+@router.message(StateFilter(FSMFillForm.fill_second_name))
+async def warning_not_name(message: Message):
+    await message.answer(
+        text='То, что вы отправили не похоже на фамилию латинским буквами\n\n'
+             'Пожалуйста, введите вашу фамилию\n\n'
+             'Если вы хотите прервать заполнение анкеты - '
+             'отправьте команду /cancel')
+
+'''
+
+///... ХЭНДЛЕРЫ РЕГИСТРАЦИИ КОМАНДЫ КОНЕЦ ///
+
+'''
+
+
+
+
+'''
+
+///... ХЭНДЛЕРЫ ПРОГНОЗА НАЧАЛО ///
 
 '''
 

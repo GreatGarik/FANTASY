@@ -189,6 +189,20 @@ def check_res(gp):
         else:
             return
 
+# Просмотр команды пользователя
+def get_user_team(id_telegram):
+    with Session() as session:
+        user = session.query(User).filter(User.id_telegram == id_telegram).first()
+        team = session.query(Team).filter(
+                (Team.first == user.id) |
+                (Team.second == user.id) |
+                (Team.third == user.id)
+            ).first()
+        if team:
+            return team.name
+        else:
+            return 'PERSONAL ENTRY'
+
 def is_prediced(user_id, gp):
     with Session() as session:
         statement = select(Predict).where(Predict.gp == gp, Predict.user_id == user_id)
@@ -197,3 +211,14 @@ def is_prediced(user_id, gp):
             return True
         else:
             return
+
+
+# Добавление команды
+def add_team(user_id, name: str, number: int, captain: bool):
+    with Session() as session:
+        user = session.scalars(select(User).where(User.id_telegram == user_id)).one().id
+        try:
+            session.add(Team(name=name, first=user, number=number, captain=captain))
+            session.commit()
+        except Exception as e:
+            print(e)
