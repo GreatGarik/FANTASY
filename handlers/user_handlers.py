@@ -8,7 +8,8 @@ from sqlalchemy import lambda_stmt
 from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
-    show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, is_prediced
+    show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
+    is_prediced
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from aiogram.fsm.storage.redis import RedisStorage, Redis
@@ -45,9 +46,7 @@ class FSMFillForm(StatesGroup):
 # Этот хэндлер срабатывает на команду /start
 @router.message(CommandStart(), StateFilter(default_state))
 async def process_start_command(message: Message):
-    await message.answer(text=LEXICON_RU['start_answer'], reply_markup = types.ReplyKeyboardRemove())
-
-
+    await message.answer(text=LEXICON_RU['start_answer'], reply_markup=types.ReplyKeyboardRemove())
 
 
 # Этот хэндлер будет срабатывать на команду "/cancel" в любых состояниях,
@@ -81,6 +80,7 @@ async def process_fillform_command(message: Message, state: FSMContext):
         user = get_users(message.from_user.id)
         await message.answer(text=f'Вы уже зарегистрированы как {user.name}')
 
+
 # Этот хэндлер будет срабатывать, если введено корректное имя
 @router.message(StateFilter(FSMFillForm.fill_name), lambda message: all(char in ascii_letters for char in message.text))
 async def process_lastname_sent(message: Message, state: FSMContext):
@@ -88,6 +88,7 @@ async def process_lastname_sent(message: Message, state: FSMContext):
     await state.update_data(name=message.text.capitalize())
     await message.answer(text='Спасибо!\n\nА теперь введите вашу фамилию латинским буквами')
     await state.set_state(FSMFillForm.fill_second_name)
+
 
 # Этот хэндлер будет срабатывать, если во время ввода имени
 # будет введено что-то некорректное
@@ -100,10 +101,10 @@ async def warning_not_name(message: Message):
              'отправьте команду /cancel')
 
 
-
 # Этот хэндлер будет срабатывать на ввод фамилии
 # записывать данные и выводить из машины состояний
-@router.message(StateFilter(FSMFillForm.fill_second_name), lambda message: all(char in ascii_letters for char in message.text))
+@router.message(StateFilter(FSMFillForm.fill_second_name),
+                lambda message: all(char in ascii_letters for char in message.text))
 async def process_wish_news_press(message: Message, state: FSMContext):
     # Cохраняем данные о вк
     await state.update_data(lastname=message.text.upper())
@@ -123,6 +124,7 @@ async def process_wish_news_press(message: Message, state: FSMContext):
         text='Чтобы посмотреть данные вашей '
              'анкеты - отправьте команду /showdata'
     )
+
 
 # Этот хэндлер будет срабатывать, если во время ввода фамилии
 # будет введено что-то некорректное
@@ -179,68 +181,83 @@ async def predict_first(callback: CallbackQuery, state: FSMContext):
     await state.update_data(select2_engine=callback.data)
     await callback.message.delete()
     await callback.message.answer(text='Спасибо!\nТеперь выберите первого пилота',
-                                  reply_markup=create_inline_kb(1, *[i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers()]))
+                                  reply_markup=create_inline_kb(1,
+                                                                *[i.driver_name + ' (' + i.driver_engine + ')' for i in
+                                                                  select_drivers()]))
     await state.set_state(FSMFillForm.select_second)
 
 
 # Сохраняем первого пилота, отправляем кнопки с выбором второго пилота
-@router.callback_query(StateFilter(FSMFillForm.select_second), F.data.in_([i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers()]))
+@router.callback_query(StateFilter(FSMFillForm.select_second),
+                       F.data.in_([i.driver_name + ' (' + i.driver_engine + ')' for i in select_drivers()]))
 async def predict_second(callback: CallbackQuery, state: FSMContext):
     await state.update_data(first_driver=callback.data.split('(')[0].strip())
     await state.update_data(select3_engine=callback.data.split('(')[-1].strip('()'))
     await callback.message.delete()
     predict = await state.get_data()
     await callback.message.answer(text='Спасибо!\nТеперь выберите второго пилота',
-                                  reply_markup=create_inline_kb(1, *[i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers() if
-                                                                     i.driver_name not in [*predict.values()]]))
+                                  reply_markup=create_inline_kb(1,
+                                                                *[i.driver_name + ' (' + i.driver_engine + ')' for i in
+                                                                  select_drivers() if
+                                                                  i.driver_name not in [*predict.values()]]))
     await state.set_state(FSMFillForm.select_third)
 
 
 # Сохраняем второго пилота, отправляем кнопки с выбором третьего пилота
-@router.callback_query(StateFilter(FSMFillForm.select_third), F.data.in_([i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers()]))
+@router.callback_query(StateFilter(FSMFillForm.select_third),
+                       F.data.in_([i.driver_name + ' (' + i.driver_engine + ')' for i in select_drivers()]))
 async def predict_third(callback: CallbackQuery, state: FSMContext):
     await state.update_data(second_driver=callback.data.split('(')[0].strip())
     await state.update_data(select4_engine=callback.data.split('(')[-1].strip('()'))
     await callback.message.delete()
     predict = await state.get_data()
-    if len(set([predict['select1_engine'], predict['select2_engine'], predict['select3_engine'],predict['select4_engine']])) == 1:
-        await callback.message.answer(text='Вы выбрали 4 участника с одним мотором, начните выбор заново с команды /predict')
+    if len(set([predict['select1_engine'], predict['select2_engine'], predict['select3_engine'],
+                predict['select4_engine']])) == 1:
+        await callback.message.answer(
+            text='Вы выбрали 4 участника с одним мотором, начните выбор заново с команды /predict')
         await state.clear()
     else:
         await callback.message.answer(text='Спасибо!\nТеперь выберите третьего пилота',
-                                      reply_markup=create_inline_kb(1, *[i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers()[10:] if
-                                                                         i.driver_name not in [*predict.values()]]))
+                                      reply_markup=create_inline_kb(1,
+                                                                    *[i.driver_name + ' (' + i.driver_engine + ')' for i
+                                                                      in select_drivers()[10:] if
+                                                                      i.driver_name not in [*predict.values()]]))
         await state.set_state(FSMFillForm.select_fourth)
 
 
 # Сохраняем третьего пилота, отправляем кнопки с выбором четвертого пилота
 @router.callback_query(StateFilter(FSMFillForm.select_fourth),
-                       F.data.in_([i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers()][10:]))
+                       F.data.in_([i.driver_name + ' (' + i.driver_engine + ')' for i in select_drivers()][10:]))
 async def predict_fourth(callback: CallbackQuery, state: FSMContext):
     await state.update_data(third_driver=callback.data.split('(')[0].strip())
     await state.update_data(select5_engine=callback.data.split('(')[-1].strip('()'))
     await callback.message.delete()
     predict = await state.get_data()
-    values = [predict['select1_engine'], predict['select2_engine'], predict['select3_engine'], predict['select4_engine'], predict['select5_engine']]
+    values = [predict['select1_engine'], predict['select2_engine'], predict['select3_engine'],
+              predict['select4_engine'], predict['select5_engine']]
     if any(values.count(x) == 4 for x in set(values)):
         await callback.message.answer(
             text='Вы выбрали 4 участника с одним мотором, начните выбор заново с команды /predict')
         await state.clear()
     else:
         await callback.message.answer(text='Спасибо!\nТеперь выберите четвертого пилота',
-                                      reply_markup=create_inline_kb(1, *[i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers()[15:] if
-                                                                         i.driver_name not in [*predict.values()]]))
+                                      reply_markup=create_inline_kb(1,
+                                                                    *[i.driver_name + ' (' + i.driver_engine + ')' for i
+                                                                      in select_drivers()[15:] if
+                                                                      i.driver_name not in [*predict.values()]]))
         await state.set_state(FSMFillForm.select_gap)
 
 
 # Сохраняем четвертого пилота, отправляем текст с выбором отставания от лидера
-@router.callback_query(StateFilter(FSMFillForm.select_gap), F.data.in_([i.driver_name  + ' (' + i.driver_engine + ')' for i in select_drivers()][15:]))
+@router.callback_query(StateFilter(FSMFillForm.select_gap),
+                       F.data.in_([i.driver_name + ' (' + i.driver_engine + ')' for i in select_drivers()][15:]))
 async def predict_gap(callback: CallbackQuery, state: FSMContext):
     await state.update_data(fourth_driver=callback.data.split('(')[0].strip())
     await state.update_data(select6_engine=callback.data.split('(')[-1].strip('()'))
     await callback.message.delete()
     predict = await state.get_data()
-    values = [predict['select1_engine'], predict['select2_engine'], predict['select3_engine'], predict['select4_engine'], predict['select5_engine'], predict['select6_engine']]
+    values = [predict['select1_engine'], predict['select2_engine'], predict['select3_engine'],
+              predict['select4_engine'], predict['select5_engine'], predict['select6_engine']]
     if any(values.count(x) == 4 for x in set(values)):
         await callback.message.answer(
             text='Вы выбрали 4 участника с одним мотором, начните выбор заново с команды /predict')
@@ -275,7 +292,8 @@ async def predict_lap(message: CallbackQuery, state: FSMContext):
     Количество круговых: <b>{predict['lapped']}</b>
     ''')
     # Удаляем служебные ключи
-    for i in ['select1_engine', 'select2_engine', 'select3_engine', 'select4_engine', 'select5_engine', 'select6_engine']:
+    for i in ['select1_engine', 'select2_engine', 'select3_engine', 'select4_engine', 'select5_engine',
+              'select6_engine']:
         predict.pop(i)
 
     # Пишем прогноз в базу
@@ -371,6 +389,7 @@ async def process_resultcsv_command(message: Message):
     # Удаляем файл после отправки
     os.remove(xls_filename)
 
+
 # Этот хэндлер будет срабатывать на отправку команды /calculation
 @router.message(Command(commands='calculation'), StateFilter(default_state))
 async def process_calculation_command(message: Message):
@@ -381,51 +400,56 @@ async def process_calculation_command(message: Message):
         calculation_drivers(gp)
         await message.answer(f'Расчет результатов выполнен')
 
+
 # Этот хэндлер будет срабатывать на отправку команды /championship
 @router.message(Command(commands='championship'), StateFilter(default_state))
 async def process_championship_command(message: Message):
     points_all: dict = show_points()
     text_for_answer = f'POS|DRIVER              |PTS|\n'
-    for index, user in enumerate(sorted(points_all, key=lambda x: sum([i for i in x.values() if isinstance(i, int)]), reverse=True), 1):
+    for index, user in enumerate(
+            sorted(points_all, key=lambda x: sum([i for i in x.values() if isinstance(i, int)]), reverse=True), 1):
         text_for_answer += f'{index:<3}|{user['User']:<20}|{sum([i for i in user.values() if isinstance(i, int)]):<3}|\n'
     await message.answer(f'<code>{text_for_answer}</code>')
+
 
 # Этот хэндлер будет срабатывать на отправку команды /championship_full
 @router.message(Command(commands='championship_full'), StateFilter(default_state))
 async def process_championship_full_command(message: Message):
     points_list: dict = show_points_all()
-    #print(points_list)
+
     for entry in points_list:
         entry['Total Points'] = sum(entry[key] for key in entry if key != 'User')
-        # Сортируем по общему количеству очков
+
+    # Сортируем по общему количеству очков
     points_list.sort(key=lambda x: x['Total Points'], reverse=True)
+
+    # Создаем новый Excel файл
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Championship Points"
+
     # Заголовки таблицы
     header = ['Driver'] + [key for key in points_list[0] if key != 'User' and key != 'Total Points'] + ['Total Points']
+    ws.append(header)  # Добавляем заголовки в первую строку
 
-
-    # Печатаем заголовки.
-    text_for_answer_test = f'{header[0]:<25} {header[-1]:<10} {' | '.join(header[2:])}\n{"-" * 50}\n'
+    # Добавляем данные в файл
     for entry in points_list:
-        row = [entry['User'], entry['Total Points']] + [entry[key] for key in header[2:]]
-        text_for_answer_test += f'{row[0]:<25}|{row[1]:<10} {' | '.join(map(str, row[2:]))}'
-    await message.answer(f'<code>{text_for_answer_test}</code>')
+        row = [entry['User']] + [entry[key] for key in header[1:]]
+        ws.append(row)  # Добавляем строку с данными
 
-    '''
-    await message.answer(f'<code>{f"{header[0]:<25} {header[-1]:<10} {' | '.join(header[2:])}"}</code>')
-    await message.answer(f'<code>{"-" * 50}</code>')
+    # Сохраняем файл
+    excel_file_path = 'championship_points.xlsx'
+    wb.save(excel_file_path)
 
+    # Отправляем сообщение о завершении
+    await message.answer_document(
+        document=FSInputFile(path=excel_file_path),
+        caption='Чемпионат в формате XLS',
+        filename='championship.xlsx'
+    )
 
-    # Печатаем строки с данными
-    for entry in points_list:
-        row = [entry['User'], entry['Total Points']] + [entry[key] for key in header[2:]]
-        await message.answer(f'<code>{row[0]:<25}|{row[1]:<10} {' | '.join(map(str, row[2:]))}</code>')
-    
-
-    text_for_answer = f'POS|DRIVER              |PTS|\n'
-    for index, user in enumerate(sorted(points_list, key=lambda x: sum([i for i in x.values() if isinstance(i, int)]), reverse=True), 1):
-        text_for_answer += f'{index:<3}|{user['User']:<20}|{sum([i for i in user.values() if isinstance(i, int)]):<3}|\n'
-    await message.answer(f'<code>{text_for_answer}</code>')
-    '''
+    # Удаляем файл после отправки
+    os.remove(excel_file_path)
 
 
 # Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
