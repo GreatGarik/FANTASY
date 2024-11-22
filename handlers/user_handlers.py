@@ -388,7 +388,7 @@ async def process_championship_command(message: Message):
     text_for_answer = f'POS|DRIVER              |PTS|\n'
     for index, user in enumerate(sorted(points_all, key=lambda x: sum([i for i in x.values() if isinstance(i, int)]), reverse=True), 1):
         text_for_answer += f'{index:<3}|{user['User']:<20}|{sum([i for i in user.values() if isinstance(i, int)]):<3}|\n'
-    await message.answer(f'<code>{text_for_answer}</code>', isable_web_page_preview=True)
+    await message.answer(f'<code>{text_for_answer}</code>')
 
 # Этот хэндлер будет срабатывать на отправку команды /championship_full
 @router.message(Command(commands='championship_full'), StateFilter(default_state))
@@ -397,32 +397,38 @@ async def process_championship_full_command(message: Message):
     #print(points_list)
     for entry in points_list:
         entry['Total Points'] = sum(entry[key] for key in entry if key != 'User')
-    print(1)
         # Сортируем по общему количеству очков
     points_list.sort(key=lambda x: x['Total Points'], reverse=True)
-    print(2)
     # Заголовки таблицы
     header = ['Driver'] + [key for key in points_list[0] if key != 'User' and key != 'Total Points'] + ['Total Points']
-    print(3)
-    # Печатаем заголовки
-    print(f"{header[0]:<25} {header[-1]:<10} {' | '.join(header[2:])}")
-    print("-" * 50)
+
+
+    # Печатаем заголовки.
+    text_for_answer_test = f'{header[0]:<25} {header[-1]:<10} {' | '.join(header[2:])}\n{"-" * 50}\n'
+    for entry in points_list:
+        row = [entry['User'], entry['Total Points']] + [entry[key] for key in header[2:]]
+        text_for_answer_test += f'{row[0]:<25}|{row[1]:<10} {' | '.join(map(str, row[2:]))}'
+    await message.answer(f'<code>{text_for_answer_test}</code>')
+
+    '''
+    await message.answer(f'<code>{f"{header[0]:<25} {header[-1]:<10} {' | '.join(header[2:])}"}</code>')
+    await message.answer(f'<code>{"-" * 50}</code>')
 
 
     # Печатаем строки с данными
     for entry in points_list:
         row = [entry['User'], entry['Total Points']] + [entry[key] for key in header[2:]]
-        print(f"{row[0]:<25}|{row[1]:<10} {' | '.join(map(str, row[2:]))}")
-
+        await message.answer(f'<code>{row[0]:<25}|{row[1]:<10} {' | '.join(map(str, row[2:]))}</code>')
+    
 
     text_for_answer = f'POS|DRIVER              |PTS|\n'
     for index, user in enumerate(sorted(points_list, key=lambda x: sum([i for i in x.values() if isinstance(i, int)]), reverse=True), 1):
         text_for_answer += f'{index:<3}|{user['User']:<20}|{sum([i for i in user.values() if isinstance(i, int)]):<3}|\n'
-    #await message.answer(f'<code>{text_for_answer}</code>', isable_web_page_preview=True)
+    await message.answer(f'<code>{text_for_answer}</code>')
+    '''
 
 
-
-# # Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
+# Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
 @router.message()
 async def answer_all(message: Message):
     await message.answer(text=LEXICON_RU['unknown_command'])

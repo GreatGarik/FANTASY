@@ -88,8 +88,9 @@ class Grandprix(Base):
     __tablename__ = 'grandprix'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    gp_name: Mapped[str] = mapped_column(String)
+    gp_name: Mapped[str] = mapped_column(String(60))
     year: Mapped[int] = mapped_column(Integer)
+    gp_name_abr: Mapped[str] = mapped_column(String(3))
     nextgp: Mapped[bool] = mapped_column(Boolean)
 
     race = relationship('Point', back_populates='gp')
