@@ -74,7 +74,7 @@ async def process_help_command(message: Message):
 @router.message(Command(commands='registration'), StateFilter(default_state))
 async def process_fillform_command(message: Message, state: FSMContext):
     if not get_users(message.from_user.id):
-        await message.answer(text='Пожалуйста, введите ваше имя')
+        await message.answer(text='Пожалуйста, введите ваше имя латинским буквами')
         # Устанавливаем состояние ожидания ввода имени
         await state.set_state(FSMFillForm.fill_name)
     else:
@@ -86,7 +86,7 @@ async def process_fillform_command(message: Message, state: FSMContext):
 async def process_lastname_sent(message: Message, state: FSMContext):
     # Сохраняем введенное имя в хранилище по ключу "name"
     await state.update_data(name=message.text.capitalize())
-    await message.answer(text='Спасибо!\n\nА теперь введите вашу фамилию')
+    await message.answer(text='Спасибо!\n\nА теперь введите вашу фамилию латинским буквами')
     await state.set_state(FSMFillForm.fill_second_name)
 
 # Этот хэндлер будет срабатывать, если во время ввода имени
@@ -94,7 +94,7 @@ async def process_lastname_sent(message: Message, state: FSMContext):
 @router.message(StateFilter(FSMFillForm.fill_name))
 async def warning_not_name(message: Message):
     await message.answer(
-        text='То, что вы отправили не похоже на имя\n\n'
+        text='То, что вы отправили не похоже на имя латинским буквами\n\n'
              'Пожалуйста, введите ваше имя\n\n'
              'Если вы хотите прервать заполнение анкеты - '
              'отправьте команду /cancel')
@@ -129,7 +129,7 @@ async def process_wish_news_press(message: Message, state: FSMContext):
 @router.message(StateFilter(FSMFillForm.fill_second_name))
 async def warning_not_name(message: Message):
     await message.answer(
-        text='То, что вы отправили не похоже на фамилию\n\n'
+        text='То, что вы отправили не похоже на фамилию латинским буквами\n\n'
              'Пожалуйста, введите вашу фамилию\n\n'
              'Если вы хотите прервать заполнение анкеты - '
              'отправьте команду /cancel')
