@@ -14,7 +14,6 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     id_telegram: Mapped[int] = mapped_column(Integer, unique=True)
-    vk_link: Mapped[str] = mapped_column(String(60))
     name: Mapped[str] = mapped_column(String(60))
     user_team: Mapped[Optional[str]] = mapped_column(String(60))
 

@@ -32,10 +32,10 @@ def get_actual_gp():
         return db_object.id
 
 # Добавление юзера
-def update_user(user_id, name: str, second_name: str, vk_id: str):
+def add_user(user_id, name: str, lastname: str):
     with Session() as session:
         try:
-            session.add(User(name=name + ' ' + second_name, id_telegram=user_id, vk_link=vk_id))
+            session.add(User(name=name + ' ' + lastname, id_telegram=user_id))
             session.commit()
         except:
             pass
@@ -183,6 +183,15 @@ def get_users(id_telegram=None):
 def check_res(gp):
     with Session() as session:
         statement = select(Point).where(Point.race_id == gp)
+        res = session.scalars(statement).all()
+        if res:
+            return True
+        else:
+            return
+
+def is_prediced(user_id, gp):
+    with Session() as session:
+        statement = select(Predict).where(Predict.gp == gp, Predict.user_id == user_id)
         res = session.scalars(statement).all()
         if res:
             return True

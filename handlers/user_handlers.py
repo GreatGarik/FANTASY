@@ -1,16 +1,19 @@
 from openpyxl import Workbook
 import os
-from aiogram import Router, F, Bot
+from aiogram import Router, F, Bot, types
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, FSInputFile
 from aiogram.filters import Command, CommandStart, StateFilter
+from sqlalchemy import lambda_stmt
+
 from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
-from database.database import select_drivers, update_user, get_users, send_predict, get_predict, add_result, \
-    show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all
+from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
+    show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, is_prediced
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from aiogram.fsm.storage.redis import RedisStorage, Redis
 from dataprocessing.calculation_gp_drivers import calculation_drivers
+from string import ascii_letters
 
 router: Router = Router()
 
@@ -42,7 +45,9 @@ class FSMFillForm(StatesGroup):
 # Этот хэндлер срабатывает на команду /start
 @router.message(CommandStart(), StateFilter(default_state))
 async def process_start_command(message: Message):
-    await message.answer(text=LEXICON_RU['start_answer'])
+    await message.answer(text=LEXICON_RU['start_answer'], reply_markup = types.ReplyKeyboardRemove())
+
+
 
 
 # Этот хэндлер будет срабатывать на команду "/cancel" в любых состояниях,
@@ -68,21 +73,21 @@ async def process_help_command(message: Message):
 # и переводить бота в состояние ожидания ввода имени
 @router.message(Command(commands='registration'), StateFilter(default_state))
 async def process_fillform_command(message: Message, state: FSMContext):
-    await message.answer(text='Пожалуйста, введите ваше имя')
-    # Устанавливаем состояние ожидания ввода имени
-    await state.set_state(FSMFillForm.fill_name)
-
+    if not get_users(message.from_user.id):
+        await message.answer(text='Пожалуйста, введите ваше имя')
+        # Устанавливаем состояние ожидания ввода имени
+        await state.set_state(FSMFillForm.fill_name)
+    else:
+        user = get_users(message.from_user.id)
+        await message.answer(text=f'Вы уже зарегистрированы как {user.name}')
 
 # Этот хэндлер будет срабатывать, если введено корректное имя
-# и переводить в состояние ожидания ввода возраста
-@router.message(StateFilter(FSMFillForm.fill_name), F.text.isalpha())
-async def process_name_sent(message: Message, state: FSMContext):
+@router.message(StateFilter(FSMFillForm.fill_name), lambda message: all(char in ascii_letters for char in message.text))
+async def process_lastname_sent(message: Message, state: FSMContext):
     # Сохраняем введенное имя в хранилище по ключу "name"
-    await state.update_data(name=message.text.title())
+    await state.update_data(name=message.text.capitalize())
     await message.answer(text='Спасибо!\n\nА теперь введите вашу фамилию')
-    # Устанавливаем состояние ожидания ввода возраста
     await state.set_state(FSMFillForm.fill_second_name)
-
 
 # Этот хэндлер будет срабатывать, если во время ввода имени
 # будет введено что-то некорректное
@@ -95,38 +100,17 @@ async def warning_not_name(message: Message):
              'отправьте команду /cancel')
 
 
-# Этот хэндлер будет срабатывать, если введена корректная фамилия
-# и переводить в состояние ожидания ввода вк
-@router.message(StateFilter(FSMFillForm.fill_second_name), F.text.isalpha())
-async def process_name_sent(message: Message, state: FSMContext):
-    # Cохраняем введенное имя в хранилище по ключу "second_name"
-    await state.update_data(second_name=message.text.capitalize())
-    await message.answer(text='Спасибо!\n\nА теперь введите ссылку на ваш профиль Вконтакте')
-    # Устанавливаем состояние ожидания ввода вк
-    await state.set_state(FSMFillForm.fill_vk)
 
-
-# Этот хэндлер будет срабатывать, если во время ввода фамилии
-# будет введено что-то некорректное
-@router.message(StateFilter(FSMFillForm.fill_second_name))
-async def warning_not_name(message: Message):
-    await message.answer(
-        text='То, что вы отправили не похоже на фамилию\n\n'
-             'Пожалуйста, введите вашу фамилию\n\n'
-             'Если вы хотите прервать заполнение анкеты - '
-             'отправьте команду /cancel')
-
-
-# Этот хэндлер будет срабатывать на ввод ВК
+# Этот хэндлер будет срабатывать на ввод фамилии
 # записывать данные и выводить из машины состояний
-@router.message(StateFilter(FSMFillForm.fill_vk), F.text.startswith('https://vk.com/id'))
+@router.message(StateFilter(FSMFillForm.fill_second_name), lambda message: all(char in ascii_letters for char in message.text))
 async def process_wish_news_press(message: Message, state: FSMContext):
     # Cохраняем данные о вк
-    await state.update_data(vk_id=message.text)
+    await state.update_data(lastname=message.text.upper())
     # Добавляем в базу данных анкету пользователя
     # по ключу id пользователя
     user = await state.get_data()
-    update_user(message.from_user.id, **user)
+    add_user(message.from_user.id, **user)
 
     # Завершаем машину состояний
     await state.clear()
@@ -140,14 +124,13 @@ async def process_wish_news_press(message: Message, state: FSMContext):
              'анкеты - отправьте команду /showdata'
     )
 
-
-# Этот хэндлер будет срабатывать, если во время ввода вк
+# Этот хэндлер будет срабатывать, если во время ввода фамилии
 # будет введено что-то некорректное
-@router.message(StateFilter(FSMFillForm.fill_vk))
+@router.message(StateFilter(FSMFillForm.fill_second_name))
 async def warning_not_name(message: Message):
     await message.answer(
-        text='То, что вы отправили не похоже на ссылку на профиль в ВК\n\n'
-             'Пожалуйста, введите ссылку на ваш профиль Вконтакте\n'
+        text='То, что вы отправили не похоже на фамилию\n\n'
+             'Пожалуйста, введите вашу фамилию\n\n'
              'Если вы хотите прервать заполнение анкеты - '
              'отправьте команду /cancel')
 
@@ -164,11 +147,14 @@ async def warning_not_name(message: Message):
 @router.message(Command(commands=['predict']), StateFilter(default_state))
 async def predict_team(message: Message, state: FSMContext):
     if get_users(message.from_user.id):
-        await message.answer(
-            text='Выберите Команду',
-            reply_markup=create_inline_kb(1, *sorted(
-                {i.driver_team + ' (' + i.driver_engine + ')' for i in select_drivers()})))
-        await state.set_state(FSMFillForm.select_engine)
+        if not is_prediced(message.from_user.id, get_actual_gp()):
+            await message.answer(
+                text='Выберите Команду',
+                reply_markup=create_inline_kb(1, *sorted(
+                    {i.driver_team + ' (' + i.driver_engine + ')' for i in select_drivers()})))
+            await state.set_state(FSMFillForm.select_engine)
+        else:
+            await message.answer(text='Вы уже отправили прогноз на актульный GP')
     else:
         await message.answer(text='Вы не зарегистрированы')
 
@@ -288,8 +274,9 @@ async def predict_lap(message: CallbackQuery, state: FSMContext):
     Отставание от лидера: <b>{predict['gap']}</b>
     Количество круговых: <b>{predict['lapped']}</b>
     ''')
-
-
+    # Удаляем служебные ключи
+    for i in ['select1_engine', 'select2_engine', 'select3_engine', 'select4_engine', 'select5_engine', 'select6_engine']:
+        predict.pop(i)
 
     # Пишем прогноз в базу
     gp = get_actual_gp()
@@ -318,8 +305,7 @@ async def process_showdata_command(message: Message):
     # Отправляем пользователю анкету, если она есть в "базе данных"
     if get_users(message.from_user.id):
         user = get_users(message.from_user.id)
-        await message.answer(f' Ваше имя: {user.name}, Ссылка ВК: {user.vk_link}, Ваша команда: {user.user_team}',
-                             disable_web_page_preview=True)
+        await message.answer(f' Ваше имя: {user.name}, Ваша команда: {user.user_team}')
     else:
         await message.answer(text='Вы не зарегистрированы')
 
