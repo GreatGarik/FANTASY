@@ -1,7 +1,7 @@
 from aiogram.utils.chat_member import USERS
 from certifi import where
 from sqlalchemy import create_engine, select, update, case
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from database.models import *
 
 # Подключаемся к базе данных

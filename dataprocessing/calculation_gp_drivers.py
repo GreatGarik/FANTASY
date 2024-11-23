@@ -6,6 +6,7 @@ def calculation_drivers(gp):
     deltas = {0: 10, 1: 7, 2: 5, 3: 3, 4: 2, 5: 1}
     predicts_from_db = get_predict(gp)
     results_predict_gp = get_res_gp()
+    print(results_predict_gp)
 
     names = [i.driver_name for i in select_drivers()]
     first_max = max([results_predict_gp[name] for name in names])
@@ -13,6 +14,7 @@ def calculation_drivers(gp):
     second_max = max([results_predict_gp[name] for name in names])
     names = [i.driver_name for i in select_drivers()[15:]]
     third_max = max([results_predict_gp[name] for name in names])
+    print(first_max, second_max, third_max)
 
     for predict in predicts_from_db:
         counter_best = 0
