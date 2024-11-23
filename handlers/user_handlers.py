@@ -504,7 +504,7 @@ async def process_championship_full_command(message: Message):
     points_list: dict = show_points_all(2024)
 
     for entry in points_list:
-        entry['Total Points'] = sum(entry[key] for key in entry if key != 'User')
+        entry['Total Points'] = sum(entry[key] for key in entry if key != 'User' and key != 'Team')
 
     # Сортируем по общему количеству очков
     points_list.sort(key=lambda x: x['Total Points'], reverse=True)
@@ -515,12 +515,12 @@ async def process_championship_full_command(message: Message):
     ws.title = "Championship Points"
 
     # Заголовки таблицы
-    header = ['Driver'] + [key for key in points_list[0] if key != 'User' and key != 'Total Points'] + ['Total Points']
+    header = ['Driver'] + ['Team'] + [key for key in points_list[0] if key != 'User' and key != 'Total Points' and key != 'Team'] + ['Total Points']
     ws.append(header)  # Добавляем заголовки в первую строку
 
     # Добавляем данные в файл
     for entry in points_list:
-        row = [entry['User']] + [entry[key] for key in header[1:]]
+        row = [entry['User']] + [entry['Team']] + [entry[key] for key in header[2:]]
         ws.append(row)  # Добавляем строку с данными
 
     # Сохраняем файл

@@ -115,6 +115,17 @@ def show_points_all(year):
 
         for user in users:
             user_entry = {'User': user.name}
+
+            # Находим команду пользователя
+            team = session.query(Team).filter(
+                (Team.first == user.id) |
+                (Team.second == user.id) |
+                (Team.third == user.id)
+            ).first()
+
+            # Добавляем информацию о команде в user_entry
+            user_entry['Team'] = team.name if team else 'PERSONAL ENTRY'
+
             # Инициализируем очки для каждого гран-при 2024 года
             for gp in grandprix:
                 # Находим очки для текущего гран-при
@@ -149,7 +160,7 @@ def show_result(gp=None):
     with Session() as session:
         query = session.query(User, Result, Point).where(Result.gp == gp, Point.race_id == gp)
         # query = query.join(User, Result.user_id == User.id_telegram).order_by(Result.total.desc(),  case((Result.first_driver > Result.second_driver, Result.first_driver), else_=Result.second_driver).desc(), Result.third_driver.desc(), Result.fourth_driver.desc(), Result.driver_team.desc(), Result.driver_engine.desc(), Result.gap.desc(), Result.lapped.desc(), Result.id)
-        query = query.join(User, Result.user_id == User.id_telegram).order_by(Result.total.desc(),
+        query = query.join(User,Result.user_id == User.id_telegram).order_by(Result.total.desc(),
                                                                               Result.counter_best.desc(),
                                                                               Result.max1_best.desc(),
                                                                               Result.max2_best.desc(),
