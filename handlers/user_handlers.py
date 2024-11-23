@@ -9,12 +9,12 @@ from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
-    is_prediced, get_user_team, add_team
+    is_prediced, get_user_team, add_team, get_team
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from aiogram.fsm.storage.redis import RedisStorage, Redis
 from dataprocessing.calculation_gp_drivers import calculation_drivers
-from string import ascii_letters
+from string import ascii_letters, digits
 
 router: Router = Router()
 
@@ -67,6 +67,7 @@ async def process_cancel_command_state(message: Message, state: FSMContext):
 @router.message(Command(commands=['help']))
 async def process_help_command(message: Message):
     await message.answer(text=LEXICON_RU['help_answer'])
+
 
 '''
 
@@ -143,6 +144,7 @@ async def warning_not_name(message: Message):
              'Если вы хотите прервать заполнение анкеты - '
              'отправьте команду /cancel')
 
+
 '''
 
 ///... ХЭНДЛЕРЫ РЕГИСТРАЦИИ КОНЕЦ ///
@@ -159,15 +161,19 @@ async def warning_not_name(message: Message):
 # Этот хэндлер будет срабатывать на команду /createteam
 @router.message(Command(commands='createteam'), StateFilter(default_state))
 async def process_createteam_command(message: Message, state: FSMContext):
-    if get_user_team(message.from_user.id) == 'PERSONAL ENTRY':
-        await message.answer(text='Пожалуйста, введите название команды латинским буквами')
-        await state.set_state(FSMFillForm.fill_team_name)
+    if not get_users(message.from_user.id):
+        await message.answer(text='Вы не зарегистрированы, зарегистрируйтесь перед созданием команды.')
     else:
-        await message.answer(text=f'Вы уже находитесь в команде <b>{get_user_team(message.from_user.id)}</b>')
+        if get_user_team(message.from_user.id) == 'PERSONAL ENTRY':
+            await message.answer(text='Пожалуйста, введите название команды латинским буквами')
+            await state.set_state(FSMFillForm.fill_team_name)
+        else:
+            await message.answer(text=f'Вы уже находитесь в команде <b>{get_user_team(message.from_user.id)}</b>')
 
 
 # Этот хэндлер будет срабатывать, если введено корректное название
-@router.message(StateFilter(FSMFillForm.fill_team_name), lambda message: all(char in ascii_letters for char in message.text))
+@router.message(StateFilter(FSMFillForm.fill_team_name),
+                lambda message: all(char in ascii_letters + digits + "'" for char in message.text))
 async def process_lastname_sent(message: Message, state: FSMContext):
     # Сохраняем введенное имя в хранилище по ключу "name"
     await state.update_data(name=message.text)
@@ -214,19 +220,32 @@ async def warning_not_name(message: Message):
              'Если вы хотите прервать заполнение анкеты - '
              'отправьте команду /cancel')
 
-'''
 
+'''
 ///... ХЭНДЛЕРЫ РЕГИСТРАЦИИ КОМАНДЫ КОНЕЦ ///
+'''
 
+'''
+///... ДОБАВЛЕНИЕ ЧЛЕНА КОМАНДЫ ///
+
+@router.message(Command(commands='add_teammate'), StateFilter(default_state))
+async def process_add_teammate_command(message: Message, state: FSMContext):
+    print(get_team(message.from_user.id).__dict__)
+    if not get_users(message.from_user.id):
+        await message.answer(text='Вы не зарегистрированы, зарегистрируйтесь для выполнения действия команды.')
+    else:
+        if get_user_team(message.from_user.id) != 'PERSONAL ENTRY' and get_team(message.from_user.id).captain \
+            and not all([get_team(message.from_user.id).first, get_team(message.from_user.id).second, get_team(message.from_user.id).third]):
+            await message.answer(text='Пожалуйста, введите имя гонщика, которого Вы хотите добавить')
+            await state.set_state(FSMFillForm.fill_team_name)
+        else:
+            await message.answer(text=f'Вы не являетесь капитаном команды')
 '''
 
 
 
-
 '''
-
 ///... ХЭНДЛЕРЫ ПРОГНОЗА НАЧАЛО ///
-
 '''
 
 
@@ -297,8 +316,8 @@ async def predict_third(callback: CallbackQuery, state: FSMContext):
     await state.update_data(select4_engine=callback.data.split('(')[-1].strip('()'))
     await callback.message.delete()
     predict = await state.get_data()
-    if len(set([predict['select1_engine'], predict['select2_engine'], predict['select3_engine'],
-                predict['select4_engine']])) == 1:
+    if all(engine == predict['select1_engine'] for engine in
+           [predict['select2_engine'], predict['select3_engine'], predict['select4_engine']]):
         await callback.message.answer(
             text='Вы выбрали 4 участника с одним мотором, начните выбор заново с команды /predict')
         await state.clear()
@@ -515,7 +534,8 @@ async def process_championship_full_command(message: Message):
     ws.title = "Championship Points"
 
     # Заголовки таблицы
-    header = ['Driver'] + ['Team'] + [key for key in points_list[0] if key != 'User' and key != 'Total Points' and key != 'Team'] + ['Total Points']
+    header = ['Driver'] + ['Team'] + [key for key in points_list[0] if
+                                      key != 'User' and key != 'Total Points' and key != 'Team'] + ['Total Points']
     ws.append(header)  # Добавляем заголовки в первую строку
 
     # Добавляем данные в файл

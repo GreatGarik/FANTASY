@@ -214,6 +214,22 @@ def get_user_team(id_telegram):
         else:
             return 'PERSONAL ENTRY'
 
+def get_team(id_telegram):
+    with Session() as session:
+        user = session.query(User).filter(User.id_telegram == id_telegram).first()
+        team = session.query(Team).filter(
+                (Team.first == user.id) |
+                (Team.second == user.id) |
+                (Team.third == user.id)
+            ).first()
+
+        if team:
+            return team
+        else:
+            return None
+
+
+
 def is_prediced(user_id, gp):
     with Session() as session:
         statement = select(Predict).where(Predict.gp == gp, Predict.user_id == user_id)

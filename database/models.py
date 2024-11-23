@@ -32,6 +32,7 @@ class Driver(Base):
     driver_points: Mapped[int] = mapped_column(Integer)
     driver_team: Mapped[str] = mapped_column(String(60))
     driver_engine: Mapped[str] = mapped_column(String(60))
+    engine_short: Mapped[str] = mapped_column(String(3))
     driver_nextgp: Mapped[str] = mapped_column(String(1))
 
 
