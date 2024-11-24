@@ -15,6 +15,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     id_telegram: Mapped[int] = mapped_column(Integer, unique=True)
     name: Mapped[str] = mapped_column(String(60))
+    #team: Mapped[int] = mapped_column(Integer, ForeignKey('teams.id'))
 
     points: Mapped[List['Point']] = relationship('Point', back_populates='user')
     # Связи с командами
@@ -98,6 +99,7 @@ class Grandprix(Base):
     nextgp: Mapped[bool] = mapped_column(Boolean)
 
     race = relationship('Point', back_populates='gp')
+    race_team: Mapped['TeamPoint'] = relationship('TeamPoint', back_populates='gp_team')
 
 # Определяем модель команд
 class Team(Base):
@@ -112,7 +114,7 @@ class Team(Base):
     captain: Mapped[bool] = mapped_column(Boolean)
     number: Mapped[int] = mapped_column(Integer)
 
-    points: Mapped[List['TeamPoint']] = relationship('TeamPoint', back_populates='team')
+    team_points: Mapped[List['TeamPoint']] = relationship('TeamPoint', back_populates='team')
     # Связи с пользователями
     first_user: Mapped[Optional[User]] = relationship('User', back_populates='teams_first', foreign_keys=[first])
     second_user: Mapped[Optional[User]] = relationship('User', back_populates='teams_second', foreign_keys=[second])
@@ -125,11 +127,10 @@ class TeamPoint(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     team_id: Mapped[int] = mapped_column(ForeignKey('teams.id'))
     race_id: Mapped[int] = mapped_column(ForeignKey('grandprix.id'))
-    year: Mapped[int] = mapped_column(Integer)
     points: Mapped[int] = mapped_column(Integer)
 
-    team: Mapped[User] = relationship('Team', back_populates='points')
-    gp: Mapped[Grandprix] = relationship('Grandprix', back_populates='race')
+    team: Mapped[User] = relationship('Team', back_populates='team_points')
+    gp_team: Mapped[Grandprix] = relationship('Grandprix', back_populates='race_team')
 
 # Определяем модель Очков
 class Point(Base):
@@ -138,7 +139,6 @@ class Point(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     race_id: Mapped[int] = mapped_column(ForeignKey('grandprix.id'))
-    year: Mapped[int] = mapped_column(Integer)
     points: Mapped[int] = mapped_column(Integer)
 
     user: Mapped[User] = relationship('User', back_populates='points')

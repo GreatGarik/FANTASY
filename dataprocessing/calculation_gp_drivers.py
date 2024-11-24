@@ -1,5 +1,5 @@
 from dataprocessing.get_data import get_res_gp
-from database.database import get_predict, select_drivers, add_result, get_result, add_points
+from database.database import get_predict, select_drivers, add_result, get_result, add_points, get_team, add_team_points
 
 
 def calculation_drivers(gp):
@@ -84,6 +84,11 @@ def calculation_drivers(gp):
                  15: 42, 16: 40, 17: 38, 18: 36, 19: 34, 20: 32, 21: 30, 22: 29, 23: 28, 24: 27, 25: 26, 26: 25, 27: 24,
                  28: 23, 29: 22, 30: 21, 31: 20, 32: 19, 33: 18, 34: 17, 35: 16, 36: 15, 37: 14, 38: 13, 39: 12, 40: 11,
                  41: 10, 42: 9, 43: 8, 44: 7, 45: 6, 46: 5, 47: 4, 48: 3, 49: 2, 50: 1}
-
+    teams_points = {}
     for index, (user, result) in enumerate(data, 1):
-        add_points(user.id, 2024, POINST_GP.get(index, 0), gp)
+        add_points(user.id, POINST_GP.get(index, 0), gp)
+        team = get_team(user.id_telegram)
+        if team:
+            teams_points[team.id] = teams_points.get(team.id, 0) + POINST_GP.get(index, 0)
+    for key, value in teams_points.items():
+        add_team_points(team_id=key, points=value, gp=gp)

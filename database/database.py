@@ -60,10 +60,18 @@ def get_predict(gp=None):
         return db_object
 
 # Заполнение таблицы с очками по этапам
-def add_points(user_id, year, points, gp=None):
+def add_points(user_id, points, gp=None):
     with Session() as session:
         try:
-            session.add(Point(user_id=user_id, race_id=gp, year=year, points=points))
+            session.add(Point(user_id=user_id, race_id=gp, points=points))
+            session.commit()
+        except Exception as e:
+            print(e)
+
+def add_team_points(team_id, points, gp=None):
+    with Session() as session:
+        try:
+            session.add(TeamPoint(team_id=team_id, race_id=gp, points=points))
             session.commit()
         except Exception as e:
             print(e)
@@ -134,6 +142,30 @@ def show_points_all(year):
             points_list.append(user_entry)
 
         return points_list
+# Возврат списка пользователей и их очков по GP
+def show_points_team_all(year):
+    with Session() as session:
+        # Получаем все гран-при 2024 года
+        grandprix = session.query(Grandprix).filter(Grandprix.year == year).all()
+
+        # Получаем всех пользователей
+        teams = session.query(Team).all()
+
+        # Формируем список результатов
+        points_list = []
+
+        for team in teams:
+            user_entry = {'Team': team.name}
+
+            # Инициализируем очки для каждого гран-при 2024 года
+            for gp in grandprix:
+                # Находим очки для текущего гран-при
+                points = next((point.points for point in team.team_points if point.race_id == gp.id), 0)
+                user_entry[gp.gp_name_abr] = points
+            points_list.append(user_entry)
+
+        return points_list
+
 
 # Получение результатов GP без очков чемпионата
 def get_result(gp=None):
@@ -222,6 +254,7 @@ def get_team(id_telegram):
                 (Team.second == user.id) |
                 (Team.third == user.id)
             ).first()
+
 
         if team:
             return team

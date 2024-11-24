@@ -9,7 +9,7 @@ from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
-    is_prediced, get_user_team, add_team, get_team
+    is_prediced, get_user_team, add_team, get_team, show_points_team_all
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from aiogram.fsm.storage.redis import RedisStorage, Redis
@@ -545,6 +545,45 @@ async def process_championship_full_command(message: Message):
 
     # Сохраняем файл
     excel_file_path = 'championship_points.xlsx'
+    wb.save(excel_file_path)
+
+    # Отправляем сообщение о завершении
+    await message.answer_document(
+        document=FSInputFile(path=excel_file_path),
+        caption='Чемпионат в формате XLS',
+        filename='championship.xlsx'
+    )
+
+    # Удаляем файл после отправки
+    os.remove(excel_file_path)
+
+@router.message(Command(commands='championship_team_full'), StateFilter(default_state))
+async def championship_team_full_command(message: Message):
+    points_list: dict = show_points_team_all(2024)
+
+    for entry in points_list:
+        entry['Total Points'] = sum(entry[key] for key in entry if key != 'Team')
+
+    # Сортируем по общему количеству очков
+    points_list.sort(key=lambda x: x['Total Points'], reverse=True)
+
+    # Создаем новый Excel файл
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Championship Points"
+
+    # Заголовки таблицы
+    header = ['Team'] + [key for key in points_list[0] if
+                                      key != 'Total Points' and key != 'Team'] + ['Total Points']
+    ws.append(header)  # Добавляем заголовки в первую строку
+
+    # Добавляем данные в файл
+    for entry in points_list:
+        row = [entry['Team']] + [entry[key] for key in header[2:]]
+        ws.append(row)  # Добавляем строку с данными
+
+    # Сохраняем файл
+    excel_file_path = 'championship_team_points.xlsx'
     wb.save(excel_file_path)
 
     # Отправляем сообщение о завершении
