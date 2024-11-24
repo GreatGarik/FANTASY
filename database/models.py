@@ -112,12 +112,24 @@ class Team(Base):
     captain: Mapped[bool] = mapped_column(Boolean)
     number: Mapped[int] = mapped_column(Integer)
 
+    points: Mapped[List['TeamPoint']] = relationship('TeamPoint', back_populates='team')
     # Связи с пользователями
     first_user: Mapped[Optional[User]] = relationship('User', back_populates='teams_first', foreign_keys=[first])
     second_user: Mapped[Optional[User]] = relationship('User', back_populates='teams_second', foreign_keys=[second])
     third_user: Mapped[Optional[User]] = relationship('User', back_populates='teams_third', foreign_keys=[third])
 
+# Определяем модель Командных Очков
+class TeamPoint(Base):
+    __tablename__ = 'team_points'
 
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    team_id: Mapped[int] = mapped_column(ForeignKey('teams.id'))
+    race_id: Mapped[int] = mapped_column(ForeignKey('grandprix.id'))
+    year: Mapped[int] = mapped_column(Integer)
+    points: Mapped[int] = mapped_column(Integer)
+
+    team: Mapped[User] = relationship('Team', back_populates='points')
+    gp: Mapped[Grandprix] = relationship('Grandprix', back_populates='race')
 
 # Определяем модель Очков
 class Point(Base):
@@ -131,4 +143,5 @@ class Point(Base):
 
     user: Mapped[User] = relationship('User', back_populates='points')
     gp: Mapped[Grandprix] = relationship('Grandprix', back_populates='race')
+
 
