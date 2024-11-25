@@ -137,7 +137,7 @@ def show_points_all(year):
             # Инициализируем очки для каждого гран-при 2024 года
             for gp in grandprix:
                 # Находим очки для текущего гран-при
-                points = next((point.points for point in user.points if point.race_id == gp.id), 0)
+                points = next((point.points for point in user.points if point.race_id == gp.id), None)
                 user_entry[gp.gp_name_abr] = points
             points_list.append(user_entry)
 
@@ -160,7 +160,7 @@ def show_points_team_all(year):
             # Инициализируем очки для каждого гран-при 2024 года
             for gp in grandprix:
                 # Находим очки для текущего гран-при
-                points = next((point.points for point in team.team_points if point.race_id == gp.id), 0)
+                points = next((point.points for point in team.team_points if point.race_id == gp.id), None)
                 user_entry[gp.gp_name_abr] = points
             points_list.append(user_entry)
 

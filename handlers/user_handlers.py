@@ -523,7 +523,7 @@ async def process_championship_full_command(message: Message):
     points_list: dict = show_points_all(2024)
 
     for entry in points_list:
-        entry['Total Points'] = sum(entry[key] for key in entry if key != 'User' and key != 'Team')
+        entry['Total Points'] = sum(entry[key] for key in entry if key != 'User' and key != 'Team' and entry[key])
 
     # Сортируем по общему количеству очков
     points_list.sort(key=lambda x: x['Total Points'], reverse=True)
@@ -562,7 +562,7 @@ async def championship_team_full_command(message: Message):
     points_list: dict = show_points_team_all(2024)
 
     for entry in points_list:
-        entry['Total Points'] = sum(entry[key] for key in entry if key != 'Team')
+        entry['Total Points'] = sum(entry[key] for key in entry if key != 'Team' and entry[key])
 
     # Сортируем по общему количеству очков
     points_list.sort(key=lambda x: x['Total Points'], reverse=True)
@@ -590,7 +590,7 @@ async def championship_team_full_command(message: Message):
     await message.answer_document(
         document=FSInputFile(path=excel_file_path),
         caption='Чемпионат в формате XLS',
-        filename='championship.xlsx'
+        filename='championship_team_points.xlsx'
     )
 
     # Удаляем файл после отправки
