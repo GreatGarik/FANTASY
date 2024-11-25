@@ -579,7 +579,7 @@ async def championship_team_full_command(message: Message):
 
     # Добавляем данные в файл
     for entry in points_list:
-        row = [entry['Team']] + [entry[key] for key in header[2:]]
+        row = [entry['Team']] + [entry[key] for key in header[1:]]
         ws.append(row)  # Добавляем строку с данными
 
     # Сохраняем файл
