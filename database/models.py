@@ -15,6 +15,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     id_telegram: Mapped[int] = mapped_column(Integer, unique=True)
     name: Mapped[str] = mapped_column(String(60))
+    number: Mapped[int] = mapped_column(Integer, unique=True)
     #team: Mapped[int] = mapped_column(Integer, ForeignKey('teams.id'))
 
     points: Mapped[List['Point']] = relationship('Point', back_populates='user')

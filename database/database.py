@@ -112,7 +112,7 @@ def show_points():
 # Возврат списка пользователей и их очков по GP
 def show_points_all(year):
     with Session() as session:
-        # Получаем все гран-при 2024 года
+        # Получаем все гран-при
         grandprix = session.query(Grandprix).filter(Grandprix.year == year).all()
 
         # Получаем всех пользователей

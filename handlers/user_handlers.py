@@ -460,14 +460,16 @@ async def process_resultcsv_command(message: Message):
     sheet.title = "Results"
 
     # Записываем заголовки
-    headers = ['POS', 'DRIVER', 'DR1', 'DR2', 'DR3', 'DR4', 'TM', 'ENG', 'DIFF', 'LAP', 'PEN', 'PTS', 'CH.PTS']
+    headers = ['POS','№', 'DRIVER', 'TEAM', 'DR1', 'DR2', 'DR3', 'DR4', 'TM', 'ENG', 'DIFF', 'LAP', 'PEN', 'PTS', 'CH.PTS']
     sheet.append(headers)
 
     # Записываем данные
     for index, (user, result, points) in enumerate(data, 1):
         sheet.append([
             index,
+            user.number,
             user.name,
+            get_user_team(user.id_telegram),
             result.first_driver,
             result.second_driver,
             result.third_driver,
@@ -510,10 +512,10 @@ async def process_calculation_command(message: Message):
 @router.message(Command(commands='championship'), StateFilter(default_state))
 async def process_championship_command(message: Message):
     points_all: dict = show_points()
-    text_for_answer = f'POS|DRIVER              |PTS|\n'
+    text_for_answer = f'POS|DRIVER                   |PTS|\n'
     for index, user in enumerate(
             sorted(points_all, key=lambda x: sum([i for i in x.values() if isinstance(i, int)]), reverse=True), 1):
-        text_for_answer += f'{index:<3}|{user['User']:<20}|{sum([i for i in user.values() if isinstance(i, int)]):<3}|\n'
+        text_for_answer += f'{index:<3}|{user['User']:<25}|{sum([i for i in user.values() if isinstance(i, int)]):<3}|\n'
     await message.answer(f'<code>{text_for_answer}</code>')
 
 
