@@ -1,9 +1,12 @@
+from typing import List
+
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.drawing.image import Image
 from io import BytesIO
 from aiogram import Router, F, Bot, types
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, FSInputFile, BufferedInputFile
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, FSInputFile, \
+    BufferedInputFile
 from aiogram.filters import Command, CommandStart, StateFilter
 from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
@@ -242,8 +245,6 @@ async def process_add_teammate_command(message: Message, state: FSMContext):
             await message.answer(text=f'Вы не являетесь капитаном команды')
 '''
 
-
-
 '''
 ///... ХЭНДЛЕРЫ ПРОГНОЗА НАЧАЛО ///
 '''
@@ -460,7 +461,8 @@ async def process_resultcsv_command(message: Message):
     sheet.title = "Results"
 
     # Записываем заголовки
-    headers = ['POS','№', 'DRIVER', 'TEAM', 'DR1', 'DR2', 'DR3', 'DR4', 'TM', 'ENG', 'DIFF', 'LAP', 'PEN', 'PTS', 'CH.PTS']
+    headers = ['POS', '№', 'DRIVER', 'TEAM', 'DR1', 'DR2', 'DR3', 'DR4', 'TM', 'ENG', 'DIFF', 'LAP', 'PEN', 'PTS',
+               'CH.PTS']
     sheet.append(headers)
 
     # Записываем данные
@@ -519,7 +521,7 @@ async def process_championship_command(message: Message):
 # Этот хэндлер будет срабатывать на отправку команды /championship_full
 @router.message(Command(commands='championship_full'), StateFilter(default_state))
 async def process_championship_full_command(message: Message):
-    points_list: dict = show_points_all(2024)
+    points_list: List[dict] = show_points_all(2024)
 
     for entry in points_list:
         entry['PTS'] = sum(entry[key] for key in entry if key != 'User' and key != 'Team' and entry[key])
@@ -534,7 +536,8 @@ async def process_championship_full_command(message: Message):
 
     # Заголовки таблицы
     header = ['№'] + ['Driver'] + ['Team'] + [''] + [key for key in points_list[0] if
-                                      key != 'User' and key != 'PTS' and key != 'Team' and  key != 'Image'] + ['PTS']
+                                                     key != 'User' and key != 'PTS' and key != 'Team' and key != 'Image'] + [
+                 'PTS']
     ws.append(header)  # Добавляем заголовки в первую строку
 
     # Устанавливаем шрифт и фон для заголовков
@@ -549,14 +552,12 @@ async def process_championship_full_command(message: Message):
 
     # Добавляем данные в файл
     for num, entry in enumerate(points_list, 1):
-        row = [num] + [entry['User']] + [entry['Team']] + ['']  + [entry[key] for key in header[4:]]
+        row = [num] + [entry['User']] + [entry['Team']] + [''] + [entry[key] for key in header[4:]]
         ws.append(row)  # Добавляем строку с данными
 
         # Устанавливаем фон для ячейки, если команда равна "ovalmentario"
         if entry['Team'] == 'OVALMENTARIO':
-
             # Устанавливаем фон для ячейки, например, в колонке B (вторая колонка)
-
             font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000000')  # Черный цвет
             fill = PatternFill(start_color='f5a9b8', end_color='f5a9b8', fill_type='solid')
             ws.cell(row=ws.max_row, column=2).font = font
@@ -593,11 +594,9 @@ async def process_championship_full_command(message: Message):
         # Объединяем ячейки в третьем и четвертом столбцах (C и D)
         ws.merge_cells(start_row=ws.max_row, start_column=3, end_row=ws.max_row, end_column=4)
 
-
     # Устанавливаем шрифт и фон для всех остальных ячеек
     wight_font = Font(name='Formula1 Display Regular', size=11, bold=True, color='FFFFFF')  # Белый цвет
     black_fill = PatternFill(start_color='000000', end_color='000000', fill_type='solid')  # Черный цвет
-    
     for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=len(header)):
         for cell in row:
             if cell.font.name != 'Formula1 Display Regular':  # Проверяем, установлен ли шрифт
@@ -625,9 +624,10 @@ async def process_championship_full_command(message: Message):
         document=BufferedInputFile(output.read(), filename='championship_points.xlsx')
     )
 
+
 @router.message(Command(commands='championship_team_full'), StateFilter(default_state))
 async def championship_team_full_command(message: Message):
-    points_list: dict = show_points_team_all(2024)
+    points_list: List[dict] = show_points_team_all(2024)
 
     for entry in points_list:
         entry['Total Points'] = sum(entry[key] for key in entry if key != 'Team' and entry[key])
@@ -642,7 +642,7 @@ async def championship_team_full_command(message: Message):
 
     # Заголовки таблицы
     header = ['Team'] + [key for key in points_list[0] if
-                                      key != 'Total Points' and key != 'Team'] + ['Total Points']
+                         key != 'Total Points' and key != 'Team'] + ['Total Points']
     ws.append(header)  # Добавляем заголовки в первую строку
 
     # Добавляем данные в файл
@@ -659,8 +659,6 @@ async def championship_team_full_command(message: Message):
     await message.answer_document(
         document=BufferedInputFile(output.read(), filename='championship_team_points.xlsx')
     )
-
-
 
 
 # Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
