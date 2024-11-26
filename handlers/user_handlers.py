@@ -1,12 +1,10 @@
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.drawing.image import Image
-import os
+from io import BytesIO
 from aiogram import Router, F, Bot, types
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, FSInputFile
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, FSInputFile, BufferedInputFile
 from aiogram.filters import Command, CommandStart, StateFilter
-from sqlalchemy import lambda_stmt
-
 from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
@@ -485,18 +483,15 @@ async def process_resultcsv_command(message: Message):
             points.points
         ])
 
-    # Сохраняем файл
-    workbook.save(xls_filename)
+    # Сохраняем книгу в BytesIO
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)  # Перемещаем указатель в начало
 
-    # Отправляем XLS файл
+    # Отправляем сообщение о завершении
     await message.answer_document(
-        document=FSInputFile(path=xls_filename),
-        caption='Результаты в формате XLS',
-        filename='results.xlsx'
+        document=BufferedInputFile(output.read(), filename='results.xlsx')
     )
-
-    # Удаляем файл после отправки
-    os.remove(xls_filename)
 
 
 # Этот хэндлер будет срабатывать на отправку команды /calculation
@@ -527,10 +522,10 @@ async def process_championship_full_command(message: Message):
     points_list: dict = show_points_all(2024)
 
     for entry in points_list:
-        entry['Total Points'] = sum(entry[key] for key in entry if key != 'User' and key != 'Team' and entry[key])
+        entry['PTS'] = sum(entry[key] for key in entry if key != 'User' and key != 'Team' and entry[key])
 
     # Сортируем по общему количеству очков
-    points_list.sort(key=lambda x: x['Total Points'], reverse=True)
+    points_list.sort(key=lambda x: x['PTS'], reverse=True)
 
     # Создаем новый Excel файл
     wb = Workbook()
@@ -539,7 +534,7 @@ async def process_championship_full_command(message: Message):
 
     # Заголовки таблицы
     header = ['№'] + ['Driver'] + ['Team'] + [''] + [key for key in points_list[0] if
-                                      key != 'User' and key != 'Total Points' and key != 'Team' and  key != 'Image'] + ['Total Points']
+                                      key != 'User' and key != 'PTS' and key != 'Team' and  key != 'Image'] + ['PTS']
     ws.append(header)  # Добавляем заголовки в первую строку
 
     # Устанавливаем шрифт и фон для заголовков
@@ -618,21 +613,17 @@ async def process_championship_full_command(message: Message):
 
     # Устанавливаем ширину второго и третьего столбца
     ws.column_dimensions['B'].width = 30  # Второй столбец
-    ws.column_dimensions['C'].width = 30  # Третий столбец
+    ws.column_dimensions['C'].width = 35  # Третий столбец
 
-    # Сохраняем файл
-    excel_file_path = 'championship_points.xlsx'
-    wb.save(excel_file_path)
+    # Сохраняем книгу в BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)  # Перемещаем указатель в начало
 
     # Отправляем сообщение о завершении
     await message.answer_document(
-        document=FSInputFile(path=excel_file_path),
-        caption='Чемпионат в формате XLS',
-        filename='championship.xlsx'
+        document=BufferedInputFile(output.read(), filename='championship_points.xlsx')
     )
-
-    # Удаляем файл после отправки
-    os.remove(excel_file_path)
 
 @router.message(Command(commands='championship_team_full'), StateFilter(default_state))
 async def championship_team_full_command(message: Message):
@@ -659,19 +650,17 @@ async def championship_team_full_command(message: Message):
         row = [entry['Team']] + [entry[key] for key in header[1:]]
         ws.append(row)  # Добавляем строку с данными
 
-    # Сохраняем файл
-    excel_file_path = 'championship_team_points.xlsx'
-    wb.save(excel_file_path)
+    # Сохраняем книгу в BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)  # Перемещаем указатель в начало
 
     # Отправляем сообщение о завершении
     await message.answer_document(
-        document=FSInputFile(path=excel_file_path),
-        caption='Чемпионат в формате XLS',
-        filename='championship_team_points.xlsx'
+        document=BufferedInputFile(output.read(), filename='championship_team_points.xlsx')
     )
 
-    # Удаляем файл после отправки
-    os.remove(excel_file_path)
+
 
 
 # Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
