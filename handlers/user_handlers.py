@@ -1,5 +1,6 @@
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.drawing.image import Image
 import os
 from aiogram import Router, F, Bot, types
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, FSInputFile
@@ -537,51 +538,78 @@ async def process_championship_full_command(message: Message):
     ws.title = "Championship Points"
 
     # Заголовки таблицы
-    header = ['№'] + ['Driver'] + ['Team'] + [key for key in points_list[0] if
-                                      key != 'User' and key != 'Total Points' and key != 'Team'] + ['Total Points']
+    header = ['№'] + ['Driver'] + ['Team'] + [''] + [key for key in points_list[0] if
+                                      key != 'User' and key != 'Total Points' and key != 'Team' and  key != 'Image'] + ['Total Points']
     ws.append(header)  # Добавляем заголовки в первую строку
 
     # Устанавливаем шрифт и фон для заголовков
-    header_font = Font(name='Formula1 Display Regular', size=9, bold=True, color='FFFFFF')  # Красный цвет
+    header_font = Font(name='Formula1 Display Regular', size=11, bold=True, color='FFFFFF')  # Красный цвет
     header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')  # Черный цвет
 
     for cell in ws[1]:  # Перебираем ячейки заголовка
         cell.font = header_font
         cell.fill = header_fill
+        # Объединяем ячейки в третьем и четвертом столбцах (C и D)
+        ws.merge_cells(start_row=ws.max_row, start_column=3, end_row=ws.max_row, end_column=4)
 
     # Добавляем данные в файл
     for num, entry in enumerate(points_list, 1):
-        row = [num] + [entry['User']] + [entry[key] for key in header[2:]]
+        row = [num] + [entry['User']] + [entry['Team']] + ['']  + [entry[key] for key in header[4:]]
         ws.append(row)  # Добавляем строку с данными
 
         # Устанавливаем фон для ячейки, если команда равна "ovalmentario"
-        wight_font = Font(name='Formula1 Display Regular', size=9, bold=True, color='FFFFFF')  # Белый цвет
-        black_fill = PatternFill(start_color='000000', end_color='000000', fill_type='solid')  # Черный цвет
         if entry['Team'] == 'OVALMENTARIO':
+
             # Устанавливаем фон для ячейки, например, в колонке B (вторая колонка)
-            font = Font(name='Formula1 Display Regular', size=9, bold=True, color='000000')  # Черный цвет
+
+            font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000000')  # Черный цвет
             fill = PatternFill(start_color='f5a9b8', end_color='f5a9b8', fill_type='solid')
-            ws.cell(row=ws.max_row, column=ws.max_column).font = wight_font
-            ws.cell(row=ws.max_row, column=ws.max_column).fill = black_fill
             ws.cell(row=ws.max_row, column=2).font = font
             ws.cell(row=ws.max_row, column=3).font = font
             ws.cell(row=ws.max_row, column=2).fill = fill  # Измените номер колонки, если нужно
             ws.cell(row=ws.max_row, column=3).fill = fill  # Измените номер колонки, если нужно
-        else:
-            ws.cell(row=ws.max_row, column=ws.max_column).font = wight_font
-            ws.cell(row=ws.max_row, column=ws.max_column).fill = black_fill
-    '''
+            # Вставляем изображение в четвертый столбец (колонка D)
+            img_path = r'logos\oval.png'  # Укажите путь к вашему изображению
+            img = Image(img_path)
+            # Задаем размер изображения в пикселях
+            img_width_px = 46  # Ширина в пикселях
+            img_height_px = 16  # Высота в пикселях
+            # Конвертируем пиксели в единицы Excel
+            img.width = img_width_px * (1 / 0.75)  # 1 дюйм = 96 пикселей, 1 единица Excel = 1/7 дюйма
+            img.height = img_height_px * (1 / 0.75)  # 1 дюйм = 96 пикселей, 1 единица Excel = 1/72 дюйма
+            img.anchor = f'D{ws.max_row}'  # Устанавливаем позицию изображения
+            ws.add_image(img)
+
+        if entry['Team'] == 'PERSONAL ENTRY':
+            # Вставляем изображение в четвертый столбец (колонка D)
+            img_path = r'logos\personal.png'  # Укажите путь к вашему изображению
+            img = Image(img_path)
+            # Задаем размер изображения в пикселях
+            img_width_px = 46  # Ширина в пикселях
+            img_height_px = 16  # Высота в пикселях
+
+            # Конвертируем пиксели в единицы Excel
+            img.width = img_width_px * (1 / 0.75)  # 1 дюйм = 96 пикселей, 1 единица Excel = 1/7 дюйма
+            img.height = img_height_px * (1 / 0.75)  # 1 дюйм = 96 пикселей, 1 единица Excel = 1/72 дюйма
+
+            img.anchor = f'D{ws.max_row}'  # Устанавливаем позицию изображения
+            ws.add_image(img)
+
+        # Объединяем ячейки в третьем и четвертом столбцах (C и D)
+        ws.merge_cells(start_row=ws.max_row, start_column=3, end_row=ws.max_row, end_column=4)
+
+
     # Устанавливаем шрифт и фон для всех остальных ячеек
-    wight_font = Font(name='Formula1 Display Regular', size=9, bold=True, color='FFFFFF')  # Белый цвет
+    wight_font = Font(name='Formula1 Display Regular', size=11, bold=True, color='FFFFFF')  # Белый цвет
     black_fill = PatternFill(start_color='000000', end_color='000000', fill_type='solid')  # Черный цвет
     
     for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=len(header)):
         for cell in row:
-            if cell.font.color is None:  # Проверяем, установлен ли шрифт
+            if cell.font.name != 'Formula1 Display Regular':  # Проверяем, установлен ли шрифт
                 cell.font = wight_font  # Устанавливаем белый шрифт
             if cell.fill.fill_type is None:  # Проверяем, установлен ли фон
                 cell.fill = black_fill  # Устанавливаем черный фон
-    '''
+
     # Устанавливаем выравнивание по центру для первой колонки
     center_alignment = Alignment(horizontal='center')
 
