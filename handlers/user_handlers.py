@@ -1,7 +1,7 @@
 from typing import List
 
 from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.drawing.image import Image
 from io import BytesIO
 from aiogram import Router, F, Bot, types
@@ -510,7 +510,7 @@ async def process_calculation_command(message: Message):
 @router.message(Command(commands='championship'), StateFilter(default_state))
 async def process_championship_command(message: Message):
     points_all: dict = show_points()
-    text_for_answer = f'POS|DRIVER                   |PTS|\n'
+    text_for_answer = f'POS|DRIVER                   |CH.PTS|\n'
     for index, user in enumerate(
             sorted(points_all, key=lambda x: sum([i for i in x.values() if isinstance(i, int)]), reverse=True), 1):
         text_for_answer += f'{index:<3}|{user['User']:<25}|{sum([i for i in user.values() if isinstance(i, int)]):<3}|\n'
@@ -523,10 +523,10 @@ async def process_championship_full_command(message: Message):
     points_list: List[dict] = show_points_all(2024)
 
     for entry in points_list:
-        entry['PTS'] = sum(entry[key] for key in entry if key != 'User' and key != 'Team' and entry[key])
+        entry['CH.PTS'] = sum(entry[key] for key in entry if key != 'User' and key != 'Team' and entry[key])
 
     # Сортируем по общему количеству очков
-    points_list.sort(key=lambda x: x['PTS'], reverse=True)
+    points_list.sort(key=lambda x: x['CH.PTS'], reverse=True)
 
     # Создаем новый Excel файл
     wb = Workbook()
@@ -535,38 +535,48 @@ async def process_championship_full_command(message: Message):
 
     # Вставляем 5 пустых строк в начале
     ws.insert_rows(1, amount=5)
+    ws.row_dimensions[4].height = 22.5
 
     # Заголовки таблицы
     header = ['POS'] + ['№'] + ['Driver'] + ['Team'] + [''] + [key for key in points_list[0] if
-    key not in ['User', 'PTS', 'Number', 'Team', 'Image']] + ['PTS']
+    key not in ['User', 'CH.PTS', 'Number', 'Team', 'Image']] + ['CH.PTS']
     ws.append(header)  # Добавляем заголовки в первую строку
 
     # Устанавливаем шрифт и фон для заголовков
     header_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
     header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')  # Красный цвет
 
+    # Создаем черную границу
+    thin_border = Border(left=Side(style='thin', color='000000'),
+                         right=Side(style='thin', color='000000'),
+                         top=Side(style='thin', color='000000'),
+                         bottom=Side(style='thin', color='000000'))
+
     for cell in ws[7]:  # Перебираем ячейки заголовка
         cell.font = header_font
         cell.fill = header_fill
+        cell.border = thin_border
         # Объединяем ячейки в третьем и четвертом столбцах (C и D)
-        #ws.merge_cells(start_row=ws.max_row, start_column=3, end_row=ws.max_row, end_column=4)
+        ws.merge_cells(start_row=ws.max_row, start_column=4, end_row=ws.max_row, end_column=5)
     teams_fonts: dict = get_teams_fonts_colors()
     # Добавляем данные в файл
     for num, entry in enumerate(points_list, 1):
         row = [num] + [entry['Number']] + [entry['User']]+ [entry['Team']] + [''] + [entry[key] for key in header[5:]]
         ws.append(row)  # Добавляем строку с данными
-        ws.row_dimensions[ws.max_row].height = 20*0.78
+        #ws.row_dimensions[ws.max_row].height = 17
         wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
         black_fill = PatternFill(start_color='000001', end_color='000001', fill_type='solid')  # Черный цве
         for cell in ws[ws.max_row]:
-            cell.font = wight_font  # Устанавливаем белый шрифт
+            if cell.column_letter in ['A', 'B', 'C', 'D', 'E']:
+                cell.font = wight_font  # Устанавливаем белый шрифт
+            else:
+                cell.font = Font(name='Formula1 Display Regular', size=11, bold=False, color='FFFFFF')
             cell.fill = black_fill  # Устанавливаем черный фон
-
 
         # Устанавливаем фон для ячейки для команд
         if teams_fonts.get(entry['Team'], None):
             team = teams_fonts[entry['Team']]
-            # Устанавливаем фон для ячейки, например, в колонке B (вторая колонка)
+            # Устанавливаем фон для ячейки, например, в колонке
             font = Font(name='Formula1 Display Bold', size=11, bold=False, color=team['text_color'])
             fill = PatternFill(start_color=team['background_color'], end_color=team['background_color'], fill_type='solid')
             font_number = Font(name=team['number_font'], size=14, bold=True, italic=team['number_italic'], color=team['number_color'])
@@ -618,10 +628,15 @@ async def process_championship_full_command(message: Message):
     for cell in ws['A'] + ws['B'] + ws['D']:
         cell.alignment = center_alignment
 
-    # Устанавливаем ширину второго и третьего столбца
-    ws.column_dimensions['C'].width = 30  # Второй столбец
-    ws.column_dimensions['D'].width = 40  # Третий столбец
+
+    # Устанавливаем ширину столбцов
+    for column in ws.columns:
+        column_letter = column[0].column_letter  # Получаем букву столбца
+        ws.column_dimensions[column_letter].width = 7
+    ws.column_dimensions['C'].width = 35  # Второй столбец
+    ws.column_dimensions['D'].width = 41  # Третий столбец
     ws.column_dimensions['E'].width = 8  # Третий столбец
+    ws.column_dimensions[ws.cell(row=7, column=ws.max_column).column_letter].width = 10.5  # Третий столбец
 
     # Скрываем сетку
     ws.sheet_view.showGridLines = False
