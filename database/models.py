@@ -113,7 +113,11 @@ class Team(Base):
     third: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('users.id'))
     logo: Mapped[str] = mapped_column(String(60))
     captain: Mapped[bool] = mapped_column(Boolean)
-    number: Mapped[int] = mapped_column(Integer)
+    background_color: Mapped[str] = mapped_column(String(6))
+    text_color: Mapped[str] = mapped_column(String(6))
+    number_color: Mapped[str] = mapped_column(String(6))
+    number_font: Mapped[str] = mapped_column(String(60))
+    number_italic: Mapped[bool] = mapped_column(Boolean)
 
     team_points: Mapped[List['TeamPoint']] = relationship('TeamPoint', back_populates='team')
     # Связи с пользователями

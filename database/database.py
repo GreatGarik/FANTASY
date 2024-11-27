@@ -1,3 +1,5 @@
+from typing import Dict, Any
+
 from aiogram.utils.chat_member import USERS
 from certifi import where
 from sqlalchemy import create_engine, select, update, case
@@ -123,6 +125,7 @@ def show_points_all(year):
 
         for user in users:
             user_entry = {'User': user.name}
+            user_entry['Number'] = user.number
 
             # Находим команду пользователя
             team = session.query(Team).filter(
@@ -282,3 +285,22 @@ def add_team(user_id, name: str, number: int, captain: bool):
             session.commit()
         except Exception as e:
             print(e)
+
+
+
+def get_teams_fonts_colors() -> Dict[str, Dict[str, Any]]:
+    with Session() as session:
+        teams_dict = {}
+        teams = session.query(Team).all()  # Получаем все команды из базы данных
+
+        for team in teams:
+            teams_dict[team.name] = {
+                'logo': team.logo,
+                'background_color': team.background_color,
+                'text_color': team.text_color,
+                'number_color': team.number_color,
+                'number_font': team.number_font,
+                'number_italic': team.number_italic,
+            }
+
+        return teams_dict

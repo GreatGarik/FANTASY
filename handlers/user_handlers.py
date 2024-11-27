@@ -12,7 +12,7 @@ from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
-    is_prediced, get_user_team, add_team, get_team, show_points_team_all
+    is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from aiogram.fsm.storage.redis import RedisStorage, Redis
@@ -448,16 +448,13 @@ async def process_viewresult_command(message: Message):
 
 # Этот хэндлер будет срабатывать на отправку команды /resultxls
 @router.message(Command(commands='resultxls'), StateFilter(default_state))
-async def process_resultcsv_command(message: Message):
+async def process_result_xls_command(message: Message):
     gp = get_actual_gp()
     data = show_result(gp)
 
-    # Указываем имя файла
-    xls_filename = 'results.xlsx'
-
     # Создаем новый Excel файл
-    workbook = Workbook()
-    sheet = workbook.active
+    wb = Workbook()
+    sheet = wb.active
     sheet.title = "Results"
 
     # Записываем заголовки
@@ -487,13 +484,15 @@ async def process_resultcsv_command(message: Message):
 
     # Сохраняем книгу в BytesIO
     output = BytesIO()
-    workbook.save(output)
+    wb.save(output)
     output.seek(0)  # Перемещаем указатель в начало
 
     # Отправляем сообщение о завершении
     await message.answer_document(
         document=BufferedInputFile(output.read(), filename='results.xlsx')
     )
+
+    output.close()
 
 
 # Этот хэндлер будет срабатывать на отправку команды /calculation
@@ -535,71 +534,70 @@ async def process_championship_full_command(message: Message):
     ws.title = "Championship Points"
 
     # Заголовки таблицы
-    header = ['№'] + ['Driver'] + ['Team'] + [''] + [key for key in points_list[0] if
-                                                     key != 'User' and key != 'PTS' and key != 'Team' and key != 'Image'] + [
-                 'PTS']
+    header = ['POS'] + ['№'] + ['Driver'] + ['Team'] + [''] + [key for key in points_list[0] if
+    key not in ['User', 'PTS', 'Number', 'Team', 'Image']] + ['PTS']
     ws.append(header)  # Добавляем заголовки в первую строку
 
     # Устанавливаем шрифт и фон для заголовков
-    header_font = Font(name='Formula1 Display Regular', size=11, bold=True, color='FFFFFF')  # Красный цвет
-    header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')  # Черный цвет
+    header_font = Font(name='Formula1 Display Regular', size=11, bold=True, color='FFFFFF')  # Белый цвет
+    header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')  # Красный цвет
 
     for cell in ws[1]:  # Перебираем ячейки заголовка
         cell.font = header_font
         cell.fill = header_fill
         # Объединяем ячейки в третьем и четвертом столбцах (C и D)
-        ws.merge_cells(start_row=ws.max_row, start_column=3, end_row=ws.max_row, end_column=4)
-
+        #ws.merge_cells(start_row=ws.max_row, start_column=3, end_row=ws.max_row, end_column=4)
+    teams_fonts: dict = get_teams_fonts_colors()
     # Добавляем данные в файл
     for num, entry in enumerate(points_list, 1):
-        row = [num] + [entry['User']] + [entry['Team']] + [''] + [entry[key] for key in header[4:]]
+        row = [num] + [entry['Number']] + [entry['User']]+ [entry['Team']] + [''] + [entry[key] for key in header[5:]]
         ws.append(row)  # Добавляем строку с данными
 
         # Устанавливаем фон для ячейки, если команда равна "ovalmentario"
-        if entry['Team'] == 'OVALMENTARIO':
+        if teams_fonts.get(entry['Team'], None):
+            team = teams_fonts[entry['Team']]
             # Устанавливаем фон для ячейки, например, в колонке B (вторая колонка)
-            font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000000')  # Черный цвет
-            fill = PatternFill(start_color='f5a9b8', end_color='f5a9b8', fill_type='solid')
-            ws.cell(row=ws.max_row, column=2).font = font
+            font = Font(name='Formula1 Display Regular', size=11, bold=True, color=team['text_color'])
+            fill = PatternFill(start_color=team['background_color'], end_color=team['background_color'], fill_type='solid')
+            font_number = Font(name=team['number_font'], size=14, bold=True, italic=team['number_italic'], color=team['number_color'])
+            ws.cell(row=ws.max_row, column=2).font = font_number
             ws.cell(row=ws.max_row, column=3).font = font
-            ws.cell(row=ws.max_row, column=2).fill = fill  # Измените номер колонки, если нужно
-            ws.cell(row=ws.max_row, column=3).fill = fill  # Измените номер колонки, если нужно
-            # Вставляем изображение в четвертый столбец (колонка D)
-            img_path = r'logos\oval.png'  # Укажите путь к вашему изображению
-            img = Image(img_path)
-            # Задаем размер изображения в пикселях
-            img_width_px = 46  # Ширина в пикселях
-            img_height_px = 16  # Высота в пикселях
-            # Конвертируем пиксели в единицы Excel
-            img.width = img_width_px * (1 / 0.75)  # 1 дюйм = 96 пикселей, 1 единица Excel = 1/7 дюйма
-            img.height = img_height_px * (1 / 0.75)  # 1 дюйм = 96 пикселей, 1 единица Excel = 1/72 дюйма
-            img.anchor = f'D{ws.max_row}'  # Устанавливаем позицию изображения
-            ws.add_image(img)
+            ws.cell(row=ws.max_row, column=4).font = font
+            ws.cell(row=ws.max_row, column=2).fill = fill
+            ws.cell(row=ws.max_row, column=3).fill = fill
+            ws.cell(row=ws.max_row, column=4).fill = fill
+            ws.cell(row=ws.max_row, column=5).fill = fill
+            # Вставляем изображение в четвертый столбец (колонка Е)
+            if team['logo']:
+                img_path = f'logos\\{team['logo']}'  # Укажите путь к вашему изображению
+                img = Image(img_path)
+                # Задаем размер изображения в пикселях
+                #img_width_px = 43  # Ширина в пикселях
+                #img_height_px = 15  # Высота в пикселях
+                # Конвертируем пиксели в единицы Excel 57.33
+                img.width = 57.33  # дюйм
+                img.height = 20  # дюйм
+                img.anchor = f'E{ws.max_row}'  # Устанавливаем позицию изображения
+                ws.add_image(img)
 
-        if entry['Team'] == 'PERSONAL ENTRY':
+        else:
             # Вставляем изображение в четвертый столбец (колонка D)
             img_path = r'logos\personal.png'  # Укажите путь к вашему изображению
             img = Image(img_path)
-            # Задаем размер изображения в пикселях
-            img_width_px = 46  # Ширина в пикселях
-            img_height_px = 16  # Высота в пикселях
-
-            # Конвертируем пиксели в единицы Excel
-            img.width = img_width_px * (1 / 0.75)  # 1 дюйм = 96 пикселей, 1 единица Excel = 1/7 дюйма
-            img.height = img_height_px * (1 / 0.75)  # 1 дюйм = 96 пикселей, 1 единица Excel = 1/72 дюйма
-
-            img.anchor = f'D{ws.max_row}'  # Устанавливаем позицию изображения
+            img.width = 57.33  # дюйм
+            img.height = 20  # дюйм
+            img.anchor = f'E{ws.max_row}'  # Устанавливаем позицию изображения
             ws.add_image(img)
 
         # Объединяем ячейки в третьем и четвертом столбцах (C и D)
-        ws.merge_cells(start_row=ws.max_row, start_column=3, end_row=ws.max_row, end_column=4)
+        #ws.merge_cells(start_row=ws.max_row, start_column=3, end_row=ws.max_row, end_column=4)
 
     # Устанавливаем шрифт и фон для всех остальных ячеек
     wight_font = Font(name='Formula1 Display Regular', size=11, bold=True, color='FFFFFF')  # Белый цвет
     black_fill = PatternFill(start_color='000000', end_color='000000', fill_type='solid')  # Черный цвет
     for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=len(header)):
         for cell in row:
-            if cell.font.name != 'Formula1 Display Regular':  # Проверяем, установлен ли шрифт
+            if cell.font.name == 'Calibri':  # Проверяем, установлен ли шрифт
                 cell.font = wight_font  # Устанавливаем белый шрифт
             if cell.fill.fill_type is None:  # Проверяем, установлен ли фон
                 cell.fill = black_fill  # Устанавливаем черный фон
@@ -607,12 +605,13 @@ async def process_championship_full_command(message: Message):
     # Устанавливаем выравнивание по центру для первой колонки
     center_alignment = Alignment(horizontal='center')
 
-    for cell in ws['A']:  # Перебираем все ячейки в первой колонке
+    for cell in ws['A'] + ws['B'] + ws['D']:
         cell.alignment = center_alignment
 
     # Устанавливаем ширину второго и третьего столбца
-    ws.column_dimensions['B'].width = 30  # Второй столбец
-    ws.column_dimensions['C'].width = 35  # Третий столбец
+    ws.column_dimensions['C'].width = 30  # Второй столбец
+    ws.column_dimensions['D'].width = 40  # Третий столбец
+    ws.column_dimensions['E'].width = 8  # Третий столбец
 
     # Сохраняем книгу в BytesIO
     output = BytesIO()
@@ -623,6 +622,7 @@ async def process_championship_full_command(message: Message):
     await message.answer_document(
         document=BufferedInputFile(output.read(), filename='championship_points.xlsx')
     )
+    output.close()
 
 
 @router.message(Command(commands='championship_team_full'), StateFilter(default_state))
@@ -659,6 +659,7 @@ async def championship_team_full_command(message: Message):
     await message.answer_document(
         document=BufferedInputFile(output.read(), filename='championship_team_points.xlsx')
     )
+    output.close()
 
 
 # Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
