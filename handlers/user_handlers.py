@@ -533,16 +533,19 @@ async def process_championship_full_command(message: Message):
     ws = wb.active
     ws.title = "Championship Points"
 
+    # Вставляем 5 пустых строк в начале
+    ws.insert_rows(1, amount=5)
+
     # Заголовки таблицы
     header = ['POS'] + ['№'] + ['Driver'] + ['Team'] + [''] + [key for key in points_list[0] if
     key not in ['User', 'PTS', 'Number', 'Team', 'Image']] + ['PTS']
     ws.append(header)  # Добавляем заголовки в первую строку
 
     # Устанавливаем шрифт и фон для заголовков
-    header_font = Font(name='Formula1 Display Regular', size=11, bold=True, color='FFFFFF')  # Белый цвет
+    header_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
     header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')  # Красный цвет
 
-    for cell in ws[1]:  # Перебираем ячейки заголовка
+    for cell in ws[7]:  # Перебираем ячейки заголовка
         cell.font = header_font
         cell.fill = header_fill
         # Объединяем ячейки в третьем и четвертом столбцах (C и D)
@@ -552,12 +555,19 @@ async def process_championship_full_command(message: Message):
     for num, entry in enumerate(points_list, 1):
         row = [num] + [entry['Number']] + [entry['User']]+ [entry['Team']] + [''] + [entry[key] for key in header[5:]]
         ws.append(row)  # Добавляем строку с данными
+        ws.row_dimensions[ws.max_row].height = 20*0.78
+        wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
+        black_fill = PatternFill(start_color='000001', end_color='000001', fill_type='solid')  # Черный цве
+        for cell in ws[ws.max_row]:
+            cell.font = wight_font  # Устанавливаем белый шрифт
+            cell.fill = black_fill  # Устанавливаем черный фон
 
-        # Устанавливаем фон для ячейки, если команда равна "ovalmentario"
+
+        # Устанавливаем фон для ячейки для команд
         if teams_fonts.get(entry['Team'], None):
             team = teams_fonts[entry['Team']]
             # Устанавливаем фон для ячейки, например, в колонке B (вторая колонка)
-            font = Font(name='Formula1 Display Regular', size=11, bold=True, color=team['text_color'])
+            font = Font(name='Formula1 Display Bold', size=11, bold=False, color=team['text_color'])
             fill = PatternFill(start_color=team['background_color'], end_color=team['background_color'], fill_type='solid')
             font_number = Font(name=team['number_font'], size=14, bold=True, italic=team['number_italic'], color=team['number_color'])
             ws.cell(row=ws.max_row, column=2).font = font_number
@@ -581,7 +591,7 @@ async def process_championship_full_command(message: Message):
                 ws.add_image(img)
 
         else:
-            # Вставляем изображение в четвертый столбец (колонка D)
+            # Вставляем изображение для частников
             img_path = r'logos\personal.png'  # Укажите путь к вашему изображению
             img = Image(img_path)
             img.width = 57.33  # дюйм
@@ -591,7 +601,7 @@ async def process_championship_full_command(message: Message):
 
         # Объединяем ячейки в третьем и четвертом столбцах (C и D)
         #ws.merge_cells(start_row=ws.max_row, start_column=3, end_row=ws.max_row, end_column=4)
-
+    '''
     # Устанавливаем шрифт и фон для всех остальных ячеек
     wight_font = Font(name='Formula1 Display Regular', size=11, bold=True, color='FFFFFF')  # Белый цвет
     black_fill = PatternFill(start_color='000000', end_color='000000', fill_type='solid')  # Черный цвет
@@ -601,7 +611,7 @@ async def process_championship_full_command(message: Message):
                 cell.font = wight_font  # Устанавливаем белый шрифт
             if cell.fill.fill_type is None:  # Проверяем, установлен ли фон
                 cell.fill = black_fill  # Устанавливаем черный фон
-
+    '''
     # Устанавливаем выравнивание по центру для первой колонки
     center_alignment = Alignment(horizontal='center')
 
@@ -612,6 +622,9 @@ async def process_championship_full_command(message: Message):
     ws.column_dimensions['C'].width = 30  # Второй столбец
     ws.column_dimensions['D'].width = 40  # Третий столбец
     ws.column_dimensions['E'].width = 8  # Третий столбец
+
+    # Скрываем сетку
+    ws.sheet_view.showGridLines = False
 
     # Сохраняем книгу в BytesIO
     output = BytesIO()
