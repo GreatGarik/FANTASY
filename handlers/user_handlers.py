@@ -633,9 +633,9 @@ async def process_championship_full_command(message: Message):
     for column in ws.columns:
         column_letter = column[0].column_letter  # Получаем букву столбца
         ws.column_dimensions[column_letter].width = 7
-    ws.column_dimensions['C'].width = 35  # Второй столбец
-    ws.column_dimensions['D'].width = 41  # Третий столбец
-    ws.column_dimensions['E'].width = 8  # Третий столбец
+    ws.column_dimensions['C'].width = 35  # Третий столбец
+    ws.column_dimensions['D'].width = 41  # Четвертый столбец
+    ws.column_dimensions['E'].width = 8  # Пятый столбец
     ws.column_dimensions[ws.cell(row=7, column=ws.max_column).column_letter].width = 10.5  # Третий столбец
 
     # Скрываем сетку
