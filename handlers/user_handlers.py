@@ -541,6 +541,7 @@ async def process_championship_full_command(message: Message):
     header = ['POS'] + ['№'] + ['Driver'] + ['Team'] + [''] + [key for key in points_list[0] if
     key not in ['User', 'CH.PTS', 'Number', 'Team', 'Image']] + ['CH.PTS']
     ws.append(header)  # Добавляем заголовки в первую строку
+    ws.row_dimensions[ws.max_row].height = 17
 
     # Устанавливаем шрифт и фон для заголовков
     header_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
@@ -563,7 +564,7 @@ async def process_championship_full_command(message: Message):
     for num, entry in enumerate(points_list, 1):
         row = [num] + [entry['Number']] + [entry['User']]+ [entry['Team']] + [''] + [entry[key] for key in header[5:]]
         ws.append(row)  # Добавляем строку с данными
-        #ws.row_dimensions[ws.max_row].height = 17
+        ws.row_dimensions[ws.max_row].height = 17
         wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
         black_fill = PatternFill(start_color='000001', end_color='000001', fill_type='solid')  # Черный цве
         for cell in ws[ws.max_row]:
@@ -593,8 +594,13 @@ async def process_championship_full_command(message: Message):
             else:
                 img_path = r'logos\personal.png'  # Укажите путь к вашему изображению
             img = Image(img_path)
-            img.width = 57.33  # дюйм
-            img.height = 20  # дюйм
+            # Указываем процент изменения размера
+            resize_percentage = 46  # например, 150% от оригинального размера
+            # Рассчитываем новый размер
+            img.width = int(img.width * (resize_percentage / 100))
+            img.height = int(img.height * (resize_percentage / 100))
+
+
             img.anchor = f'E{ws.max_row}'  # Устанавливаем позицию изображения
             ws.add_image(img)
 
@@ -621,11 +627,11 @@ async def process_championship_full_command(message: Message):
     # Устанавливаем ширину столбцов
     for column in ws.columns:
         column_letter = column[0].column_letter  # Получаем букву столбца
-        ws.column_dimensions[column_letter].width = 7
-    ws.column_dimensions['C'].width = 35  # Третий столбец
-    ws.column_dimensions['D'].width = 41  # Четвертый столбец
-    ws.column_dimensions['E'].width = 8  # Пятый столбец
-    ws.column_dimensions[ws.cell(row=7, column=ws.max_column).column_letter].width = 10.5  # Третий столбец
+        ws.column_dimensions[column_letter].width = 7.7
+    ws.column_dimensions['C'].width = 35.7  # Третий столбец
+    ws.column_dimensions['D'].width = 41.7  # Четвертый столбец
+    ws.column_dimensions['E'].width = 8.7  # Пятый столбец
+    ws.column_dimensions[ws.cell(row=7, column=ws.max_column).column_letter].width = 11.3  # Третий столбец
 
     # Скрываем сетку
     ws.sheet_view.showGridLines = False
