@@ -595,7 +595,7 @@ async def process_championship_full_command(message: Message):
                 img_path = r'logos\personal.png'  # Укажите путь к вашему изображению
             img = Image(img_path)
             # Указываем процент изменения размера
-            resize_percentage = 46  # например, 150% от оригинального размера
+            resize_percentage = 46  # % от оригинального размера
             # Рассчитываем новый размер
             img.width = int(img.width * (resize_percentage / 100))
             img.height = int(img.height * (resize_percentage / 100))
