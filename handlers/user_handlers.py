@@ -590,19 +590,8 @@ async def process_championship_full_command(message: Message):
             # Вставляем изображение в четвертый столбец (колонка Е)
             if team['logo']:
                 img_path = f'logos\\{team['logo']}'  # Укажите путь к вашему изображению
-                img = Image(img_path)
-                # Задаем размер изображения в пикселях
-                #img_width_px = 43  # Ширина в пикселях
-                #img_height_px = 15  # Высота в пикселях
-                # Конвертируем пиксели в единицы Excel 57.33
-                img.width = 57.33  # дюйм
-                img.height = 20  # дюйм
-                img.anchor = f'E{ws.max_row}'  # Устанавливаем позицию изображения
-                ws.add_image(img)
-
-        else:
-            # Вставляем изображение для частников
-            img_path = r'logos\personal.png'  # Укажите путь к вашему изображению
+            else:
+                img_path = r'logos\personal.png'  # Укажите путь к вашему изображению
             img = Image(img_path)
             img.width = 57.33  # дюйм
             img.height = 20  # дюйм
