@@ -604,19 +604,7 @@ async def process_championship_full_command(message: Message):
             img.anchor = f'E{ws.max_row}'  # Устанавливаем позицию изображения
             ws.add_image(img)
 
-        # Объединяем ячейки в третьем и четвертом столбцах (C и D)
-        #ws.merge_cells(start_row=ws.max_row, start_column=3, end_row=ws.max_row, end_column=4)
-    '''
-    # Устанавливаем шрифт и фон для всех остальных ячеек
-    wight_font = Font(name='Formula1 Display Regular', size=11, bold=True, color='FFFFFF')  # Белый цвет
-    black_fill = PatternFill(start_color='000000', end_color='000000', fill_type='solid')  # Черный цвет
-    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=len(header)):
-        for cell in row:
-            if cell.font.name == 'Calibri':  # Проверяем, установлен ли шрифт
-                cell.font = wight_font  # Устанавливаем белый шрифт
-            if cell.fill.fill_type is None:  # Проверяем, установлен ли фон
-                cell.fill = black_fill  # Устанавливаем черный фон
-    '''
+
     # Устанавливаем выравнивание по центру для первой колонки
     center_alignment = Alignment(horizontal='center')
 
