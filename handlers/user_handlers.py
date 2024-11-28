@@ -600,12 +600,11 @@ async def process_championship_full_command(message: Message):
             img.width = int(img.width * (resize_percentage / 100))
             img.height = int(img.height * (resize_percentage / 100))
 
-
             img.anchor = f'E{ws.max_row}'  # Устанавливаем позицию изображения
             ws.add_image(img)
 
 
-    # Устанавливаем выравнивание по центру для первой колонки
+    # Устанавливаем выравнивание по центру для нужных колонок
     center_alignment = Alignment(horizontal='center')
 
     for cell in ws['A'] + ws['B'] + ws['D']:
