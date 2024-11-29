@@ -402,9 +402,15 @@ async def predict_lap(message: CallbackQuery, state: FSMContext):
     await state.update_data(lapped=message.text)
     await state.update_data(penalty=0)
     predict = await state.get_data()
-    if len({predict['first_driver'], predict['second_driver'], predict['third_driver'], predict['third_driver']}) != 4:
+    values = [predict['select1_engine'], predict['select2_engine'], predict['select3_engine'],
+              predict['select4_engine'], predict['select5_engine'], predict['select6_engine']]
+    if len({predict['first_driver'], predict['second_driver'], predict['third_driver'], predict['fourth_driver']}) != 4:
         await message.answer(
             text='<b>Вы выбрали несколько одинаковых гонщиков, используя старые кнопки, пожалуйста, используйте актуальные кнопки и начните выбор заново с команды /predict</b>')
+        await state.clear()
+    elif any(values.count(x) == 4 for x in set(values)):
+        await message.answer(
+            text='Вы выбрали 4 участника с одним мотором, начните выбор заново с команды /predict')
         await state.clear()
     else:
         await message.answer(text=f'''Спасибо!\nВы выбрали: 
