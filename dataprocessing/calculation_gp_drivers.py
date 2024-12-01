@@ -90,5 +90,7 @@ def calculation_drivers(gp):
         team = get_team(user.id_telegram)
         if team:
             teams_points[team.id] = teams_points.get(team.id, 0) + POINST_GP.get(index, 0)
+
+
     for key, value in teams_points.items():
         add_team_points(team_id=key, points=value, gp=gp)
