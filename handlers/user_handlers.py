@@ -1,5 +1,5 @@
 from typing import List
-
+import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.drawing.image import Image
@@ -673,8 +673,21 @@ async def process_calculation_command(message: Message):
     if check_res(gp):
         await message.answer(f'Вы уже сделали расчет для этого GP', isable_web_page_preview=True)
     else:
-        calculation_drivers(gp)
+        results_predict_gp = calculation_drivers(gp)
+        # Преобразование словаря в DataFrame
+        df = pd.DataFrame(list(results_predict_gp.items()), columns=['Ключ', 'Значение'])
+
+        # Сохраняем книгу в BytesIO
+        output = BytesIO()
+        output.seek(0)  # Перемещаем указатель в начало
+        # Сохранение DataFrame в Excel-файл
+        df.to_excel(output, index=False)
+        output.seek(0)  # Перемещаем указатель в начало
+        await message.answer_document(
+            document=BufferedInputFile(output.read(), filename='gp_points.xlsx')
+        )
         await message.answer(f'Расчет результатов выполнен')
+        output.close()
 
 
 # Этот хэндлер будет срабатывать на отправку команды /championship
