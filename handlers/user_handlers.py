@@ -12,7 +12,7 @@ from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
-    is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors
+    is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from aiogram.fsm.storage.redis import RedisStorage, Redis
@@ -70,6 +70,12 @@ async def process_cancel_command_state(message: Message, state: FSMContext):
 @router.message(Command(commands=['help']))
 async def process_help_command(message: Message):
     await message.answer(text=LEXICON_RU['help_answer'])
+
+# Этот хэндлер срабатывает на команду /clear_result
+@router.message(Command(commands=['clear_result']))
+async def clear_result_command(message: Message):
+    clear_results(get_actual_gp())
+    await message.answer('Результат удалён')
 
 
 '''

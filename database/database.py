@@ -304,3 +304,17 @@ def get_teams_fonts_colors() -> Dict[str, Dict[str, Any]]:
             }
 
         return teams_dict
+
+def clear_results(gp):
+    with Session() as session:
+        # Удаляем строки по условию
+        condition = Result.gp == gp  # Условие для удаления
+        session.query(Result).filter(condition).delete(synchronize_session='fetch')
+
+        condition = TeamPoint.race_id == gp  # Условие для удаления
+        session.query(TeamPoint).filter(condition).delete(synchronize_session='fetch')
+
+        condition = Point.race_id == gp  # Условие для удаления
+        session.query(Point).filter(condition).delete(synchronize_session='fetch')
+
+        session.commit()
