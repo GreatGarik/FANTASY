@@ -38,7 +38,8 @@ for_replace = [
     ('(З) #43 Franco Colapinto', 'Franco Colapinto'),
     ('(С) #30 Liam Lawson', 'Liam Lawson'),
     ('(К) #24 Zhou Guanyu', 'Zhou Guanyu'),
-    ('(К) #77 Valtteri Bottas', 'Valtteri Bottas')
+    ('(К) #77 Valtteri Bottas', 'Valtteri Bottas'),
+    ('(Р) #7 Jack Doohan', 'Jack Doohan')
 ]
 
 # Создаем сессию
