@@ -318,3 +318,26 @@ def clear_results(gp):
         session.query(Point).filter(condition).delete(synchronize_session='fetch')
 
         session.commit()
+
+def get_name_gp(gp):
+    with Session() as session:
+        statement = select(Grandprix).where(Grandprix.id == gp)
+        res = session.scalars(statement).first()
+        return res.gp_name
+
+def get_maximus(gp):
+    with Session() as session:
+        statement = select(Grandprix).where(Grandprix.id == gp)
+        res = session.scalars(statement).first()
+        return {'max1':res.max1, 'max2': res.max2, 'max3':res.max3}
+
+def add_maximus(gp, maximus):
+    with Session() as session:
+        grandprix = session.query(Grandprix).filter(Grandprix.id == gp).first()
+
+        if grandprix:
+            # Обновляем значения
+            grandprix.max1 = maximus['MAX1']
+            grandprix.max2 = maximus['MAX2']
+            grandprix.max3 = maximus['MAX3']
+            session.commit()

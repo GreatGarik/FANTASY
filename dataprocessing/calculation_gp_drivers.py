@@ -1,5 +1,5 @@
 from dataprocessing.get_data import get_res_gp
-from database.database import get_predict, select_drivers, add_result, get_result, add_points, get_team, add_team_points
+from database.database import get_predict, select_drivers, add_result, get_result, add_points, get_team, add_team_points, add_maximus
 
 
 def calculation_drivers(gp):
@@ -94,5 +94,7 @@ def calculation_drivers(gp):
         add_team_points(team_id=key, points=value, gp=gp)
 
     results_predict_gp = results_predict_gp | {'MAX1': first_max, 'MAX2': second_max, 'MAX3': third_max}
+    # Добавляем максимумы к GP
+    add_maximus(gp, results_predict_gp)
 
     return results_predict_gp

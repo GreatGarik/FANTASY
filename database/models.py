@@ -98,6 +98,9 @@ class Grandprix(Base):
     year: Mapped[int] = mapped_column(Integer)
     gp_name_abr: Mapped[str] = mapped_column(String(3))
     nextgp: Mapped[bool] = mapped_column(Boolean)
+    max1: Mapped[int] = mapped_column(Integer)
+    max2: Mapped[int] = mapped_column(Integer)
+    max3: Mapped[int] = mapped_column(Integer)
 
     race = relationship('Point', back_populates='gp')
     race_team: Mapped['TeamPoint'] = relationship('TeamPoint', back_populates='gp_team')

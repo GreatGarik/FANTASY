@@ -12,7 +12,8 @@ from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
-    is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results
+    is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
+    get_name_gp, get_maximus
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from aiogram.fsm.storage.redis import RedisStorage, Redis
@@ -70,6 +71,7 @@ async def process_cancel_command_state(message: Message, state: FSMContext):
 @router.message(Command(commands=['help']))
 async def process_help_command(message: Message):
     await message.answer(text=LEXICON_RU['help_answer'])
+
 
 # Этот хэндлер срабатывает на команду /clear_result
 @router.message(Command(commands=['clear_result']))
@@ -526,9 +528,10 @@ async def process_result_xls_command(message: Message):
 
     output.close()
 
+
 # Этот хэндлер будет срабатывать на отправку команды /resultxls2
 @router.message(Command(commands='resultxls2'), StateFilter(default_state))
-async def process_result_xls_command(message: Message):
+async def process_result_xls2_command(message: Message):
     gp = get_actual_gp()
     data = show_result(gp)
 
@@ -540,6 +543,21 @@ async def process_result_xls_command(message: Message):
     # Вставляем 5 пустых строк в начале
     ws.insert_rows(1, amount=5)
     ws.row_dimensions[4].height = 22.5
+    # Объединяем ячейки в третьем и четвертом столбцах (C и D)
+    ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=12)
+    ws.cell(row=4, column=4).font = Font(name='Formula1 Display Bold', size=18, bold=True, color='000000')
+    ws['D4'] = f'FORMULA 1 {get_name_gp(gp).upper()} GRAND PRIX'
+    ws['D4'].alignment = Alignment(horizontal='center', vertical='center')
+
+    img_path = r'logos\Shirokoe_logo_bez_fona_silli.png'  # Укажите путь к вашему изображению
+    img = Image(img_path)
+    # Указываем процент изменения размера
+    resize_percentage = 7  # % от оригинального размера
+    # Рассчитываем новый размер 57,33 -  20
+    img.width = int(img.width * (resize_percentage / 100))
+    img.height = int(img.height * (resize_percentage / 100))
+    img.anchor = f'C1'  # Устанавливаем позицию изображения
+    ws.add_image(img)
 
     # Записываем заголовки
     headers = ['POS', '№', 'DRIVER', 'TEAM', None, 'DR1', 'DR2', 'DR3', 'DR4', 'TM', 'ENG', 'DIFF', 'LAP', 'PEN', 'PTS',
@@ -564,6 +582,8 @@ async def process_result_xls_command(message: Message):
         # Объединяем ячейки в третьем и четвертом столбцах (C и D)
         ws.merge_cells(start_row=ws.max_row, start_column=4, end_row=ws.max_row, end_column=5)
     teams_fonts: dict = get_teams_fonts_colors()
+
+    maximus: dict = get_maximus(gp)
 
     # Записываем данные
     for index, (user, result, points) in enumerate(data, 1):
@@ -593,7 +613,12 @@ async def process_result_xls_command(message: Message):
             if cell.column_letter in ['A', 'B', 'C', 'D', 'E']:
                 cell.font = wight_font  # Устанавливаем белый шрифт
             else:
-                cell.font = Font(name='Formula1 Display Regular', size=11, bold=False, color='FFFFFF')
+                if (cell.column_letter in ['F', 'G'] and cell.value == maximus['max1']) or (
+                        cell.column_letter == 'H' and cell.value == maximus['max2']) or (
+                        cell.column_letter == 'I' and cell.value == maximus['max3']):
+                    cell.font = Font(name='Formula1 Display Regular', size=11, bold=False, color='ED7D31')
+                else:
+                    cell.font = Font(name='Formula1 Display Regular', size=11, bold=False, color='FFFFFF')
             cell.fill = black_fill  # Устанавливаем черный фон
 
         # Устанавливаем фон для ячейки для команд
@@ -620,7 +645,7 @@ async def process_result_xls_command(message: Message):
             img = Image(img_path)
             # Указываем процент изменения размера
             resize_percentage = 46  # % от оригинального размера
-            # Рассчитываем новый размер 57,33 -  20
+            # Рассчитываем новый размер
             img.width = int(img.width * (resize_percentage / 100))
             img.height = int(img.height * (resize_percentage / 100))
 
@@ -632,17 +657,15 @@ async def process_result_xls_command(message: Message):
             img = Image(img_path)
             # Указываем процент изменения размера
             resize_percentage = 46  # % от оригинального размера
-            # Рассчитываем новый размер 57,33 -  20
+            # Рассчитываем новый размер
             img.width = int(img.width * (resize_percentage / 100))
             img.height = int(img.height * (resize_percentage / 100))
 
             img.anchor = f'E{ws.max_row}'  # Устанавливаем позицию изображения
             ws.add_image(img)
 
-
         # Устанавливаем выравнивание по центру для нужных колонок
     center_alignment = Alignment(horizontal='center', vertical='center')
-
 
     for cell in ws['A'] + ws['B'] + ws['D']:
         cell.alignment = center_alignment
@@ -656,6 +679,14 @@ async def process_result_xls_command(message: Message):
     ws.column_dimensions['E'].width = 8.7  # Пятый столбец
     ws.column_dimensions[ws.cell(row=7, column=ws.max_column).column_letter].width = 10.7  # Последний столбец
 
+    # Цвета 1, 2, 3 места
+    ws.cell(row=8, column=1).fill = PatternFill(start_color='bf9000', end_color='bf9000',
+                                                fill_type='solid')
+    ws.cell(row=9, column=1).fill = PatternFill(start_color='7c7c7c', end_color='7c7c7c',
+                                                fill_type='solid')
+    ws.cell(row=10, column=1).fill = PatternFill(start_color='c55a11', end_color='c55a11',
+                                                 fill_type='solid')
+
     # Скрываем сетку
     ws.sheet_view.showGridLines = False
 
@@ -666,7 +697,7 @@ async def process_result_xls_command(message: Message):
 
     # Отправляем сообщение о завершении
     await message.answer_document(
-        document=BufferedInputFile(output.read(), filename='results.xlsx')
+        document=BufferedInputFile(output.read(), filename=f'results {get_name_gp(gp)}.xlsx')
     )
 
     output.close()
