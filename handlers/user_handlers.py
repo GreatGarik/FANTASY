@@ -408,7 +408,7 @@ async def predict_gap(message: CallbackQuery, state: FSMContext):
 @router.message(StateFilter(FSMFillForm.end_select), F.text.isdigit())
 async def predict_lap(message: CallbackQuery, state: FSMContext):
     await state.update_data(lapped=message.text)
-    await state.update_data(penalty=0)
+    await state.update_data(penalty=False)
     predict = await state.get_data()
     values = [predict['select1_engine'], predict['select2_engine'], predict['select3_engine'],
               predict['select4_engine'], predict['select5_engine'], predict['select6_engine']]
@@ -615,7 +615,8 @@ async def process_result_xls2_command(message: Message):
             else:
                 if (cell.column_letter in ['F', 'G'] and cell.value == maximus['max1']) or (
                         cell.column_letter == 'H' and cell.value == maximus['max2']) or (
-                        cell.column_letter == 'I' and cell.value == maximus['max3']):
+                        cell.column_letter == 'I' and cell.value == maximus['max3']) or (
+                        cell.column_letter in ['L', 'M'] and cell.value == 10):
                     cell.font = Font(name='Formula1 Display Regular', size=11, bold=False, color='ED7D31')
                 else:
                     cell.font = Font(name='Formula1 Display Regular', size=11, bold=False, color='FFFFFF')
