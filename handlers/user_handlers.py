@@ -759,6 +759,26 @@ async def process_championship_full_command(message: Message):
     ws.insert_rows(1, amount=5)
     ws.row_dimensions[4].height = 22.5
 
+    # Объединяем ячейки в третьем и четвертом столбцах (C и D)
+    ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=12)
+    ws.merge_cells(start_row=5, start_column=4, end_row=5, end_column=12)
+    ws.cell(row=4, column=4).font = Font(name='Formula1 Display Bold', size=18, bold=True, color='000000')
+    ws['D4'] = f'FORMULA 1 FANTASY SERIES BY SILLY FORMULA'
+    ws['D4'].alignment = Alignment(horizontal='center', vertical='center')
+    ws.cell(row=5, column=4).font = Font(name='Formula1 Display Bold', size=11, bold=True, color='000000')
+    ws['D5'] = f"DRIVER'S CHAMPIONSHIP"
+    ws['D5'].alignment = Alignment(horizontal='center', vertical='center')
+
+    img_path = r'logos\Shirokoe_logo_bez_fona_silli.png'  # Укажите путь к вашему изображению
+    img = Image(img_path)
+    # Указываем процент изменения размера
+    resize_percentage = 7  # % от оригинального размера
+    # Рассчитываем новый размер
+    img.width = int(img.width * (resize_percentage / 100))
+    img.height = int(img.height * (resize_percentage / 100))
+    img.anchor = f'C1'  # Устанавливаем позицию изображения
+    ws.add_image(img)
+
     # Заголовки таблицы
     header = ['POS'] + ['№'] + ['Driver'] + ['Team'] + [''] + [key for key in points_list[0] if
                                                                key not in ['User', 'CH.PTS', 'Number', 'Team',
@@ -821,7 +841,7 @@ async def process_championship_full_command(message: Message):
             img = Image(img_path)
             # Указываем процент изменения размера
             resize_percentage = 46  # % от оригинального размера
-            # Рассчитываем новый размер 57,33 -  20
+            # Рассчитываем новый размер
             img.width = int(img.width * (resize_percentage / 100))
             img.height = int(img.height * (resize_percentage / 100))
 
@@ -893,6 +913,11 @@ async def championship_team_full_command(message: Message):
         document=BufferedInputFile(output.read(), filename='championship_team_points.xlsx')
     )
     output.close()
+
+# Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
+@router.callback_query()
+async def answer_all(message: Message):
+    await message.answer(text=LEXICON_RU['unknown_command'])
 
 
 # Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
