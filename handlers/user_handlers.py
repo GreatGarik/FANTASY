@@ -468,6 +468,7 @@ async def process_showdata_command(message: Message):
         await message.answer(text='Вы не зарегистрированы')
 
 
+'''
 # Этот хэндлер будет срабатывать на отправку команды /viewresult
 @router.message(Command(commands='viewresult'), StateFilter(default_state))
 async def process_viewresult_command(message: Message):
@@ -527,10 +528,10 @@ async def process_result_xls_command(message: Message):
     )
 
     output.close()
+'''
 
-
-# Этот хэндлер будет срабатывать на отправку команды /resultxls2
-@router.message(Command(commands='resultxls2'), StateFilter(default_state))
+# Этот хэндлер будет срабатывать на отправку команды /resultxls
+@router.message(Command(commands='resultxls'), StateFilter(default_state))
 async def process_result_xls2_command(message: Message):
     gp = get_actual_gp()
     data = show_result(gp)
@@ -553,7 +554,7 @@ async def process_result_xls2_command(message: Message):
     img = Image(img_path)
     # Указываем процент изменения размера
     resize_percentage = 7  # % от оригинального размера
-    # Рассчитываем новый размер 57,33 -  20
+    # Рассчитываем новый размер
     img.width = int(img.width * (resize_percentage / 100))
     img.height = int(img.height * (resize_percentage / 100))
     img.anchor = f'C1'  # Устанавливаем позицию изображения
