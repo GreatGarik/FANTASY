@@ -51,7 +51,7 @@ with Session() as session:
 
 
     for _ in range(100):
-        gp = 21
+        gp = 22
         txt = input()
         for a, b in for_replace:
             txt = txt.replace(a, b)

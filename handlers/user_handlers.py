@@ -863,6 +863,14 @@ async def process_championship_full_command(message: Message):
     ws.column_dimensions['E'].width = 8.7  # Пятый столбец
     ws.column_dimensions[ws.cell(row=7, column=ws.max_column).column_letter].width = 11.3  # Третий столбец
 
+    # Цвета 1, 2, 3 места
+    ws.cell(row=8, column=1).fill = PatternFill(start_color='bf9000', end_color='bf9000',
+                                                fill_type='solid')
+    ws.cell(row=9, column=1).fill = PatternFill(start_color='7c7c7c', end_color='7c7c7c',
+                                                fill_type='solid')
+    ws.cell(row=10, column=1).fill = PatternFill(start_color='c55a11', end_color='c55a11',
+                                                 fill_type='solid')
+
     # Скрываем сетку
     ws.sheet_view.showGridLines = False
 
