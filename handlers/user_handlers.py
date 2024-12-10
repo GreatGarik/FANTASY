@@ -1,4 +1,5 @@
 from typing import List
+import os
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -550,7 +551,7 @@ async def process_result_xls2_command(message: Message):
     ws['D4'] = f'FORMULA 1 {get_name_gp(gp).upper()} GRAND PRIX'
     ws['D4'].alignment = Alignment(horizontal='center', vertical='center')
 
-    img_path = r'logos\Shirokoe_logo_bez_fona_silli.png'  # Укажите путь к вашему изображению
+    img_path = os.path.join('logos', 'Shirokoe_logo_bez_fona_silli.png')  # Укажите путь к вашему изображению
     img = Image(img_path)
     # Указываем процент изменения размера
     resize_percentage = 7  # % от оригинального размера
@@ -641,9 +642,9 @@ async def process_result_xls2_command(message: Message):
             ws.cell(row=ws.max_row, column=5).fill = fill
             # Вставляем изображение в четвертый столбец (колонка Е)
             if team['logo']:
-                img_path = f'logos\\{team['logo']}'  # Укажите путь к вашему изображению
+                img_path = os.path.join('logos', team['logo'])  # Укажите путь к вашему изображению
             else:
-                img_path = r'logos\personal.png'  # Укажите путь к вашему изображению
+                img_path = os.path.join('logos', 'personal.png')  # Укажите путь к вашему изображению
             img = Image(img_path)
             # Указываем процент изменения размера
             resize_percentage = 46  # % от оригинального размера
@@ -655,7 +656,7 @@ async def process_result_xls2_command(message: Message):
             ws.add_image(img)
         else:
 
-            img_path = r'logos\personal.png'  # Укажите путь к вашему изображению
+            img_path = os.path.join('logos', 'personal.png')  # Укажите путь к вашему изображению
             img = Image(img_path)
             # Указываем процент изменения размера
             resize_percentage = 46  # % от оригинального размера
@@ -770,7 +771,7 @@ async def process_championship_full_command(message: Message):
     ws['D5'] = f"DRIVER'S CHAMPIONSHIP"
     ws['D5'].alignment = Alignment(horizontal='center', vertical='center')
 
-    img_path = r'logos\Shirokoe_logo_bez_fona_silli.png'  # Укажите путь к вашему изображению
+    img_path = os.path.join('logos', 'Shirokoe_logo_bez_fona_silli.png')  # Укажите путь к вашему изображению
     img = Image(img_path)
     # Указываем процент изменения размера
     resize_percentage = 7  # % от оригинального размера
@@ -836,9 +837,9 @@ async def process_championship_full_command(message: Message):
             ws.cell(row=ws.max_row, column=5).fill = fill
             # Вставляем изображение в четвертый столбец (колонка Е)
             if team['logo']:
-                img_path = f'logos\\{team['logo']}'  # Укажите путь к вашему изображению
+                img_path = os.path.join('logos', team['logo'])  # Укажите путь к вашему изображению
             else:
-                img_path = r'logos\personal.png'  # Укажите путь к вашему изображению
+                img_path = os.path.join('logos', 'personal.png')  # Укажите путь к вашему изображению
             img = Image(img_path)
             # Указываем процент изменения размера
             resize_percentage = 46  # % от оригинального размера
