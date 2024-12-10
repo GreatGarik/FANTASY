@@ -813,6 +813,7 @@ async def process_championship_full_command(message: Message):
         wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
         black_fill = PatternFill(start_color='000001', end_color='000001', fill_type='solid')  # Черный цве
         for cell in ws[ws.max_row]:
+            cell.alignment = Alignment(vertical='center')
             if cell.column_letter in ['A', 'B', 'C', 'D', 'E']:
                 cell.font = wight_font  # Устанавливаем белый шрифт
             else:
@@ -851,7 +852,7 @@ async def process_championship_full_command(message: Message):
             ws.add_image(img)
 
     # Устанавливаем выравнивание по центру для нужных колонок
-    center_alignment = Alignment(horizontal='center')
+    center_alignment = Alignment(horizontal='center', vertical='center')
 
     for cell in ws['A'] + ws['B'] + ws['D']:
         cell.alignment = center_alignment
