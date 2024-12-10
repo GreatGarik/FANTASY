@@ -13,10 +13,16 @@ engine = create_engine("sqlite:///fantasy.db", echo=False)
 Session = sessionmaker(engine)
 
 # Выбор гонщиков для прогноза со срезами по местам
-def select_drivers(start=None, stop=None):
+def select_drivers(start=0, stop=None):
     with Session() as session:
-        statement = select(Driver).where(Driver.driver_nextgp == 'Y').order_by(Driver.driver_position)
+        statement = select(Driver).where(Driver.driver_nextgp == 'Y').order_by(Driver.driver_position.asc())
         db_object = session.scalars(statement).all()
+
+        # Обработка случая, когда stop равно None
+        if stop is None:
+            stop = len(db_object)
+
+        # Возврат среза результатов
         return db_object[start:stop]
 
 # Выбор команд и моторов для прогноза

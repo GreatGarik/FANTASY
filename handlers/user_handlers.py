@@ -747,7 +747,7 @@ async def process_championship_full_command(message: Message):
     points_list: List[dict] = show_points_all(2024)
 
     for entry in points_list:
-        entry['CH.PTS'] = sum(entry[key] for key in entry if key != 'User' and key != 'Team' and entry[key])
+        entry['CH.PTS'] = sum(entry[key] for key in entry if key != 'User' and key != 'Team' and key != 'Number' and entry[key])
 
     # Сортируем по общему количеству очков
     points_list.sort(key=lambda x: x['CH.PTS'], reverse=True)
