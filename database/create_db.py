@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import Column, Integer, String, ForeignKey
-from championship2022 import gps
+from championship2025 import gps
 from drivers import drivers
 from models import *
 
@@ -21,7 +21,7 @@ Session = sessionmaker(engine)
 # Заполняем пилотов
 with Session() as session:
     for driver in drivers:
-        new_driver = Driver(driver_name=driver['driver'], driver_points=driver['points'], driver_team=driver['team'],
+        new_driver = Driver(driver_name=driver['driver'], driver_points=driver['position'], driver_team=driver['team'],
                             driver_engine=driver['engine'], driver_nextgp=driver['nextGP'])
         session.add(new_driver)
 

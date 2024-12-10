@@ -463,7 +463,7 @@ async def process_showdata_command(message: Message):
     # Отправляем пользователю анкету, если она есть в "базе данных"
     if get_users(message.from_user.id):
         user = get_users(message.from_user.id)
-        await message.answer(f' Ваше имя: {user.name}, Ваша команда: {user.user_team}')
+        await message.answer(f' Ваше имя: {user.name}')
     else:
         await message.answer(text='Вы не зарегистрированы')
 
