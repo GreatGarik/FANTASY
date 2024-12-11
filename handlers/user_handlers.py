@@ -264,14 +264,14 @@ async def process_add_teammate_command(message: Message, state: FSMContext):
 @router.message(Command(commands=['predict']), StateFilter(default_state))
 async def predict_team(message: Message, state: FSMContext):
     if get_users(message.from_user.id):
-        if not is_prediced(message.from_user.id, get_actual_gp()):
+        #if not is_prediced(message.from_user.id, get_actual_gp()):
             await message.answer(
                 text='Выберите Команду',
                 reply_markup=create_inline_kb(1, *sorted(
                     {i.driver_team + '  ' + i.engine_short for i in select_drivers()})))
             await state.set_state(FSMFillForm.select_engine)
-        else:
-            await message.answer(text='Вы уже отправили прогноз на актуальный GP')
+        #else:
+         #   await message.answer(text='Вы уже отправили прогноз на актуальный GP')
     else:
         await message.answer(text='Вы не зарегистрированы')
 
@@ -1011,7 +1011,7 @@ async def championship_team_full_command(message: Message):
     #ws.column_dimensions['C'].width = 35.7  # Третий столбец
     ws.column_dimensions['B'].width = 41.7  # Четвертый столбец
     ws.column_dimensions['C'].width = 8.7  # Пятый столбец
-    ws.column_dimensions[ws.cell(row=7, column=ws.max_column).column_letter].width = 11.3  # Третий столбец
+    ws.column_dimensions[ws.cell(row=3, column=ws.max_column).column_letter].width = 11.3  # Третий столбец
 
     # Цвета 1, 2, 3 места
     ws.cell(row=8, column=1).fill = PatternFill(start_color='bf9000', end_color='bf9000',
