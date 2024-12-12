@@ -264,14 +264,14 @@ async def process_add_teammate_command(message: Message, state: FSMContext):
 @router.message(Command(commands=['predict']), StateFilter(default_state))
 async def predict_team(message: Message, state: FSMContext):
     if get_users(message.from_user.id):
-        #if not is_prediced(message.from_user.id, get_actual_gp()):
-            await message.answer(
-                text='Выберите Команду',
-                reply_markup=create_inline_kb(1, *sorted(
-                    {i.driver_team + '  ' + i.engine_short for i in select_drivers()})))
-            await state.set_state(FSMFillForm.select_engine)
-        #else:
-         #   await message.answer(text='Вы уже отправили прогноз на актуальный GP')
+        # if not is_prediced(message.from_user.id, get_actual_gp()):
+        await message.answer(
+            text='Выберите Команду',
+            reply_markup=create_inline_kb(1, *sorted(
+                {i.driver_team + '  ' + i.engine_short for i in select_drivers()})))
+        await state.set_state(FSMFillForm.select_engine)
+    # else:
+    #   await message.answer(text='Вы уже отправили прогноз на актуальный GP')
     else:
         await message.answer(text='Вы не зарегистрированы')
 
@@ -377,6 +377,7 @@ async def predict_fourth(callback: CallbackQuery, state: FSMContext):
         await state.set_state(FSMFillForm.select_gap)
 
 
+
 # Сохраняем четвертого пилота, отправляем текст с выбором отставания от лидера
 @router.callback_query(StateFilter(FSMFillForm.select_gap),
                        F.data.in_([i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short for i in
@@ -393,9 +394,14 @@ async def predict_gap(callback: CallbackQuery, state: FSMContext):
             text='Вы выбрали 4 участника с одним мотором, начните выбор заново с команды /predict')
         await state.clear()
     else:
-        await callback.message.answer(text='Спасибо!\nТеперь введите отставание от лидера')
+        await callback.message.answer(text='Спасибо!\nТеперь введите отставание от лидера в секундах (целое число)')
         await state.set_state(FSMFillForm.select_lapped)
 
+# Если что-то пошло не так при выборе на инлайн кнопках
+@router.message(StateFilter(FSMFillForm.select_engine, FSMFillForm.select_first, FSMFillForm.select_second,
+                            FSMFillForm.select_third, FSMFillForm.select_fourth, FSMFillForm.select_gap))
+async def predict_engine_(message: CallbackQuery, state: FSMContext):
+    await message.answer(text='Используйте кнопки меню для выбора')
 
 # Сохраняем отставание, отправляем текст с выбором количества круговых
 @router.message(StateFilter(FSMFillForm.select_lapped), F.text.isdigit())
@@ -403,6 +409,12 @@ async def predict_gap(message: CallbackQuery, state: FSMContext):
     await state.update_data(gap=message.text)
     await message.answer(text='Спасибо!\nТеперь введите количество круговых')
     await state.set_state(FSMFillForm.end_select)
+
+
+# Если вместо отрыва ввели что-то не то
+@router.message(StateFilter(FSMFillForm.select_lapped))
+async def predict_gap(message: CallbackQuery, state: FSMContext):
+    await message.answer(text='Вы ввели что-то неподходящее.\nВведите отставание от лидера в секундах (целое число)')
 
 
 # Сохранение количества круговых и запись прогноза в БД, выход
@@ -422,7 +434,8 @@ async def predict_lap(message: CallbackQuery, state: FSMContext):
             text='Вы выбрали 4 участника с одним мотором, начните выбор заново с команды /predict')
         await state.clear()
     else:
-        await message.answer(text=f'''Спасибо!\nВы выбрали: 
+        gp = get_actual_gp()
+        await message.answer(text=f'''Спасибо!\nВаш прогноз на GP {get_name_gp(gp)}: 
         Команда: <b>{predict['driver_team']}</b> 
         Двигатель: <b>{predict['driver_engine']}</b>
         Первый пилот: <b>{predict['first_driver']}</b>
@@ -438,17 +451,17 @@ async def predict_lap(message: CallbackQuery, state: FSMContext):
             predict.pop(i)
 
         # Пишем прогноз в базу
-        gp = get_actual_gp()
+
         send_predict(message.from_user.id, gp, **predict)
 
         # Завершаем машину состояний
         await state.clear()
-        # Отправляем в чат сообщение с предложением посмотреть свою анкету
-        await message.answer(
-            text='Чтобы посмотреть свой прогноз '
-                 ' - отправьте команду /viewpredict'
-        )
 
+
+# Если вместо отрыва ввели что-то не то
+@router.message(StateFilter(FSMFillForm.end_select))
+async def predict_gap(message: CallbackQuery, state: FSMContext):
+    await message.answer(text='Вы ввели что-то неподходящее.\nВведите количество круговых')
 
 '''
 
@@ -530,6 +543,7 @@ async def process_result_xls_command(message: Message):
 
     output.close()
 '''
+
 
 # Этот хэндлер будет срабатывать на отправку команды /resultxls
 @router.message(Command(commands='resultxls'), StateFilter(default_state))
@@ -747,7 +761,8 @@ async def process_championship_full_command(message: Message):
     points_list: List[dict] = show_points_all(2024)
 
     for entry in points_list:
-        entry['CH.PTS'] = sum(entry[key] for key in entry if key != 'User' and key != 'Team' and key != 'Number' and entry[key])
+        entry['CH.PTS'] = sum(
+            entry[key] for key in entry if key != 'User' and key != 'Team' and key != 'Number' and entry[key])
 
     # Сортируем по общему количеству очков
     points_list.sort(key=lambda x: x['CH.PTS'], reverse=True)
@@ -929,8 +944,8 @@ async def championship_team_full_command(message: Message):
     ws.add_image(img)
 
     # Заголовки таблицы
-    header = ['POS'] + ['Team']  + [''] + [key for key in points_list[0] if
-                         key != 'Points' and key != 'Team'] + ['Points']
+    header = ['POS'] + ['Team'] + [''] + [key for key in points_list[0] if
+                                          key != 'Points' and key != 'Team'] + ['Points']
     ws.append(header)  # Добавляем заголовки в первую строку
     ws.row_dimensions[ws.max_row].height = 17
 
@@ -953,15 +968,15 @@ async def championship_team_full_command(message: Message):
     teams_fonts: dict = get_teams_fonts_colors()
 
     # Добавляем данные в файл
-    for num, entry in enumerate (points_list, 1):
-        row = [num] + [entry['Team']] + [''] + [entry[key] for key in header[1:] if key!='' and key != 'Team']
+    for num, entry in enumerate(points_list, 1):
+        row = [num] + [entry['Team']] + [''] + [entry[key] for key in header[1:] if key != '' and key != 'Team']
         ws.append(row)  # Добавляем строку с данными
         ws.row_dimensions[ws.max_row].height = 17
         wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
         black_fill = PatternFill(start_color='000001', end_color='000001', fill_type='solid')  # Черный цве
         for cell in ws[ws.max_row]:
             cell.alignment = Alignment(vertical='center')
-            #if cell.column_letter in ['A', 'B', 'C', 'D', 'E']:
+            # if cell.column_letter in ['A', 'B', 'C', 'D', 'E']:
             #    cell.font = wight_font  # Устанавливаем белый шрифт
 
             cell.font = Font(name='Formula1 Display Regular', size=11, bold=False, color='FFFFFF')
@@ -976,13 +991,13 @@ async def championship_team_full_command(message: Message):
                                fill_type='solid')
             font_number = Font(name=team['number_font'], size=14, bold=True, italic=team['number_italic'],
                                color=team['number_color'])
-            #ws.cell(row=ws.max_row, column=2).font = font_number
+            # ws.cell(row=ws.max_row, column=2).font = font_number
             ws.cell(row=ws.max_row, column=2).font = font
-            #ws.cell(row=ws.max_row, column=4).font = font
-            #ws.cell(row=ws.max_row, column=2).fill = fill
+            # ws.cell(row=ws.max_row, column=4).font = font
+            # ws.cell(row=ws.max_row, column=2).fill = fill
             ws.cell(row=ws.max_row, column=2).fill = fill
             ws.cell(row=ws.max_row, column=3).fill = fill
-            #ws.cell(row=ws.max_row, column=5).fill = fill
+            # ws.cell(row=ws.max_row, column=5).fill = fill
             # Вставляем изображение в четвертый столбец (колонка Е)
             if team['logo']:
                 img_path = os.path.join('logos', team['logo'])  # Укажите путь к вашему изображению
@@ -1008,7 +1023,7 @@ async def championship_team_full_command(message: Message):
     for column in ws.columns:
         column_letter = column[0].column_letter  # Получаем букву столбца
         ws.column_dimensions[column_letter].width = 7.7
-    #ws.column_dimensions['C'].width = 35.7  # Третий столбец
+    # ws.column_dimensions['C'].width = 35.7  # Третий столбец
     ws.column_dimensions['B'].width = 41.7  # Четвертый столбец
     ws.column_dimensions['C'].width = 8.7  # Пятый столбец
     ws.column_dimensions[ws.cell(row=3, column=ws.max_column).column_letter].width = 11.3  # Третий столбец
@@ -1035,10 +1050,11 @@ async def championship_team_full_command(message: Message):
     )
     output.close()
 
+
 # Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
 @router.callback_query()
 async def answer_all(message: Message):
-    await message.answer(text=LEXICON_RU['unknown_command'])
+    await message.answer(text=LEXICON_RU['unknown_button'])
 
 
 # Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
