@@ -24,7 +24,7 @@ from string import ascii_letters, digits
 router: Router = Router()
 
 # Инициализируем Redis
-redis = Redis(host='127.0.0.1')
+redis = Redis(host='localhost')
 
 # Инициализируем хранилище (создаем экземпляр класса MemoryStorage)
 storage = RedisStorage(redis=redis)
@@ -435,7 +435,7 @@ async def predict_lap(message: CallbackQuery, state: FSMContext):
         await state.clear()
     else:
         gp = get_actual_gp()
-        await message.answer(text=f'''Спасибо!\nВаш прогноз на GP {get_name_gp(gp)}: 
+        await message.answer(text=f'''Спасибо!\nВаш прогноз на <b>{get_name_gp(gp)}</b> GP: 
         Команда: <b>{predict['driver_team']}</b> 
         Двигатель: <b>{predict['driver_engine']}</b>
         Первый пилот: <b>{predict['first_driver']}</b>
