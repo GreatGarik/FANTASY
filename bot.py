@@ -4,6 +4,7 @@ from aiogram import Bot, Dispatcher
 from config_data.config import Config, load_config
 from handlers import user_handlers, other_handlers, admin_handlers
 from keyboards.menu_button import set_main_menu
+from aiogram.fsm.storage.redis import RedisStorage, Redis
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
 
@@ -24,10 +25,15 @@ async def main():
 
     # Загружаем конфиг в переменную config
     config: Config = load_config()
+    # Инициализируем Redis
+    redis = Redis(host='localhost')
+
+    # Инициализируем хранилище (создаем экземпляр класса MemoryStorage)
+    storage = RedisStorage(redis=redis)
 
     # Инициализируем бот и диспетчер
     bot: Bot = Bot(token=config.tg_bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    dp: Dispatcher = Dispatcher()
+    dp: Dispatcher = Dispatcher(storage=storage)
 
     # Отправка сообщения при запуске
     await bot.send_message(config.tg_bot.admin_id, text='Бот запущен')

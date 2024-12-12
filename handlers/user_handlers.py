@@ -17,17 +17,11 @@ from database.database import select_drivers, add_user, get_users, send_predict,
     get_name_gp, get_maximus
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
-from aiogram.fsm.storage.redis import RedisStorage, Redis
+
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 from string import ascii_letters, digits
 
 router: Router = Router()
-
-# Инициализируем Redis
-redis = Redis(host='localhost')
-
-# Инициализируем хранилище (создаем экземпляр класса MemoryStorage)
-storage = RedisStorage(redis=redis)
 
 
 class FSMFillForm(StatesGroup):
