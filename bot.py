@@ -34,6 +34,7 @@ async def main():
     # Инициализируем бот и диспетчер
     bot: Bot = Bot(token=config.tg_bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp: Dispatcher = Dispatcher(storage=storage)
+    dp.workflow_data.update({'all_admins': config.tg_bot.all_admins})
 
     # Отправка сообщения при запуске
     await bot.send_message(config.tg_bot.admin_id, text='Бот запущен')
@@ -43,8 +44,9 @@ async def main():
     await set_main_menu(bot)
 
     # Регистрируем все хэндлеры
-    dp.include_router(admin_handlers.router)
+    dp.include_router(admin_handlers.admin_router)
     dp.include_router(user_handlers.router)
+
 
     # Запускаем polling
     await dp.start_polling(bot)

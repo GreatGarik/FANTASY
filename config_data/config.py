@@ -6,6 +6,7 @@ from environs import Env
 class TgBot:
     token: str  # Токен для доступа к телеграм-боту
     admin_id: int
+    all_admins: list
 
 
 @dataclass
@@ -17,4 +18,5 @@ def load_config(path: str | None = None) -> Config:
     env = Env()
     env.read_env(path)
     return Config(tg_bot=TgBot(token=env('BOT_TOKEN'),
-                               admin_id=int(env('ADMIN_ID'))))
+                               admin_id=int(env('ADMIN_ID')),
+                               all_admins=([int(i) for i in env('ALL_ADMINS').split(',')])))

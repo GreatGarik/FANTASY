@@ -323,6 +323,12 @@ def clear_results(gp):
         condition = Point.race_id == gp  # Условие для удаления
         session.query(Point).filter(condition).delete(synchronize_session='fetch')
 
+        # Сбрасываем значения max1, max2 и max3 для определенного гран-при
+        session.query(Grandprix).filter(Grandprix.id == gp).update(
+            {Grandprix.max1: None, Grandprix.max2: None, Grandprix.max3: None},
+            synchronize_session='fetch'
+        )
+
         session.commit()
 
 def get_name_gp(gp):
