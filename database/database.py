@@ -304,7 +304,7 @@ def add_team(user_id, name: str, number: int, captain: bool):
     with Session() as session:
         user = session.scalars(select(User).where(User.id_telegram == user_id)).one().id
         try:
-            session.add(Team(name=name, first=user, number=number, captain=captain))
+            session.add(Team(name=name, first=user, captain=user))
             session.commit()
         except Exception as e:
             print(e)

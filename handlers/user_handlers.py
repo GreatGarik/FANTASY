@@ -173,8 +173,8 @@ async def warning_not_name(message: Message):
 '''
 
 
-# Этот хэндлер будет срабатывать на команду /createteam
-@router.message(Command(commands='createteam'), StateFilter(default_state))
+# Этот хэндлер будет срабатывать на команду /create_team
+@router.message(Command(commands='create_team'), StateFilter(default_state))
 async def process_createteam_command(message: Message, state: FSMContext):
     if not get_users(message.from_user.id):
         await message.answer(text='Вы не зарегистрированы, зарегистрируйтесь перед созданием команды.')
@@ -188,7 +188,7 @@ async def process_createteam_command(message: Message, state: FSMContext):
 
 # Этот хэндлер будет срабатывать, если введено корректное название
 @router.message(StateFilter(FSMFillForm.fill_team_name),
-                lambda message: all(char in ascii_letters + digits + "'" for char in message.text))
+                lambda message: all(char in ascii_letters + digits + "' " for char in message.text))
 async def process_lastname_sent(message: Message, state: FSMContext):
     # Сохраняем введенное имя в хранилище по ключу "name"
     await state.update_data(name=message.text)
@@ -206,16 +206,13 @@ async def warning_not_name(message: Message):
              'отправьте команду /cancel')
 
 
-# Этот хэндлер будет срабатывать на ввод фамилии
-# записывать данные и выводить из машины состояний
 @router.message(StateFilter(FSMFillForm.fill_team_number), F.text.isdigit())
 async def process_wish_news_press(message: Message, state: FSMContext):
-    # Cохраняем данные о вк
-    await state.update_data(number=message.text.upper())
+    await state.update_data(number=message.text)
     # Добавляем в базу данных анкету пользователя
     # по ключу id пользователя
     user = await state.get_data()
-    add_team(user_id=message.from_user.id, captain=True, **user)
+    add_team(name=state.get_data().name, first=get_users(), **user)
 
     # Завершаем машину состояний
     await state.clear()

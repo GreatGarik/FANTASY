@@ -20,11 +20,8 @@ async def set_main_menu(bot: Bot):
             command='/showdata',
             description='Показать данные пользователя'),
         BotCommand(
-            command='/viewresult',
-            description='Показать результаты актуального GP'),
-        BotCommand(
-            command='/resultxls',
-            description='Получить результаты актуального GP в формате Excel'),
+            command='/create_team',
+            description='Создать команду'),
         BotCommand(
             command='/championship',
             description='Посмотеть актуальное положение в чемпионате')
