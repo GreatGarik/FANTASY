@@ -209,16 +209,14 @@ async def warning_not_name(message: Message):
 @router.message(StateFilter(FSMFillForm.fill_team_number), F.text.isdigit())
 async def process_wish_news_press(message: Message, state: FSMContext):
     await state.update_data(number=message.text)
-    # Добавляем в базу данных анкету пользователя
-    # по ключу id пользователя
-    user = await state.get_data()
-    add_team(name=state.get_data().name, first=get_users(), **user)
+    data_team = await state.get_data()
+    add_team(user_id=message.from_user.id, name=data_team['name'], new_number=data_team['number'])
 
     # Завершаем машину состояний
     await state.clear()
     # Отправляем в чат сообщение о сохранении данных
     await message.answer(
-        text=f'Спасибо! Ваши команда <b>{get_user_team(message.from_user.id)}</b> зарегистрирована!\n\n'
+        text=f'Спасибо! Ваша команда <b>{get_user_team(message.from_user.id)}</b> зарегистрирована!'
     )
 
 

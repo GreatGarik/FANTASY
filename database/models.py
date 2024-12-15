@@ -115,7 +115,7 @@ class Team(Base):
     second: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('users.id'))
     third: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('users.id'))
     logo: Mapped[str] = mapped_column(String(60))
-    captain: Mapped[bool] = mapped_column(Boolean)
+    captain: Mapped[int] = mapped_column(Integer, ForeignKey('users.id'))
     background_color: Mapped[str] = mapped_column(String(6))
     text_color: Mapped[str] = mapped_column(String(6))
     number_color: Mapped[str] = mapped_column(String(6))

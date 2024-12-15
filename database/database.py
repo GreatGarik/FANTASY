@@ -300,11 +300,29 @@ def is_prediced(user_id, gp):
 
 
 # Добавление команды
-def add_team(user_id, name: str, number: int, captain: bool):
+def add_team(user_id, name: str, new_number: str, logo: str=None, background_color: str=None, text_color: str=None, number_color: str=None,
+             number_font: str=None, number_italic: bool=0):
     with Session() as session:
-        user = session.scalars(select(User).where(User.id_telegram == user_id)).one().id
+        user = session.scalars(select(User).where(User.id_telegram == user_id)).one_or_none()
+
         try:
-            session.add(Team(name=name, first=user, captain=user))
+            # Создаем новую команду
+            new_team = Team(
+                name=name,
+                first=user.id,
+                captain=user.id,
+                logo=logo,
+                background_color=background_color,
+                text_color=text_color,
+                number_color=number_color,
+                number_font=number_font,
+                number_italic=number_italic
+            )
+            session.add(new_team)
+
+            # Обновляем номер пользователя
+            user.number = int(new_number)
+
             session.commit()
         except Exception as e:
             print(e)
