@@ -392,3 +392,4 @@ async def get_users_by_name(user_name: str):
 
             # Возвращаем список словарей с данными пользователей
             return [{'id_telegram': user.id_telegram, 'name': user.name} for user in users]
+

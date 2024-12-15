@@ -62,10 +62,19 @@ async def process_cancel_command_state(message: Message, state: FSMContext):
     await state.clear()
 
 
+url_button_reglament = InlineKeyboardButton(
+    text='Ссылка на регламент Fantasy',
+    url='https://docs.google.com/document/d/1s-qmH73Ji6zAX7U-M1q4unNKITnjgvIoIp_kPwkxx1Q')
+
+# Создаем объект инлайн-клавиатуры
+keyboard = InlineKeyboardMarkup(
+    inline_keyboard=[[url_button_reglament]]
+)
+
 # Этот хэндлер срабатывает на команду /help
 @router.message(Command(commands=['help']))
 async def process_help_command(message: Message):
-    await message.answer(text=LEXICON_RU['help_answer'])
+    await message.answer(text=LEXICON_RU['help_answer'], reply_markup=keyboard)
 
 
 # Этот хэндлер срабатывает на команду /clear_result
@@ -371,7 +380,6 @@ async def predict_fourth(callback: CallbackQuery, state: FSMContext):
         await state.set_state(FSMFillForm.select_gap)
 
 
-
 # Сохраняем четвертого пилота, отправляем текст с выбором отставания от лидера
 @router.callback_query(StateFilter(FSMFillForm.select_gap),
                        F.data.in_([i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short for i in
@@ -391,11 +399,13 @@ async def predict_gap(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer(text='Спасибо!\nТеперь введите отставание от лидера в секундах (целое число)')
         await state.set_state(FSMFillForm.select_lapped)
 
+
 # Если что-то пошло не так при выборе на инлайн кнопках
 @router.message(StateFilter(FSMFillForm.select_engine, FSMFillForm.select_first, FSMFillForm.select_second,
                             FSMFillForm.select_third, FSMFillForm.select_fourth, FSMFillForm.select_gap))
 async def predict_engine_(message: CallbackQuery, state: FSMContext):
     await message.answer(text='Используйте кнопки меню для выбора')
+
 
 # Сохраняем отставание, отправляем текст с выбором количества круговых
 @router.message(StateFilter(FSMFillForm.select_lapped), F.text.isdigit())
@@ -456,6 +466,7 @@ async def predict_lap(message: CallbackQuery, state: FSMContext):
 @router.message(StateFilter(FSMFillForm.end_select))
 async def predict_gap(message: CallbackQuery, state: FSMContext):
     await message.answer(text='Вы ввели что-то неподходящее.\nВведите количество круговых')
+
 
 '''
 

@@ -57,7 +57,7 @@ async def user_setup(message: Message, state: FSMContext):
     await message.delete()
     for item in await get_users_by_name(message.text):
         await message.answer(text=f'id_telegram: {item['id_telegram']}, name: {item['name']}')
-
+    await state.clear()
 
 
 
