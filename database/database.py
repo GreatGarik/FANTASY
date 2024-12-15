@@ -1,5 +1,5 @@
 from typing import Dict, Any
-
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from aiogram.utils.chat_member import USERS
 from certifi import where
 from sqlalchemy import create_engine, select, update, case
@@ -8,9 +8,12 @@ from database.models import *
 
 # Подключаемся к базе данных
 engine = create_engine("sqlite:///fantasy.db", echo=False)
+engine2 = create_async_engine("sqlite+aiosqlite:///fantasy.db", echo=False)
 
 # Создаем сессию
 Session = sessionmaker(engine)
+async_session = sessionmaker(bind=engine2, class_=AsyncSession, expire_on_commit=False)
+
 
 # Выбор гонщиков для прогноза со срезами по местам
 def select_drivers(start=0, stop=None):
@@ -25,6 +28,7 @@ def select_drivers(start=0, stop=None):
         # Возврат среза результатов
         return db_object[start:stop]
 
+
 # Выбор команд и моторов для прогноза
 def select_team_engine(pilot):
     with Session() as session:
@@ -32,12 +36,14 @@ def select_team_engine(pilot):
         db_object = session.scalars(statement).one()
         return db_object.driver_team, db_object.driver_engine
 
+
 # Запрос актуального GP
 def get_actual_gp():
     with Session() as session:
         statement = select(Grandprix).where(Grandprix.nextgp)
         db_object = session.scalars(statement).one()
         return db_object.id
+
 
 # Добавление юзера
 def add_user(user_id, name: str, lastname: str):
@@ -47,6 +53,7 @@ def add_user(user_id, name: str, lastname: str):
             session.commit()
         except:
             pass
+
 
 # Запись прогноза на гонку
 def send_predict(tg_id, gp, first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap,
@@ -60,12 +67,14 @@ def send_predict(tg_id, gp, first_driver, second_driver, third_driver, fourth_dr
         except Exception as e:
             print(e)
 
+
 # Получение прогноза на гонку
 def get_predict(gp=None):
     with Session() as session:
         statement = select(Predict).where(Predict.gp == gp)
         db_object = session.scalars(statement).all()
         return db_object
+
 
 # Заполнение таблицы с очками по этапам
 def add_points(user_id, points, gp=None):
@@ -76,6 +85,7 @@ def add_points(user_id, points, gp=None):
         except Exception as e:
             print(e)
 
+
 def add_team_points(team_id, points, gp=None):
     with Session() as session:
         try:
@@ -83,6 +93,7 @@ def add_team_points(team_id, points, gp=None):
             session.commit()
         except Exception as e:
             print(e)
+
 
 # Заполнение таблицы результатов GP
 def add_result(tg_id, first_driver: int, second_driver: int, third_driver: int, fourth_driver: int, driver_team: int,
@@ -104,6 +115,7 @@ def add_result(tg_id, first_driver: int, second_driver: int, third_driver: int, 
         except Exception as e:
             print(e)
 
+
 # Возврат списка мз пользователей и их очков
 def show_points():
     with Session() as session:
@@ -116,6 +128,7 @@ def show_points():
             for user in result
         ]
         return points_list
+
 
 # Возврат списка пользователей и их очков по GP
 def show_points_all(year):
@@ -151,6 +164,8 @@ def show_points_all(year):
             points_list.append(user_entry)
 
         return points_list
+
+
 # Возврат списка пользователей и их очков по GP
 def show_points_team_all(year):
     with Session() as session:
@@ -196,12 +211,13 @@ def get_result(gp=None):
 
         return query
 
+
 # Получение результатов GP вместе с очками чемпионата
 def show_result(gp=None):
     with Session() as session:
         query = session.query(User, Result, Point).where(Result.gp == gp, Point.race_id == gp)
         # query = query.join(User, Result.user_id == User.id_telegram).order_by(Result.total.desc(),  case((Result.first_driver > Result.second_driver, Result.first_driver), else_=Result.second_driver).desc(), Result.third_driver.desc(), Result.fourth_driver.desc(), Result.driver_team.desc(), Result.driver_engine.desc(), Result.gap.desc(), Result.lapped.desc(), Result.id)
-        query = query.join(User,Result.user_id == User.id_telegram).order_by(Result.total.desc(),
+        query = query.join(User, Result.user_id == User.id_telegram).order_by(Result.total.desc(),
                                                                               Result.counter_best.desc(),
                                                                               Result.max1_best.desc(),
                                                                               Result.max2_best.desc(),
@@ -215,6 +231,7 @@ def show_result(gp=None):
                                                                               Result.id).outerjoin(Point).all()
 
         return query
+
 
 # Получение пользователя по его id в телеграме или всех, если id не задан
 def get_users(id_telegram=None):
@@ -241,35 +258,35 @@ def check_res(gp):
         else:
             return
 
+
 # Просмотр команды пользователя
 def get_user_team(id_telegram):
     with Session() as session:
         user = session.query(User).filter(User.id_telegram == id_telegram).first()
         team = session.query(Team).filter(
-                (Team.first == user.id) |
-                (Team.second == user.id) |
-                (Team.third == user.id)
-            ).first()
+            (Team.first == user.id) |
+            (Team.second == user.id) |
+            (Team.third == user.id)
+        ).first()
         if team:
             return team.name
         else:
             return 'PERSONAL ENTRY'
 
+
 def get_team(id_telegram):
     with Session() as session:
         user = session.query(User).filter(User.id_telegram == id_telegram).first()
         team = session.query(Team).filter(
-                (Team.first == user.id) |
-                (Team.second == user.id) |
-                (Team.third == user.id)
-            ).first()
-
+            (Team.first == user.id) |
+            (Team.second == user.id) |
+            (Team.third == user.id)
+        ).first()
 
         if team:
             return team
         else:
             return None
-
 
 
 def is_prediced(user_id, gp):
@@ -293,7 +310,6 @@ def add_team(user_id, name: str, number: int, captain: bool):
             print(e)
 
 
-
 def get_teams_fonts_colors() -> Dict[str, Dict[str, Any]]:
     with Session() as session:
         teams_dict = {}
@@ -310,6 +326,7 @@ def get_teams_fonts_colors() -> Dict[str, Dict[str, Any]]:
             }
 
         return teams_dict
+
 
 def clear_results(gp):
     with Session() as session:
@@ -331,17 +348,20 @@ def clear_results(gp):
 
         session.commit()
 
+
 def get_name_gp(gp):
     with Session() as session:
         statement = select(Grandprix).where(Grandprix.id == gp)
         res = session.scalars(statement).first()
         return res.gp_name
 
+
 def get_maximus(gp):
     with Session() as session:
         statement = select(Grandprix).where(Grandprix.id == gp)
         res = session.scalars(statement).first()
-        return {'max1':res.max1, 'max2': res.max2, 'max3':res.max3}
+        return {'max1': res.max1, 'max2': res.max2, 'max3': res.max3}
+
 
 def add_maximus(gp, maximus):
     with Session() as session:
@@ -353,3 +373,22 @@ def add_maximus(gp, maximus):
             grandprix.max2 = maximus['MAX2']
             grandprix.max3 = maximus['MAX3']
             session.commit()
+
+
+async def get_all_users():
+    async with async_session() as session:
+        result = await session.execute(select(User.id_telegram, User.name))
+        users = result.fetchall()
+
+        # Верните результаты в виде списка словарей
+        return [{'id_telegram': user.id_telegram, 'name': user.name} for user in users]
+
+
+async def get_users_by_name(user_name: str):
+    async with async_session() as session:
+        async with session.begin():
+            result = await session.execute(select(User).where(User.name == user_name))
+            users = result.scalars().all()  # Получаем всех пользователей с указанным именем
+
+            # Возвращаем список словарей с данными пользователей
+            return [{'id_telegram': user.id_telegram, 'name': user.name} for user in users]
