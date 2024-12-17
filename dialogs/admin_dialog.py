@@ -88,6 +88,10 @@ async def button_calculate(callback: CallbackQuery, button: Button, dialog_manag
 
     await dialog_manager.switch_to(AdminSG.stage)
 
+async def button_clear_result(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    clear_results(get_actual_gp())
+    await callback.message.answer('Результат удалён')
+    await dialog_manager.switch_to(AdminSG.stage)
 
 async def button_tables(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.tables)
@@ -200,9 +204,9 @@ admin_dialog = Dialog(
                 on_click=button_drivers_champ)
             ,
             Button(
-                text=Const('2'),
-                id='button_teams_champ',
-                on_click=button_teams_champ)
+                text=Const('Сбросить расчет этапа'),
+                id='button_clear_result',
+                on_click=button_clear_result)
             ,
             Button(
                 text=Const('Вернуться в главное меню'),

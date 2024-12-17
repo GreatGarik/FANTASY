@@ -78,18 +78,8 @@ keyboard = InlineKeyboardMarkup(
 async def process_help_command(message: Message):
     await message.answer(text=LEXICON_RU['help_answer'], reply_markup=keyboard)
 
-
-# Этот хэндлер срабатывает на команду /clear_result
-@router.message(Command(commands=['clear_result']))
-async def clear_result_command(message: Message):
-    clear_results(get_actual_gp())
-    await message.answer('Результат удалён')
-
-
 '''
-
 ///... ХЭНДЛЕРЫ РЕГИСТРАЦИИ НАЧАЛО ///
-
 '''
 
 
@@ -222,7 +212,7 @@ async def process_wish_news_press(message: Message, state: FSMContext):
     )
 
 
-# Этот хэндлер будет срабатывать, если во время ввода фамилии
+# Этот хэндлер будет срабатывать, если что-то ввели не так
 # будет введено что-то некорректное
 @router.message(StateFilter(FSMFillForm.fill_second_name))
 async def warning_not_name(message: Message):
