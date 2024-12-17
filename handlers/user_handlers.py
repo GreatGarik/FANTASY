@@ -1,26 +1,14 @@
-from typing import List
-import os
-import pandas as pd
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.drawing.image import Image
-from io import BytesIO
 from aiogram import Router, F, Bot, types
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, FSInputFile, \
-    BufferedInputFile
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from aiogram.filters import Command, CommandStart, StateFilter
 from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
-    show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
-    is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
-    get_name_gp, get_maximus
+    get_actual_gp, show_points, get_user_team, add_team, get_name_gp
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
-
-from dataprocessing.calculation_gp_drivers import calculation_drivers
 from string import ascii_letters, digits
-from dataprocessing.excel_forms import entry_list
+
 
 router: Router = Router()
 
