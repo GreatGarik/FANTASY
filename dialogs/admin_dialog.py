@@ -5,7 +5,7 @@ from aiogram import Router
 from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.filters import Command, CommandStart, StateFilter, BaseFilter
-from dataprocessing.excel_forms import entry_list
+from dataprocessing.excel_forms import entry_list, last_stage, process_championship_full, championship_team_full
 
 
 
@@ -24,8 +24,8 @@ from aiogram.types import BufferedInputFile
 
 class AdminSG(StatesGroup):
     start = State()
-    start1 = State()
-    start2 = State()
+    users_menu = State()
+    tables = State()
     exit_admin = State()
 
 
@@ -37,7 +37,7 @@ async def go_back(callback: CallbackQuery, button: Button, dialog_manager: Dialo
     await dialog_manager.back()
 
 async def button_users(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    await dialog_manager.switch_to(AdminSG.start1)
+    await dialog_manager.switch_to(AdminSG.users_menu)
 
 async def button_show_users(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     output = await entry_list()  # Получаем объект файла
@@ -45,12 +45,44 @@ async def button_show_users(callback: CallbackQuery, button: Button, dialog_mana
         document=BufferedInputFile(output.read(), filename='championship_points.xlsx')
     )
     output.close()  # Закрываем объект после использования
-    await dialog_manager.switch_to(AdminSG.start)
+    await dialog_manager.switch_to(AdminSG.users_menu)
+
+async def button_last_stage(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    output = await last_stage()  # Получаем объект файла
+    await callback.message.answer_document(
+        document=BufferedInputFile(output.read(), filename=f'results {get_name_gp(get_actual_gp())}.xlsx')
+    )
+    output.close()  # Закрываем объект после использования
+    await dialog_manager.switch_to(AdminSG.tables)
+
+async def button_drivers_champ(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    output = await process_championship_full()  # Получаем объект файла
+    await callback.message.answer_document(
+        document=BufferedInputFile(output.read(), filename='championship_points.xlsx')
+    )
+    output.close()  # Закрываем объект после использования
+    await dialog_manager.switch_to(AdminSG.tables)
+
+
+async def button_teams_champ(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    output = await championship_team_full()  # Получаем объект файла
+    await callback.message.answer_document(
+        document=BufferedInputFile(output.read(), filename='championship_team_points.xlsx')
+    )
+    output.close()  # Закрываем объект после использования
+    await dialog_manager.switch_to(AdminSG.tables)
+
+
 
 async def button_find_user(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await callback.message.answer('Я нашел следующих участников:')
-    await dialog_manager.switch_to(AdminSG.start1)
+    await dialog_manager.switch_to(AdminSG.users_menu)
 
+async def button_tables(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.tables)
+
+async def button_menu(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.start)
 
 async def button_exit(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await callback.message.answer('Вы, вышли из админки!')
@@ -60,10 +92,15 @@ async def button_exit(callback: CallbackQuery, button: Button, dialog_manager: D
 admin_dialog = Dialog(
     Window(
         Const('Это админка, нажми нужную кнопку'),
-        Row(Button(
+        Column(Button(
             text=Const('Меню управления пользователями'),
             id='button_users',
             on_click=button_users)
+        ),
+        Button(
+            text=Const('Таблицы'),
+            id='button_tables',
+            on_click=button_tables
         ),
         Button(
             text=Const('Выйти из админки'),
@@ -74,7 +111,6 @@ admin_dialog = Dialog(
     Window(
         Const('Это главное меню пользователей'),
         Column(
-Button(Const('◀️ Назад'), id='b_back', on_click=go_back),
         Button(
             text=Const('Найти пользователя'),
             id='button_users',
@@ -86,12 +122,48 @@ Button(Const('◀️ Назад'), id='b_back', on_click=go_back),
             on_click=button_show_users)
         ,
         Button(
+            text=Const('Вернуться в главное меню'),
+            id='button_menu',
+            on_click=button_menu)
+        ,
+        Button(
             text=Const('Выйти из админки'),
             id='button_exit',
             on_click=button_exit),
 
         ),
-        state=AdminSG.start1
+        state=AdminSG.users_menu
+    ),
+    Window(
+        Const('Это меню с таблицами'),
+        Column(
+        Button(
+            text=Const('Таблица с результатами последнего этапа'),
+            id='button_last_stage',
+            on_click=button_last_stage
+        ),
+        Button(
+            text=Const('Таблица личного зачёта'),
+            id='button_drivers_champ',
+            on_click=button_drivers_champ)
+        ,
+        Button(
+            text=Const('Таблица командного зачёта'),
+            id='button_teams_champ',
+            on_click=button_teams_champ)
+        ,
+        Button(
+            text=Const('Вернуться в главное меню'),
+            id='button_menu',
+            on_click=button_menu)
+        ,
+        Button(
+            text=Const('Выйти из админки'),
+            id='button_exit',
+            on_click=button_exit),
+
+        ),
+        state=AdminSG.tables
     ),
 )
 
