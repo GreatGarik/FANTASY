@@ -72,6 +72,7 @@ keyboard = InlineKeyboardMarkup(
     inline_keyboard=[[url_button_reglament]]
 )
 
+
 # Этот хэндлер срабатывает на команду /help
 @router.message(Command(commands=['help']))
 async def process_help_command(message: Message):
@@ -211,7 +212,7 @@ async def warning_not_name(message: Message):
 async def process_wish_news_press(message: Message, state: FSMContext):
     await state.update_data(number=message.text)
     data_team = await state.get_data()
-    add_team(user_id=message.from_user.id, name=data_team['name'], new_number=data_team['number'])
+    add_team(user_id=message.from_user.id, name=data_team['name'], new_number=data_team['number'], text_color='ffffff')
 
     # Завершаем машину состояний
     await state.clear()
@@ -470,6 +471,7 @@ async def predict_gap(message: CallbackQuery, state: FSMContext):
 
 '''
 
+
 # Этот хэндлер будет срабатывать на отправку команды /showdata
 # и отправлять в чат данные анкеты, либо сообщение об отсутствии данных
 @router.message(Command(commands='showdata'), StateFilter(default_state))
@@ -481,29 +483,6 @@ async def process_showdata_command(message: Message):
     else:
         await message.answer(text='Вы не зарегистрированы')
 
-# Этот хэндлер будет срабатывать на отправку команды /calculation
-@router.message(Command(commands='calculation'), StateFilter(default_state))
-async def process_calculation_command(message: Message):
-    gp = get_actual_gp()
-    if check_res(gp):
-        await message.answer(f'Вы уже сделали расчет для этого GP', isable_web_page_preview=True)
-    else:
-        results_predict_gp = calculation_drivers(gp)
-        # Преобразование словаря в DataFrame
-        df = pd.DataFrame(list(results_predict_gp.items()), columns=['Ключ', 'Значение'])
-
-        # Сохраняем книгу в BytesIO
-        output = BytesIO()
-        output.seek(0)  # Перемещаем указатель в начало
-        # Сохранение DataFrame в Excel-файл
-        df.to_excel(output, index=False)
-        output.seek(0)  # Перемещаем указатель в начало
-        await message.answer_document(
-            document=BufferedInputFile(output.read(), filename='gp_points.xlsx')
-        )
-        await message.answer(f'Расчет результатов выполнен')
-        output.close()
-
 
 # Этот хэндлер будет срабатывать на отправку команды /championship
 @router.message(Command(commands='championship'), StateFilter(default_state))
@@ -514,17 +493,3 @@ async def process_championship_command(message: Message):
             sorted(points_all, key=lambda x: sum([i for i in x.values() if isinstance(i, int)]), reverse=True), 1):
         text_for_answer += f'{index:<3}|{user['User']:<25}|{sum([i for i in user.values() if isinstance(i, int)]):<3}|\n'
     await message.answer(f'<code>{text_for_answer}</code>')
-
-
-'''
-# Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
-@router.callback_query()
-async def answer_all(message: Message):
-    await message.answer(text=LEXICON_RU['unknown_button'])
-
-
-# Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
-@router.message()
-async def answer_all(message: Message):
-    await message.answer(text=LEXICON_RU['unknown_command'])
-'''

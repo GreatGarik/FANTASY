@@ -1,5 +1,6 @@
 import os
 from typing import List
+import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.drawing.image import Image
@@ -596,5 +597,14 @@ async def championship_team_full():
     # Сохраняем книгу в BytesIO
     output = BytesIO()
     wb.save(output)
+    output.seek(0)  # Перемещаем указатель в начало
+    return output
+
+async def process_calculation_command(data):
+    df = pd.DataFrame(list(data.items()), columns=['Ключ', 'Значение'])
+    # Сохраняем книгу в BytesIO
+    output = BytesIO()
+    # Сохранение DataFrame в Excel-файл
+    df.to_excel(output, index=False)
     output.seek(0)  # Перемещаем указатель в начало
     return output
