@@ -2,11 +2,13 @@ import asyncio
 import logging
 from aiogram import Bot, Dispatcher
 from config_data.config import Config, load_config
-from handlers import user_handlers, admin_handlers
+from handlers import user_handlers, admin_handlers, other_handlers
+from dialogs import admin_dialog
 from keyboards.menu_button import set_main_menu
-from aiogram.fsm.storage.redis import RedisStorage, Redis
+from aiogram.fsm.storage.redis import RedisStorage, Redis, DefaultKeyBuilder
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram_dialog import setup_dialogs
 
 # Инициализируем логгер
 logger = logging.getLogger(__name__)
@@ -29,7 +31,7 @@ async def main():
     redis = Redis(host='localhost')
 
     # Инициализируем хранилище (создаем экземпляр класса MemoryStorage)
-    storage = RedisStorage(redis=redis)
+    storage = RedisStorage(redis=redis, key_builder=DefaultKeyBuilder(with_destiny=True))
 
     # Инициализируем бот и диспетчер
     bot: Bot = Bot(token=config.tg_bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
@@ -44,8 +46,14 @@ async def main():
     await set_main_menu(bot)
 
     # Регистрируем все хэндлеры
-    dp.include_router(admin_handlers.admin_router)
+    #dp.include_router(admin_handlers.admin_router)
     dp.include_router(user_handlers.router)
+    dp.include_router(admin_dialog.router)
+    dp.include_router(other_handlers.other_router)
+
+
+
+
 
 
     # Запускаем polling

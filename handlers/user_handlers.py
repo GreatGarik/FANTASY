@@ -20,6 +20,7 @@ from aiogram.fsm.state import default_state, State, StatesGroup
 
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 from string import ascii_letters, digits
+from dataprocessing.excel_forms import entry_list
 
 router: Router = Router()
 
@@ -1050,7 +1051,7 @@ async def championship_team_full_command(message: Message):
     )
     output.close()
 
-
+'''
 # Хэндлер для текстовых сообщений, которые не попали в другие хэндлеры
 @router.callback_query()
 async def answer_all(message: Message):
@@ -1061,3 +1062,4 @@ async def answer_all(message: Message):
 @router.message()
 async def answer_all(message: Message):
     await message.answer(text=LEXICON_RU['unknown_command'])
+'''
