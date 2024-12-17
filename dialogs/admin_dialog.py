@@ -38,7 +38,7 @@ async def button_users(callback: CallbackQuery, button: Button, dialog_manager: 
 async def button_show_users(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     output = await entry_list()  # Получаем объект файла
     await callback.message.answer_document(
-        document=BufferedInputFile(output.read(), filename='championship_points.xlsx')
+        document=BufferedInputFile(output.read(), filename='entry_list.xlsx')
     )
     output.close()  # Закрываем объект после использования
     await dialog_manager.switch_to(AdminSG.users_menu)

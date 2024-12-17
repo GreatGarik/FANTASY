@@ -394,12 +394,41 @@ def add_maximus(gp, maximus):
 
 
 async def get_all_users():
+    # Получаем всех пользователей
     async with async_session() as session:
-        result = await session.execute(select(User.id_telegram, User.name))
-        users = result.fetchall()
+        result = await session.execute(select(User))
+        users = result.scalars().all()
 
-        # Верните результаты в виде списка словарей
-        return [{'id_telegram': user.id_telegram, 'name': user.name} for user in users]
+        # Формируем список результатов
+        users_list = []
+
+        for user in users:
+            user_entry = {
+                'User': user.name,
+                'Number': user.number,
+                'Team': 'PERSONAL ENTRY'  # Значение по умолчанию
+            }
+
+            # Находим команду пользователя
+            team_query = (
+                select(Team)
+                .filter(
+                    (Team.first == user.id) |
+                    (Team.second == user.id) |
+                    (Team.third == user.id)
+                )
+            )
+            team_result = await session.execute(team_query)
+            team = team_result.scalars().first()
+
+            # Добавляем информацию о команде в user_entry
+            if team:
+                user_entry['Team'] = team.name
+
+            users_list.append(user_entry)
+
+        return users_list
+
 
 
 async def get_users_by_name(user_name: str):
