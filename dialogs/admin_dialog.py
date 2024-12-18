@@ -1,17 +1,18 @@
-from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs
+from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs, ShowMode
 from aiogram_dialog.widgets.text import Const, Format
-from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column
+from aiogram_dialog.widgets.input import TextInput, ManagedTextInput
+from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select
 from aiogram import Router
 from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.filters import Command, CommandStart, StateFilter, BaseFilter
-from dataprocessing.excel_forms import entry_list, last_stage, process_championship_full, championship_team_full, process_calculation_command
+from dataprocessing.excel_forms import entry_list, last_stage, process_championship_full, championship_team_full, \
+    process_calculation_command
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
     is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
-    get_name_gp, get_maximus
-
+    get_name_gp, get_users_by_name
 
 
 class AdminSG(StatesGroup):
@@ -19,6 +20,8 @@ class AdminSG(StatesGroup):
     users_menu = State()
     tables = State()
     stage = State()
+    input_name = State()
+    found_user = State()
     exit_admin = State()
 
 
@@ -33,6 +36,28 @@ async def go_back(callback: CallbackQuery, button: Button, dialog_manager: Dialo
 
 async def button_users(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.users_menu)
+
+
+async def correct_name(
+        message: Message,
+        widget: ManagedTextInput,
+        dialog_manager: DialogManager,
+        text: str) -> None:
+    res = await get_users_by_name(text)
+    if res:
+        dialog_manager.dialog_data['found_users'] = res
+        await dialog_manager.switch_to(AdminSG.found_user)
+    else:
+        await message.answer(text=f'Я никого не нашел.')
+        await dialog_manager.switch_to(AdminSG.users_menu)
+
+async def found_users(dialog_manager: DialogManager, **kwargs):
+    return {'found_user': dialog_manager.dialog_data['found_users']}
+
+
+async def user_selected(callback: CallbackQuery, widget: Select,
+                        dialog_manager: DialogManager, user_tg_id: str):
+    print(f'Выбрана категория с id={user_tg_id}')
 
 
 async def button_show_users(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
@@ -72,8 +97,8 @@ async def button_teams_champ(callback: CallbackQuery, button: Button, dialog_man
 
 
 async def button_find_user(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    await callback.message.answer('Я нашел следующих участников:')
-    await dialog_manager.switch_to(AdminSG.users_menu)
+    await dialog_manager.switch_to(AdminSG.input_name)
+
 
 async def button_calculate(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     gp = get_actual_gp()
@@ -88,19 +113,23 @@ async def button_calculate(callback: CallbackQuery, button: Button, dialog_manag
 
     await dialog_manager.switch_to(AdminSG.stage)
 
+
 async def button_clear_result(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     clear_results(get_actual_gp())
     await callback.message.answer('Результат удалён')
     await dialog_manager.switch_to(AdminSG.stage)
 
+
 async def button_tables(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.tables)
+
 
 async def button_stage(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.stage)
 
 
 async def button_menu(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
     await dialog_manager.switch_to(AdminSG.start)
 
 
@@ -159,6 +188,35 @@ admin_dialog = Dialog(
         ),
         state=AdminSG.users_menu
     ),
+    Window(
+        Const(text='Введите полное имя пользователя'),
+        TextInput(
+            id='select_user',
+            on_success=correct_name,
+        ),
+        state=AdminSG.input_name,
+    ),
+    Window(
+        Const(text='Выберите пользователя из найденных:'),
+        Group(
+            Select(
+                Format('{item[name]}' + ' № {item[number]}'),
+                id='user_tg_id',
+                item_id_getter=lambda x: x['id_telegram'],
+                items='found_user',
+                on_click=user_selected,
+            ),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+            width=1
+        ),
+        state=AdminSG.found_user,
+        getter=found_users
+    ),
+
     Window(
         Const('Это меню с таблицами'),
         Column(

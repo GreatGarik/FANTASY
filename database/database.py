@@ -437,6 +437,10 @@ async def get_users_by_name(user_name: str):
             result = await session.execute(select(User).where(User.name == user_name))
             users = result.scalars().all()  # Получаем всех пользователей с указанным именем
 
+            # Если пользователей нет, возвращаем None
+            if not users:
+                return None
+
             # Возвращаем список словарей с данными пользователей
-            return [{'id_telegram': user.id_telegram, 'name': user.name} for user in users]
+            return [{'id_telegram': user.id_telegram, 'name': user.name, 'number': user.number if user.number else 'N/A'} for user in users]
 
