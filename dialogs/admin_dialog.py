@@ -12,7 +12,7 @@ from dataprocessing.calculation_gp_drivers import calculation_drivers
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
     is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
-    get_name_gp, get_users_by_name
+    get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async
 
 
 class AdminSG(StatesGroup):
@@ -22,6 +22,9 @@ class AdminSG(StatesGroup):
     stage = State()
     input_name = State()
     found_user = State()
+    users_edit_select = State()
+    new_name_user = State()
+    new_number_user = State()
     exit_admin = State()
 
 
@@ -51,13 +54,41 @@ async def correct_name(
         await message.answer(text=f'Я никого не нашел.')
         await dialog_manager.switch_to(AdminSG.users_menu)
 
+
 async def found_users(dialog_manager: DialogManager, **kwargs):
     return {'found_user': dialog_manager.dialog_data['found_users']}
 
 
 async def user_selected(callback: CallbackQuery, widget: Select,
                         dialog_manager: DialogManager, user_tg_id: str):
-    print(f'Выбрана категория с id={user_tg_id}')
+    dialog_manager.dialog_data['user_tg_id'] = user_tg_id
+    await dialog_manager.switch_to(AdminSG.users_edit_select)
+
+
+async def button_change_user_name(callback: CallbackQuery, widget: Select,
+                                  dialog_manager: DialogManager):
+    dialog_manager.dialog_data['user_tg_id'] = dialog_manager.dialog_data['user_tg_id']
+    await dialog_manager.switch_to(AdminSG.new_name_user)
+
+
+async def button_change_user_number(callback: CallbackQuery, widget: Select,
+                                    dialog_manager: DialogManager):
+    dialog_manager.dialog_data['user_tg_id'] = dialog_manager.dialog_data['user_tg_id']
+    await dialog_manager.switch_to(AdminSG.new_number_user)
+
+
+async def new_name_user(message: Message, widget: Select,
+                        dialog_manager: DialogManager, text: str):
+    await change_user_name_async(dialog_manager.dialog_data['user_tg_id'], text)
+    await message.answer(f'Вы изменили имя на {text}')
+    await dialog_manager.switch_to(AdminSG.users_menu)
+
+
+async def new_number_user(message: Message, widget: Select,
+                          dialog_manager: DialogManager, text: str):
+    await change_user_number_async(dialog_manager.dialog_data['user_tg_id'], text)
+    await message.answer(f'Вы изменили номер на {text}')
+    await dialog_manager.switch_to(AdminSG.users_menu)
 
 
 async def button_show_users(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
@@ -103,7 +134,7 @@ async def button_find_user(callback: CallbackQuery, button: Button, dialog_manag
 async def button_calculate(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     gp = get_actual_gp()
     if check_res(gp):
-        await callback.message.answer(f'Вы уже сделали расчет для этого GP', isable_web_page_preview=True)
+        await callback.message.answer(f'Вы уже сделали расчет для этого GP')
     else:
         output = await process_calculation_command(calculation_drivers(gp))
         await callback.message.answer_document(
@@ -197,6 +228,23 @@ admin_dialog = Dialog(
         state=AdminSG.input_name,
     ),
     Window(
+        Const(text='Введите новое имя пользователя'),
+        TextInput(
+            id='new_name_user',
+            on_success=new_name_user,
+        ),
+        state=AdminSG.new_name_user,
+    ),
+    Window(
+        Const(text='Введите новый номер пользователя'),
+        TextInput(
+            type_factory=int,
+            id='new_name_user',
+            on_success=new_number_user,
+        ),
+        state=AdminSG.new_number_user,
+    ),
+    Window(
         Const(text='Выберите пользователя из найденных:'),
         Group(
             Select(
@@ -215,6 +263,33 @@ admin_dialog = Dialog(
         ),
         state=AdminSG.found_user,
         getter=found_users
+    ),
+    Window(
+        Format('Что мы хотим сделать с пользователем'),
+        Column(
+            Button(
+                text=Const('Изменить имя'),
+                id='button_change_user_name',
+                on_click=button_change_user_name
+            ),
+            Button(
+                text=Const('Изменить номер'),
+                id='button_change_user_number',
+                on_click=button_change_user_number,
+            )
+            ,
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+            Button(
+                text=Const('Выйти из админки'),
+                id='button_exit',
+                on_click=button_exit),
+
+        ),
+        state=AdminSG.users_edit_select
     ),
 
     Window(
