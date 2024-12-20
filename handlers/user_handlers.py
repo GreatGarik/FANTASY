@@ -4,11 +4,11 @@ from aiogram.filters import Command, CommandStart, StateFilter
 from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
-    get_actual_gp, show_points, get_user_team, add_team, get_name_gp
+    get_actual_gp, show_points, get_user_team, add_team, get_name_gp, get_end_grandprix_by_id, get_penalty_grandprix_by_id
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from string import ascii_letters, digits
-
+from datetime import datetime
 
 router: Router = Router()
 
@@ -242,12 +242,18 @@ async def process_add_teammate_command(message: Message, state: FSMContext):
 @router.message(Command(commands=['predict']), StateFilter(default_state))
 async def predict_team(message: Message, state: FSMContext):
     if get_users(message.from_user.id):
-        # if not is_prediced(message.from_user.id, get_actual_gp()):
-        await message.answer(
-            text='Выберите Команду',
-            reply_markup=create_inline_kb(1, *sorted(
-                {i.driver_team + '  ' + i.engine_short for i in select_drivers()})))
-        await state.set_state(FSMFillForm.select_engine)
+        actual_gp: int = get_actual_gp()
+        end_time = await get_end_grandprix_by_id(actual_gp)
+        # if not is_prediced(message.from_user.id, actual_gp):
+        if datetime.now() < end_time:
+            await message.answer(text=f'Окончание приема прогноза на {get_name_gp(actual_gp)} GP закончится {end_time}')
+            await message.answer(
+                text='Выберите Команду',
+                reply_markup=create_inline_kb(1, *sorted(
+                    {i.driver_team + '  ' + i.engine_short for i in select_drivers()})))
+            await state.set_state(FSMFillForm.select_engine)
+        else:
+            await message.answer(text='В данный момент прогноз на GP не принимается')
     # else:
     #   await message.answer(text='Вы уже отправили прогноз на актуальный GP')
     else:
@@ -400,7 +406,13 @@ async def predict_gap(message: CallbackQuery, state: FSMContext):
 @router.message(StateFilter(FSMFillForm.end_select), F.text.isdigit())
 async def predict_lap(message: CallbackQuery, state: FSMContext):
     await state.update_data(lapped=message.text)
-    await state.update_data(penalty=False)
+    gp = get_actual_gp()
+    penalty_time = await get_penalty_grandprix_by_id(gp)
+    end_time = await get_end_grandprix_by_id(gp)
+    if datetime.now() < penalty_time:
+        await state.update_data(penalty=None)
+    else:
+        await state.update_data(penalty=30)
     predict = await state.get_data()
     values = [predict['select1_engine'], predict['select2_engine'], predict['select3_engine'],
               predict['select4_engine'], predict['select5_engine'], predict['select6_engine']]
@@ -412,8 +424,12 @@ async def predict_lap(message: CallbackQuery, state: FSMContext):
         await message.answer(
             text='Вы выбрали 4 участника с одним мотором, начните выбор заново с команды /predict')
         await state.clear()
+    elif end_time < datetime.now():
+        await message.answer(
+            text='К сожалению Вы не успели сделать прогноз на {get_name_gp(actual_gp)} GP, окончание приема заявок было до {end_time}')
+        await state.clear()
     else:
-        gp = get_actual_gp()
+
         await message.answer(text=f'''Спасибо!\nВаш прогноз на <b>{get_name_gp(gp)}</b> GP: 
         Команда: <b>{predict['driver_team']}</b> 
         Двигатель: <b>{predict['driver_engine']}</b>

@@ -1,5 +1,8 @@
 from typing import Optional, List
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
+
+from aiogram.types import DateTime
+from pandas import isnull
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -98,6 +101,8 @@ class Grandprix(Base):
     year: Mapped[int] = mapped_column(Integer)
     gp_name_abr: Mapped[str] = mapped_column(String(3))
     nextgp: Mapped[bool] = mapped_column(Boolean)
+    time_penalty: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    time_end: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     max1: Mapped[int] = mapped_column(Integer)
     max2: Mapped[int] = mapped_column(Integer)
     max3: Mapped[int] = mapped_column(Integer)

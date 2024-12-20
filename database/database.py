@@ -2,6 +2,7 @@ from typing import Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from aiogram.utils.chat_member import USERS
 from certifi import where
+from datetime import datetime
 from sqlalchemy import create_engine, select, update, case
 from sqlalchemy.orm import sessionmaker
 from database.models import *
@@ -101,7 +102,7 @@ def add_result(tg_id, first_driver: int, second_driver: int, third_driver: int, 
                lapped: int, counter_best, max1_best, max2_best, max3_best, max1_not_best, max2_not_best, max3_not_best,
                max4_not_best, counter_lap_gap, max_lap_gap, penalty, gp=None):
     total = sum(
-        [first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap, lapped]) - penalty
+        [first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap, lapped]) - (penalty if penalty else 0)
     with Session() as session:
         try:
             session.add(Result(user_id=tg_id, first_driver=first_driver, second_driver=second_driver,
@@ -156,7 +157,7 @@ def show_points_all(year):
             # Добавляем информацию о команде в user_entry
             user_entry['Team'] = team.name if team else 'PERSONAL ENTRY'
 
-            # Инициализируем очки для каждого гран-при 2024 года
+            # Инициализируем очки для каждого гран-при
             for gp in grandprix:
                 # Находим очки для текущего гран-при
                 points = next((point.points for point in user.points if point.race_id == gp.id), None)
@@ -169,7 +170,7 @@ def show_points_all(year):
 # Возврат списка пользователей и их очков по GP
 def show_points_team_all(year):
     with Session() as session:
-        # Получаем все гран-при 2024 года
+        # Получаем все гран-при
         grandprix = session.query(Grandprix).filter(Grandprix.year == year).all()
 
         # Получаем всех пользователей
@@ -181,7 +182,7 @@ def show_points_team_all(year):
         for team in teams:
             user_entry = {'Team': team.name}
 
-            # Инициализируем очки для каждого гран-при 2024 года
+            # Инициализируем очки для каждого гран-при
             for gp in grandprix:
                 # Находим очки для текущего гран-при
                 points = next((point.points for point in team.team_points if point.race_id == gp.id), None)
@@ -461,3 +462,63 @@ async def change_user_number_async(id_telegram: int, new_number: str):
             user_instance.number = new_number  # Обновляем имя напрямую
             await session.commit()  # Сохраняем изменения
 
+
+async def get_grandprix_list(year: int):
+    async with async_session() as session:
+        async with session.begin():
+            # Выполняем асинхронный запрос для получения всех гран-при за указанный год
+            result = await session.execute(select(Grandprix.id, Grandprix.gp_name).where(Grandprix.year == year))
+            # Извлекаем данные из результата
+            grandprix_list = result.all()
+            # Преобразуем в список кортежей
+            return [(gp_name, gp_id) for gp_id, gp_name in grandprix_list]
+
+async def update_driver_positions(text: str):
+    # Разделяем текст на строки и удаляем лишние пробелы
+    driver_names = [name.strip() for name in text.splitlines() if name.strip()]
+
+    async with async_session() as session:
+        async with session.begin():
+            for position, driver_name in enumerate(driver_names, start=1):
+                # Обновляем позицию водителя по имени
+                stmt = (
+                    update(Driver)
+                    .where(Driver.driver_name == driver_name)
+                    .values(driver_position=position)
+                )
+                await session.execute(stmt)
+
+
+async def update_grandprix(gp_id: int, time_penalty: datetime, time_end: datetime):
+    async with async_session() as session:
+        async with session.begin():
+            # Получаем запись по id
+            result = await session.execute(select(Grandprix).where(Grandprix.id == gp_id))
+            grandprix = result.scalars().first()
+
+            if grandprix:
+                # Устанавливаем значения
+                grandprix.nextgp = True
+                grandprix.time_penalty = time_penalty
+                grandprix.time_end = time_end
+
+                await session.execute(update(Grandprix).where(Grandprix.id != gp_id).values(nextgp=False))
+
+                # Сохраняем изменения
+                await session.commit()
+
+async def get_end_grandprix_by_id(gp_id: int):
+    async with async_session() as session:
+        async with session.begin():
+            # Получаем запись гран-при по ID
+            result = await session.execute(select(Grandprix).where(Grandprix.id == gp_id))
+            grandprix = result.scalars().first()
+            return grandprix.time_end
+
+async def get_penalty_grandprix_by_id(gp_id: int):
+    async with async_session() as session:
+        async with session.begin():
+            # Получаем запись гран-при по ID
+            result = await session.execute(select(Grandprix).where(Grandprix.id == gp_id))
+            grandprix = result.scalars().first()
+            return grandprix.time_penalty
