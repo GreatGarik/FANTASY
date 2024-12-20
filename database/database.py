@@ -58,12 +58,12 @@ def add_user(user_id, name: str, lastname: str):
 
 # Запись прогноза на гонку
 def send_predict(tg_id, gp, first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap,
-                 lapped, penalty):
+                 lapped, penalty, time):
     with Session() as session:
         try:
             session.add(Predict(user_id=tg_id, first_driver=first_driver, second_driver=second_driver,
                                 third_driver=third_driver, fourth_driver=fourth_driver, driver_team=driver_team,
-                                driver_engine=driver_engine, gap=gap, lapped=lapped, gp=gp, penalty=penalty))
+                                driver_engine=driver_engine, gap=gap, lapped=lapped, gp=gp, penalty=penalty, time=time))
             session.commit()
         except Exception as e:
             print(e)

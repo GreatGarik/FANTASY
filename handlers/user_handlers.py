@@ -453,8 +453,8 @@ async def predict_lap(message: CallbackQuery, state: FSMContext):
             predict.pop(i)
 
         # Пишем прогноз в базу
-
-        send_predict(message.from_user.id, gp, **predict)
+        time = datetime.now()
+        send_predict(message.from_user.id, gp, time=time, **predict)
 
         # Завершаем машину состояний
         await state.clear()

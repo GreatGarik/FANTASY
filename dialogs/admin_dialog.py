@@ -29,9 +29,9 @@ admin_dialog = Dialog(
     Window(
         Const('Это админка, нажми нужную кнопку'),
         Column(Button(
-            text=Const('Меню управления пользователями'),
-            id='button_users',
-            on_click=button_users)
+            text=Const('Обработка этапа'),
+            id='button_stage',
+            on_click=button_stage
         ),
         Button(
             text=Const('Таблицы'),
@@ -39,19 +39,19 @@ admin_dialog = Dialog(
             on_click=button_tables
         ),
         Button(
-            text=Const('Управление командами'),
-            id='button_tables',
-            on_click=button_team_management
-        ),
-        Button(
-            text=Const('Обработка этапа'),
-            id='button_stage',
-            on_click=button_stage
-        ),
-        Button(
             text=Const('Открыть новый прогноз'),
             id='all_stages',
             on_click=button_open_predict
+        ),
+        Button(
+            text=Const('Управление пользователями'),
+            id='button_users',
+            on_click=button_users)
+        ),
+        Button(
+            text=Const('Управление командами'),
+            id='button_team_management',
+            on_click=button_team_management
         ),
         Button(
             text=Const('Выйти из админки'),

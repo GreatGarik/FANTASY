@@ -89,6 +89,7 @@ class Predict(Base):
     lapped: Mapped[int] = mapped_column(Integer)
     penalty: Mapped[int] = mapped_column(Integer)
     gp: Mapped[int] = mapped_column(Integer)
+    time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
 
 
 
