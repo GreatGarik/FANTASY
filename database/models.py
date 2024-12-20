@@ -101,6 +101,7 @@ class Grandprix(Base):
     year: Mapped[int] = mapped_column(Integer)
     gp_name_abr: Mapped[str] = mapped_column(String(3))
     nextgp: Mapped[bool] = mapped_column(Boolean)
+    time_start: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     time_penalty: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     time_end: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
     max1: Mapped[int] = mapped_column(Integer)

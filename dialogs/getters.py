@@ -25,6 +25,10 @@ class AdminSG(StatesGroup):
     new_number_user = State()
     open_predict = State()
     update_drivers_standing = State()
+    datetime_start = State()
+    datetime_start_day = State()
+    datetime_start_hours = State()
+    datetime_start_minutes = State()
     datetime_penalty = State()
     datetime_penalty_hours = State()
     datetime_penalty_minutes = State()
@@ -32,6 +36,7 @@ class AdminSG(StatesGroup):
     datetime_end_hours = State()
     datetime_end_minutes = State()
     predict_end = State()
+    team_management = State()
     exit_admin = State()
 
 async def go_back(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
@@ -131,6 +136,10 @@ async def button_teams_champ(callback: CallbackQuery, button: Button, dialog_man
 async def button_find_user(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.input_name)
 
+async def receive_data(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    return dialog_manager
+
+
 
 async def button_calculate(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     gp = get_actual_gp()
@@ -168,8 +177,33 @@ async def update_drivers_standing(
         dialog_manager: DialogManager,
         text: str) -> None:
     await update_driver_positions(text)
+    await dialog_manager.switch_to(AdminSG.datetime_start)
+
+async def button_start_time_now(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.datetime_penalty)
 
+async def button_start_time_select(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.datetime_start_day)
+
+async def on_date_selected_start(callback: CallbackQuery, widget,
+                                   dialog_manager: DialogManager, selected_date: date):
+    dialog_manager.dialog_data['start_datetime'] = datetime.combine(selected_date, time.min).strftime(
+        '%Y-%m-%d %H:%M:%S')
+    await dialog_manager.switch_to(AdminSG.datetime_start_hours)
+
+async def on_date_selected_start_hours(callback: CallbackQuery, widget,
+                                         dialog_manager: DialogManager, item_id: int):
+    selected_date: datetime = datetime.strptime(dialog_manager.dialog_data['start_datetime'], '%Y-%m-%d %H:%M:%S')
+    dialog_manager.dialog_data['start_datetime'] = selected_date.replace(hour=int(item_id)).strftime(
+        '%Y-%m-%d %H:%M:%S')
+    await dialog_manager.switch_to(AdminSG.datetime_start_minutes)
+
+async def on_date_selected_start_minutes(callback: CallbackQuery, widget,
+                                           dialog_manager: DialogManager, item_id: int):
+    selected_date: datetime = datetime.strptime(dialog_manager.dialog_data['start_datetime'], '%Y-%m-%d %H:%M:%S')
+    dialog_manager.dialog_data['start_datetime'] = selected_date.replace(minute=int(item_id)).strftime(
+        '%Y-%m-%d %H:%M:%S')
+    await dialog_manager.switch_to(AdminSG.datetime_penalty)
 
 async def on_date_selected_penalty(callback: CallbackQuery, widget,
                                    dialog_manager: DialogManager, selected_date: date):
@@ -226,15 +260,18 @@ async def get_minutes(dialog_manager, **kwargs):
 async def predict_end(dialog_manager: DialogManager, **kwargs):
     return {'GP': get_name_gp(dialog_manager.dialog_data['predict_gp_selected']),
             'penalty': dialog_manager.dialog_data['penalty_datetime'],
-            'end': dialog_manager.dialog_data['end_datetime']}
+            'end': dialog_manager.dialog_data['end_datetime'],
+            'start': dialog_manager.dialog_data.get('start_datetime', datetime.now().replace(second=0).strftime('%Y-%m-%d %H:%M:%S'))
+            }
 
 
 async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
     pattern = '%Y-%m-%d %H:%M:%S'
     gp_id = dialog_manager.dialog_data['predict_gp_selected']
+    time_start = dialog_manager.dialog_data.get('start_datetime', datetime.now().replace(second=0).strftime('%Y-%m-%d %H:%M:%S'))
     time_penalty = dialog_manager.dialog_data['penalty_datetime']
     time_end = dialog_manager.dialog_data['end_datetime']
-    await update_grandprix(gp_id=gp_id, time_penalty=datetime.strptime(time_penalty, pattern),
+    await update_grandprix(gp_id=gp_id, time_start=datetime.strptime(time_start, pattern), time_penalty=datetime.strptime(time_penalty, pattern),
                            time_end=datetime.strptime(time_end, pattern))
     await callback.message.answer(f'Прогноз на {get_name_gp(gp_id)} открыт')
     dialog_manager.dialog_data.clear()
@@ -253,6 +290,8 @@ async def button_stage(callback: CallbackQuery, button: Button, dialog_manager: 
 async def button_open_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.open_predict)
 
+async def button_team_management(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.team_management)
 
 async def button_menu(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     dialog_manager.show_mode = ShowMode.DELETE_AND_SEND

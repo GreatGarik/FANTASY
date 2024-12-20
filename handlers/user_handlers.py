@@ -4,7 +4,7 @@ from aiogram.filters import Command, CommandStart, StateFilter
 from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
-    get_actual_gp, show_points, get_user_team, add_team, get_name_gp, get_end_grandprix_by_id, get_penalty_grandprix_by_id
+    get_actual_gp, show_points, get_user_team, add_team, get_name_gp, get_end_grandprix_by_id, get_penalty_grandprix_by_id, get_start_grandprix_by_id
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from string import ascii_letters, digits
@@ -244,16 +244,21 @@ async def predict_team(message: Message, state: FSMContext):
     if get_users(message.from_user.id):
         actual_gp: int = get_actual_gp()
         end_time = await get_end_grandprix_by_id(actual_gp)
+        start_time = await get_start_grandprix_by_id(actual_gp)
         # if not is_prediced(message.from_user.id, actual_gp):
-        if datetime.now() < end_time:
-            await message.answer(text=f'Окончание приема прогноза на {get_name_gp(actual_gp)} GP закончится {end_time}')
-            await message.answer(
-                text='Выберите Команду',
-                reply_markup=create_inline_kb(1, *sorted(
-                    {i.driver_team + '  ' + i.engine_short for i in select_drivers()})))
-            await state.set_state(FSMFillForm.select_engine)
+        if datetime.now() < start_time:
+            if datetime.now() < end_time:
+                penalty_time = await get_penalty_grandprix_by_id(actual_gp)
+                await message.answer(text=f'Окончание приема прогноза на {get_name_gp(actual_gp)} GP закончится {end_time}\n Без штрафа прогноз можно подать до {penalty_time}')
+                await message.answer(
+                    text='Выберите Команду',
+                    reply_markup=create_inline_kb(1, *sorted(
+                        {i.driver_team + '  ' + i.engine_short for i in select_drivers()})))
+                await state.set_state(FSMFillForm.select_engine)
+            else:
+                await message.answer(text=f'В данный момент прогноз на {get_name_gp(actual_gp)} GP еще не принимается\n Прием прогнозов начнется {start_time}')
         else:
-            await message.answer(text='В данный момент прогноз на GP не принимается')
+            await message.answer(text=f'В данный момент прогноз на {get_name_gp(actual_gp)} GP не принимается\n Прием прогнозов закончился {end_time}')
     # else:
     #   await message.answer(text='Вы уже отправили прогноз на актуальный GP')
     else:

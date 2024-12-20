@@ -39,6 +39,11 @@ admin_dialog = Dialog(
             on_click=button_tables
         ),
         Button(
+            text=Const('Управление командами'),
+            id='button_tables',
+            on_click=button_team_management
+        ),
+        Button(
             text=Const('Обработка этапа'),
             id='button_stage',
             on_click=button_stage
@@ -155,6 +160,72 @@ admin_dialog = Dialog(
         state=AdminSG.update_drivers_standing,
     ),
     Window(
+        Const('Начать прием прогнозов сразу или выбрать дату и время начала?'),
+        Column(
+            Button(
+                text=Const('Выбрать дату и время'),
+                id='button_start_time_now',
+                on_click=button_start_time_select),
+            Button(
+                text=Const('Начать прием сразу!'),
+                id='button_start_time_select',
+                on_click=button_start_time_now),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu),
+        ),
+        state=AdminSG.datetime_start
+    ),
+    Window(
+        Const(text='Установка даты и времени начала приёма прогнозов\nВыберите дату:'),
+        Calendar(
+            id='calendar_start',
+            on_click=on_date_selected_start
+        ),
+        state=AdminSG.datetime_start_day,
+    ),
+    Window(
+        Const(text='Установка даты и времени начала приёма прогнозов\nВыберите часы:'),
+        Group(
+            Select(
+                Format('{item}'),
+                id='datetime_start_hours',
+                item_id_getter=lambda x: x,
+                items='hours',
+                on_click=on_date_selected_start_hours,
+            ),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+            width=6
+        ),
+        state=AdminSG.datetime_start_hours,
+        getter=get_hours
+    ),
+    Window(
+        Const(text='Установка даты и времени начала приёма прогнозов\nВыберите минуты:'),
+        Group(
+            Select(
+                Format('{item}'),
+                id='datetime_start_minutes',
+                item_id_getter=lambda x: x,
+                items='minutes',
+                on_click=on_date_selected_start_minutes,
+            ),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+            width=2
+        ),
+        state=AdminSG.datetime_start_minutes,
+        getter=get_minutes
+    ),
+    Window(
         Const(text='Установка даты и времени до штрафа\nВыберите дату:'),
         Calendar(
             id='calendar_penalty',
@@ -252,7 +323,7 @@ admin_dialog = Dialog(
     ),
     Window(
         Format(
-            'Проверьте данные\n Вы открываете прогноз на {GP} GP\n Без штрафа до {penalty}\n Окончание приема прогнозов {end}'),
+            'Проверьте данные\n Вы открываете прогноз на {GP} GP\n Начало приема прогнозов {start}\n Без штрафа до {penalty}\n Окончание приема прогнозов {end}'),
         Button(
             text=Const('Подтвердить'),
             id='button_confirm_predict',
@@ -356,6 +427,37 @@ admin_dialog = Dialog(
 
         ),
         state=AdminSG.stage
+    ),
+    Window(
+        Const('Это меню управления командами'),
+        Column(
+            Button(
+                text=Const('Изменить настройки команды'),
+                id='button_users',
+                on_click=button_find_user
+            ),
+            Button(
+                text=Const('Изменить участников команды'),
+                id='button_show_users',
+                on_click=button_show_users)
+            ,
+            Button(
+                text=Const('Удалить/добавить команду'),
+                id='button_show_users',
+                on_click=button_show_users)
+            ,
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+            Button(
+                text=Const('Выйти из админки'),
+                id='button_exit',
+                on_click=button_exit),
+
+        ),
+        state=AdminSG.team_management
     ),
 )
 

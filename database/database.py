@@ -489,7 +489,7 @@ async def update_driver_positions(text: str):
                 await session.execute(stmt)
 
 
-async def update_grandprix(gp_id: int, time_penalty: datetime, time_end: datetime):
+async def update_grandprix(gp_id: int, time_start: datetime, time_penalty: datetime, time_end: datetime):
     async with async_session() as session:
         async with session.begin():
             # Получаем запись по id
@@ -501,6 +501,7 @@ async def update_grandprix(gp_id: int, time_penalty: datetime, time_end: datetim
                 grandprix.nextgp = True
                 grandprix.time_penalty = time_penalty
                 grandprix.time_end = time_end
+                grandprix.time_start = time_start
 
                 await session.execute(update(Grandprix).where(Grandprix.id != gp_id).values(nextgp=False))
 
@@ -522,3 +523,11 @@ async def get_penalty_grandprix_by_id(gp_id: int):
             result = await session.execute(select(Grandprix).where(Grandprix.id == gp_id))
             grandprix = result.scalars().first()
             return grandprix.time_penalty
+
+async def get_start_grandprix_by_id(gp_id: int):
+    async with async_session() as session:
+        async with session.begin():
+            # Получаем запись гран-при по ID
+            result = await session.execute(select(Grandprix).where(Grandprix.id == gp_id))
+            grandprix = result.scalars().first()
+            return grandprix.time_start
