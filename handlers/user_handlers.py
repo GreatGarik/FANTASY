@@ -246,7 +246,7 @@ async def predict_team(message: Message, state: FSMContext):
         end_time = await get_end_grandprix_by_id(actual_gp)
         start_time = await get_start_grandprix_by_id(actual_gp)
         # if not is_prediced(message.from_user.id, actual_gp):
-        if datetime.now() < start_time:
+        if datetime.now() > start_time:
             if datetime.now() < end_time:
                 penalty_time = await get_penalty_grandprix_by_id(actual_gp)
                 await message.answer(text=f'Окончание приема прогноза на {get_name_gp(actual_gp)} GP закончится {end_time}\n Без штрафа прогноз можно подать до {penalty_time}')
