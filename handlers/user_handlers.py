@@ -256,9 +256,11 @@ async def predict_team(message: Message, state: FSMContext):
                         {i.driver_team + '  ' + i.engine_short for i in select_drivers()})))
                 await state.set_state(FSMFillForm.select_engine)
             else:
-                await message.answer(text=f'В данный момент прогноз на {get_name_gp(actual_gp)} GP еще не принимается\n Прием прогнозов начнется {start_time}')
+                await message.answer(
+                    text=f'В данный момент прогноз на {get_name_gp(actual_gp)} GP не принимается\n Прием прогнозов закончился {end_time}')
         else:
-            await message.answer(text=f'В данный момент прогноз на {get_name_gp(actual_gp)} GP не принимается\n Прием прогнозов закончился {end_time}')
+            await message.answer(text=f'В данный момент прогноз на {get_name_gp(actual_gp)} GP еще не принимается\n Прием прогнозов начнется {start_time}')
+
     # else:
     #   await message.answer(text='Вы уже отправили прогноз на актуальный GP')
     else:
