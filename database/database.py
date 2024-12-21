@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from aiogram.utils.chat_member import USERS
 from certifi import where
@@ -519,7 +519,6 @@ async def get_end_grandprix_by_id(gp_id: int):
 async def get_penalty_grandprix_by_id(gp_id: int):
     async with async_session() as session:
         async with session.begin():
-            # Получаем запись гран-при по ID
             result = await session.execute(select(Grandprix).where(Grandprix.id == gp_id))
             grandprix = result.scalars().first()
             return grandprix.time_penalty
@@ -527,7 +526,13 @@ async def get_penalty_grandprix_by_id(gp_id: int):
 async def get_start_grandprix_by_id(gp_id: int):
     async with async_session() as session:
         async with session.begin():
-            # Получаем запись гран-при по ID
             result = await session.execute(select(Grandprix).where(Grandprix.id == gp_id))
             grandprix = result.scalars().first()
             return grandprix.time_start
+
+async def get_all_teams() -> List[Tuple[int, str]]:
+    async with async_session() as session:
+        async with session.begin():
+            result = await session.execute(select(Team.name, Team.id))
+            teams = result.all()
+            return teams

@@ -1,4 +1,6 @@
 from datetime import datetime, date, time
+from tkinter import Widget
+
 from aiogram.fsm.state import State, StatesGroup
 from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs, ShowMode
 from aiogram_dialog.widgets.input import TextInput, ManagedTextInput
@@ -11,7 +13,7 @@ from database.database import select_drivers, add_user, get_users, send_predict,
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
     is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
     get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix
+    update_driver_positions, update_grandprix, get_all_teams
 
 class AdminSG(StatesGroup):
     start = State()
@@ -37,6 +39,8 @@ class AdminSG(StatesGroup):
     datetime_end_minutes = State()
     predict_end = State()
     team_management = State()
+    edit_team = State()
+    edit_team_menu = State()
     exit_admin = State()
 
 async def go_back(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
@@ -71,26 +75,26 @@ async def user_selected(callback: CallbackQuery, widget: Select,
     await dialog_manager.switch_to(AdminSG.users_edit_select)
 
 
-async def button_change_user_name(callback: CallbackQuery, widget: Select,
+async def button_change_user_name(callback: CallbackQuery, button: Button,
                                   dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.new_name_user)
 
 
-async def button_change_user_number(callback: CallbackQuery, widget: Select,
+async def button_change_user_number(callback: CallbackQuery, button: Button,
                                     dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.new_number_user)
 
 
-async def new_name_user(message: Message, widget: Select,
-                        dialog_manager: DialogManager, text: str):
+async def new_name_user(message: Message, widget: Widget,
+                        dialog_manager: DialogManager, text: str) -> None:
     await change_user_name_async(dialog_manager.dialog_data['user_tg_id'], text)
     await message.answer(f'Вы изменили имя на {text}')
     dialog_manager.dialog_data.clear()
     await dialog_manager.switch_to(AdminSG.users_menu)
 
 
-async def new_number_user(message: Message, widget: Select,
-                          dialog_manager: DialogManager, text: str):
+async def new_number_user(message: Message,
+                          dialog_manager: DialogManager, text: str) -> None:
     await change_user_number_async(dialog_manager.dialog_data['user_tg_id'], text)
     await message.answer(f'Вы изменили номер на {text}')
     dialog_manager.dialog_data.clear()
@@ -104,6 +108,17 @@ async def button_show_users(callback: CallbackQuery, button: Button, dialog_mana
     )
     output.close()  # Закрываем объект после использования
     await dialog_manager.switch_to(AdminSG.users_menu)
+
+async def button_edit_team(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.edit_team)
+
+async def all_teams(**kwargs):
+    return {'all_teams': await get_all_teams()}
+
+async def selected_team(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, team_id):
+    dialog_manager.dialog_data['team_id'] = team_id
+    print(dialog_manager.dialog_data)
+    await dialog_manager.switch_to(AdminSG.edit_team_menu)
 
 
 async def button_last_stage(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
@@ -159,6 +174,9 @@ async def button_clear_result(callback: CallbackQuery, button: Button, dialog_ma
     clear_results(get_actual_gp())
     await callback.message.answer('Результат удалён')
     await dialog_manager.switch_to(AdminSG.stage)
+
+
+
 
 
 async def all_stages(**kwargs):

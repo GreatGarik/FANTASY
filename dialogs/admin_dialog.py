@@ -432,15 +432,9 @@ admin_dialog = Dialog(
         Const('Это меню управления командами'),
         Column(
             Button(
-                text=Const('Изменить настройки команды'),
+                text=Const('Изменить настройки/состав команды'),
                 id='button_users',
-                on_click=button_find_user
-            ),
-            Button(
-                text=Const('Изменить участников команды'),
-                id='button_show_users',
-                on_click=button_show_users)
-            ,
+                on_click=button_edit_team),
             Button(
                 text=Const('Удалить/добавить команду'),
                 id='button_show_users',
@@ -457,6 +451,60 @@ admin_dialog = Dialog(
                 on_click=button_exit),
 
         ),
+        state=AdminSG.team_management
+    ),
+    Window(
+        Const(text='Выберите команду для изменений:'),
+        Group(
+            Select(
+                Format('{item[0]}'),
+                id='team_id',
+                item_id_getter=lambda x: x[1],
+                items='all_teams',
+                on_click=selected_team,
+            ),
+            width=2
+            ),
+            Row(Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu),
+        ),
+        state=AdminSG.edit_team,
+        getter=all_teams
+    ),
+    Window(
+        Const('Что меняем у команды?'),
+        Column(
+            Button(
+                text=Const('Изменить состав'),
+                id='button_users',
+                on_click=button_edit_team),
+            Button(
+                text=Const('Изменить название'),
+                id='button_show_users',
+                on_click=button_show_users)
+            ,
+            Button(
+                text=Const('Изменить название'),
+                id='button_show_users',
+                on_click=button_show_users)
+            ,
+            Button(
+                text=Const('Изменить название'),
+                id='button_show_users',
+                on_click=button_show_users)
+            ,
+            Button(
+                text=Const('Изменить название'),
+                id='button_show_users',
+                on_click=button_show_users)
+            ,
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ),
         state=AdminSG.team_management
     ),
 )
