@@ -1,9 +1,9 @@
 from datetime import datetime, date, time
 from tkinter import Widget
-
+import os
 from aiogram.fsm.state import State, StatesGroup
 from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs, ShowMode
-from aiogram_dialog.widgets.input import TextInput, ManagedTextInput
+from aiogram_dialog.widgets.input import TextInput, ManagedTextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar
 from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
 from dataprocessing.excel_forms import entry_list, last_stage, process_championship_full, championship_team_full, \
@@ -13,7 +13,7 @@ from database.database import select_drivers, add_user, get_users, send_predict,
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
     is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
     get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix, get_all_teams
+    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member
 
 class AdminSG(StatesGroup):
     start = State()
@@ -41,6 +41,20 @@ class AdminSG(StatesGroup):
     team_management = State()
     edit_team = State()
     edit_team_menu = State()
+    change_team_font_color = State()
+    change_team_background_color = State()
+    change_team_number_font = State()
+    change_team_number_font_font = State()
+    change_team_number_font_color = State()
+    change_team_number_font_italic = State()
+    change_team_logo = State()
+    change_team_name = State()
+    new_team = State()
+    team_members = State()
+    team_members_menu = State()
+    enter_team_member = State()
+    found_user_for_member = State()
+    member_selected = State()
     exit_admin = State()
 
 async def go_back(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
@@ -51,11 +65,7 @@ async def button_users(callback: CallbackQuery, button: Button, dialog_manager: 
     await dialog_manager.switch_to(AdminSG.users_menu)
 
 
-async def correct_name(
-        message: Message,
-        widget: ManagedTextInput,
-        dialog_manager: DialogManager,
-        text: str) -> None:
+async def correct_name(message: Message,widget: ManagedTextInput,dialog_manager: DialogManager,text: str) -> None:
     res = await get_users_by_name(text)
     if res:
         dialog_manager.dialog_data['found_users'] = res
@@ -112,13 +122,118 @@ async def button_show_users(callback: CallbackQuery, button: Button, dialog_mana
 async def button_edit_team(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.edit_team)
 
+
 async def all_teams(**kwargs):
     return {'all_teams': await get_all_teams()}
 
-async def selected_team(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, team_id):
-    dialog_manager.dialog_data['team_id'] = team_id
-    print(dialog_manager.dialog_data)
+async def button_add_team(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.new_team)
+
+async def selected_team(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, team_str :str):
+    team = team_str.split('^')
+    dialog_manager.dialog_data['team_id'] = team[1]
+    dialog_manager.dialog_data['team_name'] = team[0]
     await dialog_manager.switch_to(AdminSG.edit_team_menu)
+
+async def getter_team_name(dialog_manager: DialogManager, **kwargs):
+    return {'team_name': dialog_manager.dialog_data['team_name']}
+
+async def change_team_number_font(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    await dialog_manager.switch_to(AdminSG.change_team_number_font_font)
+
+
+async def team_number_font_input(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
+    dialog_manager.dialog_data['team_number_font_font'] = text
+    await dialog_manager.switch_to(AdminSG.change_team_number_font_color)
+
+async def team_number_font_color_input(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
+    dialog_manager.dialog_data['team_number_font_color_input'] = text
+    await dialog_manager.switch_to(AdminSG.change_team_number_font_italic)
+
+async def change_team_number_font_record(callback: CallbackQuery, source, dialog_manager: DialogManager, radio_id, **kwargs) -> None:
+    dialog_manager.dialog_data['team_number_font_color_italic'] = radio_id[0]
+    await update_team(team_id=dialog_manager.dialog_data['team_id'], number_font=dialog_manager.dialog_data['team_number_font_font'], number_color=dialog_manager.dialog_data['team_number_font_color_input'], number_italic=int(dialog_manager.dialog_data['team_number_font_color_italic']))
+    await callback.answer('Настройки номера успешно записаны', show_alert=True)
+    await dialog_manager.switch_to(AdminSG.edit_team_menu)
+
+
+async def change_team_members(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    await dialog_manager.switch_to(AdminSG.team_members)
+
+async def team_members(dialog_manager: DialogManager, **kwargs):
+    return {'team_members': await get_team_members(dialog_manager.dialog_data['team_id'])}
+
+async def selected_team_member(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, member:str):
+    dialog_manager.dialog_data['team_place_member'] = member.split('^')[-1]
+    await dialog_manager.switch_to(AdminSG.team_members_menu)
+
+async def delite_team_members(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await update_or_remove_team_member(int(dialog_manager.dialog_data['team_id']), dialog_manager.dialog_data['team_place_member'])
+    await dialog_manager.switch_to(AdminSG.team_members)
+
+async def replace_team_member(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.enter_team_member)
+
+async def enter_team_member(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    res = await get_users_by_name(text)
+    if res:
+        dialog_manager.dialog_data['found_users'] = res
+        await dialog_manager.switch_to(AdminSG.found_user_for_member)
+    else:
+        await message.answer(text=f'Я никого не нашел, введите другое имя.')
+        await dialog_manager.switch_to(AdminSG.enter_team_member)
+
+async def member_selected(callback: CallbackQuery, widget: Select,
+                        dialog_manager: DialogManager, user_id: str):
+    await update_or_remove_team_member(int(dialog_manager.dialog_data['team_id']), dialog_manager.dialog_data['team_place_member'], int(user_id))
+    await dialog_manager.switch_to(AdminSG.team_members)
+
+
+async def change_team_name(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    await dialog_manager.switch_to(AdminSG.enter_team_member)
+
+async def new_team(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
+    await create_team_only_name(text)
+    await message.answer(f'Команда {text} создан')
+    await dialog_manager.switch_to(AdminSG.team_management)
+
+async def new_team_name(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
+    dialog_manager.dialog_data['team_name'] = text
+    await update_team(team_id=dialog_manager.dialog_data['team_id'],
+                      name=text)
+    await message.answer(f'Название команды изменено на {text}')
+    await dialog_manager.switch_to(AdminSG.edit_team_menu)
+
+async def change_team_logo(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    await dialog_manager.switch_to(AdminSG.change_team_logo)
+
+async def team_logo_receive(message: Message, widget: MessageInput, dialog_manager: DialogManager, **kwargs):
+    photo = message.photo[-1]  # Получаем наибольшее качество
+    file_id = photo.file_id
+    # Получаем файл
+    file = await dialog_manager.middleware_data['bot'].get_file(file_id)
+    # Загружаем файл
+    photo_data = await dialog_manager.middleware_data['bot'].download_file(file.file_path)
+    file_name = '_'.join(dialog_manager.dialog_data['team_name'].replace("'",'').split()) + '.png'
+    await update_team(team_id=dialog_manager.dialog_data['team_id'],
+                      logo=file_name)
+    with open(os.path.join('logos', file_name), 'wb') as new_file:
+        new_file.write(photo_data.getvalue())
+    await message.reply("Логотип команды сохранён")
+    await dialog_manager.switch_to(AdminSG.edit_team_menu)
+
+async def change_team_name_color(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    await dialog_manager.switch_to(AdminSG.change_team_font_color)
+
+async def team_font_color(callback: CallbackQuery, source, dialog_manager: DialogManager, radio_id, **kwargs) -> None:
+    dialog_manager.dialog_data['team_font_color'] = radio_id
+    await dialog_manager.switch_to(AdminSG.change_team_background_color)
+
+async def team_background_color(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
+    await update_team(team_id=dialog_manager.dialog_data['team_id'], background_color=text, text_color=dialog_manager.dialog_data['team_font_color'])
+    await message.answer('Настройки цветов успешно записаны', show_alert=True)
+    await dialog_manager.switch_to(AdminSG.edit_team_menu)
+
 
 
 async def button_last_stage(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):

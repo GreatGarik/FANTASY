@@ -301,7 +301,7 @@ def is_prediced(user_id, gp):
 
 
 # Добавление команды
-def add_team(user_id, name: str, new_number: str, logo: str=None, background_color: str=None, text_color: str=None, number_color: str=None,
+def add_team(user_id, name: str, new_number: str, logo: str=None, background_color: str='000000', text_color: str='FFFFFF', number_color: str=None,
              number_font: str=None, number_italic: bool=0):
     with Session() as session:
         user = session.scalars(select(User).where(User.id_telegram == user_id)).one_or_none()
@@ -443,7 +443,7 @@ async def get_users_by_name(user_name: str):
                 return None
 
             # Возвращаем список словарей с данными пользователей
-            return [{'id_telegram': user.id_telegram, 'name': user.name, 'number': user.number if user.number else 'N/A'} for user in users]
+            return [{'id':user.id, 'id_telegram': user.id_telegram, 'name': user.name, 'number': user.number if user.number else 'N/A'} for user in users]
 
 
 async def change_user_name_async(id_telegram: int, new_name: str):
@@ -536,3 +536,91 @@ async def get_all_teams() -> List[Tuple[int, str]]:
             result = await session.execute(select(Team.name, Team.id))
             teams = result.all()
             return teams
+
+async def update_team(team_id: int, **kwargs):
+    async with async_session() as session:
+        async with session.begin():
+            # Получаем команду по ID
+            result = await session.execute(select(Team).where(Team.id == team_id))
+            team = result.scalar_one_or_none()
+
+            if team is None:
+                raise ValueError("Team not found")
+
+            # Обновляем только те поля, которые были переданы
+            for key, value in kwargs.items():
+                if hasattr(team, key):
+                    setattr(team, key, value)
+
+            # Сохраняем изменения
+            await session.commit()
+
+
+async def create_team_only_name(team_name: str):
+    async with async_session() as session:
+        async with session.begin():
+            new_team = Team(
+                name=team_name,
+                text_color='#FFFFFF',  # Устанавливаем цвет текста в белый
+                logo='',  # Например, пустая строка для логотипа
+                background_color='',  # Пустая строка для фона
+                number_color='',  # Пустая строка для цвета номера
+                number_font='',  # Пустая строка для шрифта номера
+                number_italic=False  # По умолчанию не курсив
+            )
+
+            session.add(new_team)
+            await session.commit()
+
+async def get_team_members(team_id: int) -> list:
+    async with async_session() as session:
+        async with session.begin():
+            # Получаем команду по ID
+            team = await session.get(Team, team_id)
+            keys = ['first', 'second', 'third']
+            # Создаем список участников
+            members = []
+            for user_id, key in zip([team.first, team.second, team.third], keys):
+                if user_id is not None:
+                    user = await session.get(User, user_id)
+                    if user:
+                        members.append((user.name, key))
+                else:
+                    members.append(('Нет участника', key))
+
+            return members
+
+async def update_or_remove_team_member(team_id: int, position: str, user_id: Optional[int] = None):
+    # Проверяем, что переданная позиция корректна
+    if position not in ['first', 'second', 'third']:
+        raise ValueError("Position must be 'first', 'second', or 'third'.")
+
+    async with async_session() as session:
+        async with session.begin():
+            # Получаем команду по ID
+            result = await session.execute(select(Team).where(Team.id == team_id))
+            team = result.scalar_one_or_none()
+
+            if team is None:
+                raise ValueError("Team not found.")
+
+            # Если передан user_id, заменяем участника, иначе удаляем
+            if user_id is not None:
+                if position == 'first':
+                    team.first = user_id
+                elif position == 'second':
+                    team.second = user_id
+                elif position == 'third':
+                    team.third = user_id
+            else:
+                if position == 'first':
+                    team.first = None
+                elif position == 'second':
+                    team.second = None
+                elif position == 'third':
+                    team.third = None
+
+            # Сохраняем изменения в базе данных
+            await session.commit()
+
+

@@ -1,11 +1,13 @@
+import operator
 from datetime import datetime, date, time
 from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs, ShowMode
 from aiogram_dialog.widgets.text import Const, Format
-from aiogram_dialog.widgets.input import TextInput, ManagedTextInput
-from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar
+from aiogram_dialog.widgets.input import TextInput, ManagedTextInput, MessageInput
+from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar, Radio
 from aiogram import Router
 from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.enums import ContentType, ParseMode
 from aiogram.filters import Command, CommandStart, StateFilter, BaseFilter
 from .getters import *
 from sqlalchemy.util import await_only
@@ -436,9 +438,9 @@ admin_dialog = Dialog(
                 id='button_users',
                 on_click=button_edit_team),
             Button(
-                text=Const('Удалить/добавить команду'),
+                text=Const('Добавить команду'),
                 id='button_show_users',
-                on_click=button_show_users)
+                on_click=button_add_team)
             ,
             Button(
                 text=Const('Вернуться в главное меню'),
@@ -459,7 +461,7 @@ admin_dialog = Dialog(
             Select(
                 Format('{item[0]}'),
                 id='team_id',
-                item_id_getter=lambda x: x[1],
+                item_id_getter=lambda x: f'{x[0]}^{x[1]}',
                 items='all_teams',
                 on_click=selected_team,
             ),
@@ -474,38 +476,189 @@ admin_dialog = Dialog(
         getter=all_teams
     ),
     Window(
-        Const('Что меняем у команды?'),
+        Format('Что меняем у команды {team_name}?'),
+
         Column(
             Button(
                 text=Const('Изменить состав'),
-                id='button_users',
-                on_click=button_edit_team),
+                id='change_team_members',
+                on_click=change_team_members),
             Button(
-                text=Const('Изменить название'),
-                id='button_show_users',
-                on_click=button_show_users)
+                text=Const('Изменить логотип'),
+                id='change_team_logo',
+                on_click=change_team_logo)
             ,
             Button(
-                text=Const('Изменить название'),
-                id='button_show_users',
-                on_click=button_show_users)
+                text=Const('Цвет фона/текста'),
+                id='change_team_name_color',
+                on_click=change_team_name_color)
             ,
             Button(
-                text=Const('Изменить название'),
-                id='button_show_users',
-                on_click=button_show_users)
+                text=Const('Цвет/шрифт номеров'),
+                id='change_team_number_font',
+                on_click=change_team_number_font)
             ,
             Button(
-                text=Const('Изменить название'),
-                id='button_show_users',
-                on_click=button_show_users)
+                text=Const('Сменить название команды'),
+                id='change_team_name',
+                on_click=change_team_name)
             ,
             Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
                 on_click=button_menu)
             ),
-        state=AdminSG.team_management
+        state=AdminSG.edit_team_menu,
+        getter=getter_team_name
+    ),
+    Window(
+        Const(text='Введите название шрифта номера'),
+        TextInput(
+            id='team_number_font_input',
+            type_factory=str,
+            on_success=team_number_font_input,
+        ),
+        state=AdminSG.change_team_number_font_font,
+    ),
+    Window(
+        Const(text='Введите цвет номера'),
+        TextInput(
+            id='team_number_font_color_input',
+            type_factory=str,
+            on_success=team_number_font_color_input,
+        ),
+        state=AdminSG.change_team_number_font_color,
+    ),
+    Window(
+        Const(text='Номер курсивом или нет'),
+        Row(
+            Radio(
+                checked_text=Format('🔘 {item[0]}'),
+                unchecked_text=Format('⚪️ {item[0]}'),
+                id='radio_italic',
+                item_id_getter=operator.itemgetter(1),
+                items=[('Да', 1), ('Нет', 0)],
+                on_click=change_team_number_font_record,
+            ),
+        ),
+        state=AdminSG.change_team_number_font_italic,
+    ),
+    Window(Const(text='Выберите цвет шрифта команды'),
+        Row(
+            Radio(
+                checked_text=Format('🔘 {item[0]}'),
+                unchecked_text=Format('⚪️ {item[0]}'),
+                id='radio_font_color',
+                item_id_getter=operator.itemgetter(1),
+                items=[('Чёрный', '000000'), ('Белый', 'FFFFFF')],
+                on_click=team_font_color,
+            ),
+        ),
+        state=AdminSG.change_team_font_color,
+    ),
+    Window(
+        Const(text='Введите цвет фона названия команды'),
+        TextInput(
+            id='team_background_color_input',
+            type_factory=str,
+            on_success=team_background_color,
+        ),
+        state=AdminSG.change_team_background_color,
+    ),
+    Window(
+        Const(text='Пришлите мне логотип команды в формате png, размер 140х49'),
+        MessageInput(
+            func=team_logo_receive,
+            content_types=ContentType.PHOTO,
+        ),
+        state=AdminSG.change_team_logo,
+    ),
+    Window(
+        Const(text='Введите новое название команды'),
+        TextInput(
+            id='new_team_name',
+            type_factory=str,
+            on_success=new_team_name,
+        ),
+        state=AdminSG.change_team_name,
+    ),
+    Window(
+        Const(text='Введите название команды'),
+        TextInput(
+            id='new_team',
+            type_factory=str,
+            on_success=new_team,
+        ),
+        state=AdminSG.new_team,
+    ),
+    Window(
+        Const(text='Сейчас такой состав команды, выберите поле для замены'),
+        Group(
+            Select(
+                Format('{item[0]}'),
+                id='team_member_id',
+                item_id_getter=lambda x: f'{x[0]}^{x[1]}',
+                items='team_members',
+                on_click=selected_team_member,
+            ),
+            width=1
+            ),
+            Row(Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu),
+        ),
+        state=AdminSG.team_members,
+        getter=team_members
+    ),
+    Window(
+        Format('Что делаем с участником команды?'),
+
+        Column(
+            Button(
+                text=Const('Удалить'),
+                id='delite_team_members',
+                on_click=delite_team_members),
+            Button(
+                text=Const('Заменить на нового'),
+                id='replace_team_member',
+                on_click=replace_team_member)
+            ,
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ),
+        state=AdminSG.team_members_menu,
+    ),
+    Window(
+        Const(text='Введите полное имя пилота, которого вы хотите добавить'),
+        TextInput(
+            id='enter_team_member',
+            type_factory=str,
+            on_success=enter_team_member,
+        ),
+        state=AdminSG.enter_team_member,
+    ),
+    Window(
+        Const(text='Выберите пользователя из найденных:'),
+        Group(
+            Select(
+                Format('{item[name]}' + ' № {item[number]}'),
+                id='user_id',
+                item_id_getter=lambda x: x['id'],
+                items='found_user',
+                on_click=member_selected,
+            ),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+            width=1
+        ),
+        state=AdminSG.found_user_for_member,
+        getter=found_users
     ),
 )
 
