@@ -19,7 +19,7 @@ async_session = sessionmaker(bind=engine2, class_=AsyncSession, expire_on_commit
 # Выбор гонщиков для прогноза со срезами по местам
 def select_drivers(start=0, stop=None):
     with Session() as session:
-        statement = select(Driver).where(Driver.driver_nextgp == 'Y').order_by(Driver.driver_position.asc())
+        statement = select(Driver).where(Driver.driver_nextgp == True).order_by(Driver.driver_position.asc())
         db_object = session.scalars(statement).all()
 
         # Обработка случая, когда stop равно None
@@ -33,7 +33,7 @@ def select_drivers(start=0, stop=None):
 # Выбор команд и моторов для прогноза
 def select_team_engine(pilot):
     with Session() as session:
-        statement = select(Driver).where(Driver.driver_name == pilot, Driver.driver_nextgp == 'Y')
+        statement = select(Driver).where(Driver.driver_name == pilot, Driver.driver_nextgp == True)
         db_object = session.scalars(statement).one()
         return db_object.driver_team, db_object.driver_engine
 
