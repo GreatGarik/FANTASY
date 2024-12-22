@@ -94,7 +94,7 @@ async def button_change_user_number(callback: CallbackQuery, button: Button,
     await dialog_manager.switch_to(AdminSG.new_number_user)
 
 
-async def new_name_user(message: Message, widget: Widget,
+async def new_name_user(message: Message, widget: Button,
                         dialog_manager: DialogManager, text: str) -> None:
     await change_user_name_async(dialog_manager.dialog_data['user_tg_id'], text)
     await message.answer(f'Вы изменили имя на {text}')
