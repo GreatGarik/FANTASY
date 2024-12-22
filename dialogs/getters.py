@@ -12,7 +12,7 @@ from database.database import select_drivers, add_user, get_users, send_predict,
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
     is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
     get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member
+    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team
 
 class AdminSG(StatesGroup):
     start = State()
@@ -54,6 +54,13 @@ class AdminSG(StatesGroup):
     enter_team_member = State()
     found_user_for_member = State()
     member_selected = State()
+    f1_drivers_menu = State()
+    f1_drivers_active = State()
+    f1_drivers_deactivated = State()
+    add_f1_driver = State()
+    add_f1_driver_team = State()
+    f1_driver_change_team = State()
+    f1_driver_change_team_teams = State()
     exit_admin = State()
 
 async def go_back(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
@@ -287,7 +294,60 @@ async def button_clear_result(callback: CallbackQuery, button: Button, dialog_ma
     await callback.message.answer('Результат удалён')
     await dialog_manager.switch_to(AdminSG.stage)
 
+async def replace_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.f1_drivers_active)
 
+async def f1_drivers_active(**kwargs):
+    return {'f1_drivers_active': await select_drivers_async(active=True)}
+
+async def f1_teams_active(**kwargs):
+    teams = {i.driver_team for i in await select_drivers_async(active=True)}
+    return {'f1_teams_active': teams}
+
+async def f1_driver_active_selected(callback: CallbackQuery, widget: Select,
+                        dialog_manager: DialogManager, item: str):
+    dialog_manager.dialog_data['f1_drivers_active_to_replace'] = item
+    await dialog_manager.switch_to(AdminSG.f1_drivers_deactivated)
+
+
+async def f1_drivers_deactivated_selected(callback: CallbackQuery, widget: Select,
+                        dialog_manager: DialogManager, item: str):
+    await update_driver_nextgp(dialog_manager.dialog_data['f1_drivers_active_to_replace'], item)
+    await dialog_manager.switch_to(AdminSG.f1_drivers_menu)
+
+async def f1_driver_deactivated(**kwargs):
+    return {'f1_drivers_all': await select_drivers_async(active=False)}
+
+async def f1_drivers_all(**kwargs):
+    return {'f1_drivers_all': await select_drivers_async()}
+
+
+async def add_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.add_f1_driver)
+
+async def add_f1_driver(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    dialog_manager.dialog_data['f1_new_driver'] = text
+    await dialog_manager.switch_to(AdminSG.add_f1_driver_team)
+
+async def add_f1_driver_team(callback: CallbackQuery, widget: Select,
+                        dialog_manager: DialogManager, item: str):
+    await create_f1_driver(dialog_manager.dialog_data['f1_new_driver'], item)
+    await callback.message.answer(f'Пилот {dialog_manager.dialog_data['f1_new_driver']} успешно добавлен.')
+    await dialog_manager.switch_to(AdminSG.f1_drivers_menu)
+
+async def f1_drivers_all_selected(callback: CallbackQuery, widget: Select,
+                        dialog_manager: DialogManager, item: str):
+    dialog_manager.dialog_data['f1_driver_name'] = item
+    await dialog_manager.switch_to(AdminSG.f1_driver_change_team_teams)
+
+async def f1_driver_change_team_teams(callback: CallbackQuery, widget: Select,
+                        dialog_manager: DialogManager, item: str):
+    await update_driver_team(dialog_manager.dialog_data['f1_driver_name'], item)
+    await callback.message.answer(f'Пилоту {dialog_manager.dialog_data['f1_driver_name']} изменена команда на {item}.')
+    await dialog_manager.switch_to(AdminSG.f1_drivers_menu)
+
+async def changing_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.f1_driver_change_team)
 
 
 
@@ -422,6 +482,9 @@ async def button_open_predict(callback: CallbackQuery, button: Button, dialog_ma
 
 async def button_team_management(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.team_management)
+
+async def button_f1_drivers(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.f1_drivers_menu)
 
 async def button_menu(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     dialog_manager.show_mode = ShowMode.DELETE_AND_SEND

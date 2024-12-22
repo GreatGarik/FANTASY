@@ -56,6 +56,11 @@ admin_dialog = Dialog(
             on_click=button_team_management
         ),
         Button(
+            text=Const('Управление гонщиками f1'),
+            id='button_f1_drivers',
+            on_click=button_f1_drivers
+        ),
+        Button(
             text=Const('Выйти из админки'),
             id='button_exit',
             on_click=button_exit),
@@ -659,6 +664,140 @@ admin_dialog = Dialog(
         ),
         state=AdminSG.found_user_for_member,
         getter=found_users
+    ),
+    Window(
+        Const('Меню управления пилотами F1'),
+        Column(Button(
+            text=Const('Заменить участвующего пилота'),
+            id='replace_driver',
+            on_click=replace_driver
+        ),
+        Button(
+            text=Const('Добавить пилота'),
+            id='add_driver',
+            on_click=add_driver
+        ),
+        Button(
+            text=Const('Изменить команду пилота'),
+            id='changing_driver',
+            on_click=changing_driver
+        ),
+
+        Button(
+            text=Const('Вернуться в главное меню'),
+            id='button_menu',
+            on_click=button_menu)
+        ),
+        state=AdminSG.f1_drivers_menu
+    ),
+    Window(
+        Const(text='Выберите пилота для замены:'),
+        Group(
+            Select(
+                Format('{item.driver_name}'),
+                id='f1_driver_active',
+                item_id_getter=lambda x: x.driver_name,
+                items='f1_drivers_active',
+                on_click=f1_driver_active_selected,
+            ),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+            width=1
+        ),
+        state=AdminSG.f1_drivers_active,
+        getter=f1_drivers_active
+    ),
+    Window(
+        Const(text='Выберите пилота, который будет заменять:'),
+        Group(
+            Select(
+                Format('{item.driver_name}'),
+                id='f1_driver_deactivated',
+                item_id_getter=lambda x: x.driver_name,
+                items='f1_driver_deactivated',
+                on_click=f1_drivers_deactivated_selected,
+            ),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+            width=1
+        ),
+        state=AdminSG.f1_drivers_deactivated,
+        getter=f1_driver_deactivated
+    ),
+    Window(
+        Const(text='Введите пилота'),
+        TextInput(
+            id='add_f1_driver',
+            type_factory=str,
+            on_success=add_f1_driver,
+        ),
+        state=AdminSG.add_f1_driver,
+    ),
+    Window(
+        Const(text='Выберите команду нового пилота:'),
+        Group(
+            Select(
+                Format('{item}'),
+                id='add_f1_driver_team',
+                item_id_getter=lambda x: x,
+                items='f1_teams_active',
+                on_click=add_f1_driver_team,
+            ),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+            width=1
+        ),
+        state=AdminSG.add_f1_driver_team,
+        getter=f1_teams_active
+    ),
+Window(
+        Const(text='Выберите пилота, который будет заменять:'),
+        Group(
+            Select(
+                Format('{item.driver_name}'),
+                id='f1_drivers_all',
+                item_id_getter=lambda x: x.driver_name,
+                items='f1_drivers_all',
+                on_click=f1_drivers_all_selected,
+            ),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+            width=1
+        ),
+        state=AdminSG.f1_driver_change_team,
+        getter=f1_drivers_all
+    ),
+    Window(
+        Const(text='Выберите новую команду пилота:'),
+        Group(
+            Select(
+                Format('{item}'),
+                id='f1_driver_change_team_teams',
+                item_id_getter=lambda x: x,
+                items='f1_teams_active',
+                on_click=f1_driver_change_team_teams,
+            ),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+            width=1
+        ),
+        state=AdminSG.f1_driver_change_team_teams,
+        getter=f1_teams_active
     ),
 )
 

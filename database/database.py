@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from aiogram.utils.chat_member import USERS
 from certifi import where
 from datetime import datetime
-from sqlalchemy import create_engine, select, update, case
+from sqlalchemy import create_engine, select, update, case, func
 from sqlalchemy.orm import sessionmaker
 from database.models import *
 
@@ -28,6 +28,31 @@ def select_drivers(start=0, stop=None):
 
         # Возврат среза результатов
         return db_object[start:stop]
+
+
+async def select_drivers_async(start=0, stop=None, active=None):
+    async with async_session() as session:
+        async with session.begin():
+            # Формируем запрос для выбора гонщиков
+            if active is not None:
+                statement = select(Driver).where(Driver.driver_nextgp == active).order_by(Driver.driver_position.asc())
+            else:
+                statement = select(Driver).order_by(Driver.driver_position.asc())
+
+            # Выполняем запрос и получаем все результаты
+            result = await session.execute(statement)
+            db_object = result.scalars().all()
+
+            # Обработка случая, когда stop равно None
+            if stop is None:
+                stop = len(db_object)
+
+            # Проверка на корректность значений start и stop
+            if start < 0 or stop < 0 or start >= len(db_object):
+                return []  # Возвращаем пустой список, если индексы некорректны
+
+            # Возврат среза результатов
+            return db_object[start:stop]
 
 
 # Выбор команд и моторов для прогноза
@@ -624,3 +649,78 @@ async def update_or_remove_team_member(team_id: int, position: str, user_id: Opt
             await session.commit()
 
 
+async def update_driver_nextgp(driver_name_1: str, driver_name_2: str):
+    async with async_session() as session:
+        async with session.begin():
+            # Находим первого гонщика
+            result_1 = await session.execute(select(Driver).where(Driver.driver_name == driver_name_1))
+            driver_1 = result_1.scalar_one_or_none()
+
+            # Находим второго гонщика
+            result_2 = await session.execute(select(Driver).where(Driver.driver_name == driver_name_2))
+            driver_2 = result_2.scalar_one_or_none()
+
+            # Проверяем, что оба гонщика найдены
+            if driver_1 is None:
+                raise ValueError(f"Driver with name '{driver_name_1}' not found.")
+            if driver_2 is None:
+                raise ValueError(f"Driver with name '{driver_name_2}' not found.")
+
+            # Устанавливаем значения driver_nextgp
+            driver_1.driver_nextgp = False
+            driver_2.driver_nextgp = True
+
+            # Сохраняем изменения в базе данных
+            await session.commit()
+
+async def create_f1_driver(driver_name: str, driver_team: str):
+    async with async_session() as session:
+        async with session.begin():
+            # Получаем информацию о двигателе на основании команды
+            result = await session.execute(select(Driver).where(Driver.driver_team == driver_team))
+            team_driver = result.scalars().first()
+            result = await session.execute(select(func.max(Driver.driver_position)))
+            max_position = result.scalar_one_or_none()
+            if team_driver is None:
+                raise ValueError(f"No drivers found for team '{driver_team}'.")
+
+            # Используем информацию о двигателе из первого гонщика команды
+            driver_engine = team_driver.driver_engine
+            engine_short = team_driver.engine_short
+
+            # Создаем нового гонщика
+            new_driver = Driver(
+                driver_name=driver_name,
+                driver_position=max_position + 1,
+                driver_team=driver_team,
+                driver_engine=driver_engine,
+                engine_short=engine_short,
+                driver_nextgp=False  # Устанавливаем nextgp в False
+            )
+            session.add(new_driver)  # Добавляем нового гонщика в сессию
+            await session.commit()  # Сохраняем изменения в базе данных
+
+async def update_driver_team(driver_name: str, new_team: str):
+    async with async_session() as session:
+        async with session.begin():
+            # Находим гонщика по имени
+            result = await session.execute(select(Driver).where(Driver.driver_name == driver_name))
+            driver = result.scalar_one_or_none()
+
+            if driver is None:
+                raise ValueError(f"Driver with name '{driver_name}' not found.")
+
+            # Получаем информацию о двигателе для новой команды
+            engine_result = await session.execute(select(Driver).where(Driver.driver_team == new_team))
+            new_team_driver = engine_result.scalars().first()
+
+            if new_team_driver is None:
+                raise ValueError(f"No drivers found for team '{new_team}'.")
+
+            # Обновляем информацию о гонщике
+            driver.driver_team = new_team
+            driver.driver_engine = new_team_driver.driver_engine
+            driver.engine_short = new_team_driver.engine_short
+
+            # Сохраняем изменения в базе данных
+            await session.commit()
