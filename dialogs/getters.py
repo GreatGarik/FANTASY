@@ -1,5 +1,4 @@
 from datetime import datetime, date, time
-from tkinter import Widget
 import os
 from aiogram.fsm.state import State, StatesGroup
 from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs, ShowMode
