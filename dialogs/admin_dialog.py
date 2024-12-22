@@ -56,7 +56,7 @@ admin_dialog = Dialog(
             on_click=button_team_management
         ),
         Button(
-            text=Const('Управление гонщиками f1'),
+            text=Const('Управление гонщиками F1'),
             id='button_f1_drivers',
             on_click=button_f1_drivers
         ),
