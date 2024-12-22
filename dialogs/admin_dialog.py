@@ -332,7 +332,7 @@ admin_dialog = Dialog(
             on_click=button_confirm_predict
         ),
         Button(
-            text=Const('Вернуться в главное меню без сохранения'),
+            text=Const('Вернуться в главное меню без открытия прогноза'),
             id='button_menu',
             on_click=button_menu)
         ,
