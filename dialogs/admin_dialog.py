@@ -325,7 +325,7 @@ admin_dialog = Dialog(
     ),
     Window(
         Format(
-            'Проверьте данные\n Вы открываете прогноз на {GP} GP\n Начало приема прогнозов {start}\n Без штрафа до {penalty}\n Окончание приема прогнозов {end}'),
+            'Проверьте данные\n Вы открываете прогноз на <b>{GP} GP</b>\n Начало приема прогнозов <b>{start}</b>\n Без штрафа до <b>{penalty}</b>\n Окончание приема прогнозов <b>{end}</b>'),
         Button(
             text=Const('Подтвердить'),
             id='button_confirm_predict',
@@ -476,7 +476,7 @@ admin_dialog = Dialog(
         getter=all_teams
     ),
     Window(
-        Format('Что меняем у команды {team_name}?'),
+        Format('Что меняем у команды <b>{team_name}</b>?'),
 
         Column(
             Button(
