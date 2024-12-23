@@ -12,7 +12,7 @@ from database.database import select_drivers, add_user, get_users, send_predict,
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
     is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
     get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team
+    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result
 
 class AdminSG(StatesGroup):
     start = State()
@@ -61,6 +61,10 @@ class AdminSG(StatesGroup):
     add_f1_driver_team = State()
     f1_driver_change_team = State()
     f1_driver_change_team_teams = State()
+    loading_f1_results = State()
+    loading_f1_result_sprint = State()
+    loading_f1_result_quali = State()
+    loading_f1_result_race = State()
     exit_admin = State()
 
 async def go_back(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
@@ -288,6 +292,33 @@ async def button_calculate(callback: CallbackQuery, button: Button, dialog_manag
 
     await dialog_manager.switch_to(AdminSG.stage)
 
+
+async def loading_f1_results(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.loading_f1_results)
+
+async def button_f1_sprint(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.loading_f1_result_sprint)
+
+async def loading_f1_result_sprint(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    await update_grandprix_result(grandprix_id=get_actual_gp(), result_type='sprint', result_text=text)
+    await message.answer('Результат Спринта записан')
+    await dialog_manager.switch_to(AdminSG.loading_f1_results)
+
+async def button_f1_quali(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.loading_f1_result_quali)
+
+async def loading_f1_result_quali(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    await update_grandprix_result(grandprix_id=get_actual_gp(), result_type='qualifying', result_text=text)
+    await message.answer('Результат Квалификации записан')
+    await dialog_manager.switch_to(AdminSG.loading_f1_results)
+
+async def button_f1_race(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.loading_f1_result_race)
+
+async def loading_f1_result_race(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    await update_grandprix_result(grandprix_id=get_actual_gp(), result_type='race', result_text=text)
+    await message.answer('Результат Гонки записан')
+    await dialog_manager.switch_to(AdminSG.loading_f1_results)
 
 async def button_clear_result(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     clear_results(get_actual_gp())

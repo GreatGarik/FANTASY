@@ -3,7 +3,7 @@ from datetime import datetime, date, time
 from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs, ShowMode
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.input import TextInput, ManagedTextInput, MessageInput
-from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar, Radio
+from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar, Radio, Back
 from aiogram import Router
 from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
 from aiogram.fsm.state import State, StatesGroup
@@ -415,7 +415,7 @@ admin_dialog = Dialog(
             Button(
                 text=Const('Загрузить результаты этапа'),
                 id='button_drivers_champ',
-                on_click=button_drivers_champ)
+                on_click=loading_f1_results)
             ,
             Button(
                 text=Const('Сбросить расчет этапа'),
@@ -434,6 +434,60 @@ admin_dialog = Dialog(
 
         ),
         state=AdminSG.stage
+    ),
+    Window(
+        Format('Загрузка результатов этапа'),
+        Column(
+            Button(
+                text=Const('Спринт'),
+                id='button_f1_sprint',
+                on_click=button_f1_sprint
+            ),
+            Button(
+                text=Const('Квалификация'),
+                id='button_f1_quali',
+                on_click=button_f1_quali)
+            ,
+            Button(
+                text=Const('Гонка'),
+                id='button_f1_race',
+                on_click=button_f1_race)
+            ,
+            Back(Const('◀️'), id='back'),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+        ),
+        state=AdminSG.loading_f1_results
+    ),
+    Window(
+        Const(text='Введите результат спринта'),
+        TextInput(
+            id='loading_f1_result_sprint',
+            type_factory=str,
+            on_success=loading_f1_result_sprint,
+        ),
+        state=AdminSG.loading_f1_result_sprint,
+    ),
+    Window(
+        Const(text='Введите результат квалификации'),
+        TextInput(
+            id='loading_f1_result_quali',
+            type_factory=str,
+            on_success=loading_f1_result_quali,
+        ),
+        state=AdminSG.loading_f1_result_quali,
+    ),
+    Window(
+        Const(text='Введите результат гонки'),
+        TextInput(
+            id='loading_f1_result_race',
+            type_factory=str,
+            on_success=loading_f1_result_race,
+        ),
+        state=AdminSG.loading_f1_result_race,
     ),
     Window(
         Const('Это меню управления командами'),

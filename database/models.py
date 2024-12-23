@@ -108,9 +108,14 @@ class Grandprix(Base):
     max1: Mapped[int] = mapped_column(Integer)
     max2: Mapped[int] = mapped_column(Integer)
     max3: Mapped[int] = mapped_column(Integer)
+    sprint_result: Mapped[str] = mapped_column(String(400))
+    quali_result: Mapped[str] = mapped_column(String(400))
+    race_result: Mapped[str] = mapped_column(String(400))
 
     race = relationship('Point', back_populates='gp')
     race_team: Mapped['TeamPoint'] = relationship('TeamPoint', back_populates='gp_team')
+
+
 
 # Определяем модель команд
 class Team(Base):

@@ -1,4 +1,4 @@
-from dataprocessing.get_data import get_res_gp
+from dataprocessing.get_data_results_from_db import get_res_gp
 from database.database import get_predict, select_drivers, add_result, get_result, add_points, get_team, add_team_points, add_maximus
 
 

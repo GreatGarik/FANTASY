@@ -724,3 +724,37 @@ async def update_driver_team(driver_name: str, new_team: str):
 
             # Сохраняем изменения в базе данных
             await session.commit()
+
+async def update_grandprix_result(grandprix_id: int, result_type: str, result_text: str):
+    # Определяем, какое поле обновлять
+    if result_type == 'sprint':
+        column_to_update = Grandprix.sprint_result
+    elif result_type == 'qualifying':
+        column_to_update = Grandprix.quali_result
+    elif result_type == 'race':
+        column_to_update = Grandprix.race_result
+    else:
+        raise ValueError("Invalid result type. Choose 'sprint', 'qualifying', or 'race'.")
+
+    async with async_session() as session:
+        async with session.begin():
+            stmt = update(Grandprix).where(Grandprix.id == grandprix_id).values({column_to_update: result_text})
+            await session.execute(stmt)
+            await session.commit()  # Фиксация изменений
+
+async def get_grandprix_results(grandprix_id: int):
+    async with async_session() as session:
+        async with session.begin():
+            result = await session.execute(
+                select(Grandprix).where(Grandprix.id == grandprix_id)
+            )
+            grandprix = result.scalars().first()  # Получаем первый результат
+
+            if grandprix:
+                return {
+                    "sprint_result": grandprix.sprint_result,
+                    "quali_result": grandprix.quali_result,
+                    "race_result": grandprix.race_result,
+                }
+            else:
+                return None  # Если гонка не найдена
