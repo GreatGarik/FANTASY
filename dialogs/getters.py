@@ -284,7 +284,7 @@ async def button_calculate(callback: CallbackQuery, button: Button, dialog_manag
     if check_res(gp):
         await callback.message.answer(f'Вы уже сделали расчет для этого GP')
     else:
-        output = await process_calculation_command(calculation_drivers(gp))
+        output = await process_calculation_command(await calculation_drivers(gp))
         await callback.message.answer_document(
             document=BufferedInputFile(output.read(), filename='gp_results.xlsx')
         )

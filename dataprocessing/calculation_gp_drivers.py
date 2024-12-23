@@ -2,10 +2,10 @@ from dataprocessing.get_data_results_from_db import get_res_gp
 from database.database import get_predict, select_drivers, add_result, get_result, add_points, get_team, add_team_points, add_maximus
 
 
-def calculation_drivers(gp):
+async def calculation_drivers(gp):
     deltas = {0: 10, 1: 7, 2: 5, 3: 3, 4: 2, 5: 1}
     predicts_from_db = get_predict(gp)
-    results_predict_gp = get_res_gp()
+    results_predict_gp = await get_res_gp()
 
     names = [i.driver_name for i in select_drivers()]
     first_max = max([results_predict_gp[name] for name in names])
