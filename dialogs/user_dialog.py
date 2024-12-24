@@ -1,0 +1,222 @@
+import operator
+from datetime import datetime, date, time
+from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs, ShowMode
+from aiogram_dialog.widgets.text import Const, Format
+from aiogram_dialog.widgets.input import TextInput, ManagedTextInput, MessageInput
+from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar, Radio, Back
+from aiogram import Router, F
+from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.enums import ContentType, ParseMode
+from aiogram.filters import Command, CommandStart, StateFilter, BaseFilter
+from .user_getters import *
+
+user_dialog = Dialog(
+    Window(
+        Format('Здравствуйте, <b>{user_name}</b>'),
+        Column(Button(
+                text=Const('Регистрация в фэнтези'),
+                id='all_stages',
+                on_click=button_registration,
+                when=F["unregistered"]
+            ),
+            Button(
+            text=Const('Отправить прогноз на ближайший GP'),
+            id='button_send_predict',
+            on_click=button_send_predict,
+            when=F["registered"]
+        ),
+            Button(
+                text=Const('Информация о фэнтези'),
+                id='button_about',
+                on_click=button_about
+            ),
+
+        ),
+        state=UserSG.start,
+        getter=user_name
+    ),
+    Window(
+        Const(text='Пожалуйста, введите ваше имя и фамилию латинским буквами через пробел:'),
+        TextInput(
+            type_factory=name_check,
+            id='fill_form_name',
+            on_success=fill_form_name,
+            on_error=error_fill_form_name
+        ),
+        state=UserSG.fill_form_name,
+    ),
+    Window(
+        Const(text='Выберите <b>команду</b>:'),
+        Group(
+            Select(
+                Format('{item}'),
+                id='selected_team',
+                item_id_getter=lambda x: x,
+                items='teams_for_select',
+                on_click=select_team,
+            ),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_user_menu)
+            ,
+            width=1
+        ),
+        state=UserSG.send_predict,
+        getter=get_all_teams_predict
+    ),
+    Window(
+        Const(text='Выберите <b>двигатель</b>:'),
+        Group(
+            Select(
+                Format('{item}'),
+                id='selected_engine',
+                item_id_getter=lambda x: x,
+                items='engines_for_select',
+                on_click=select_engine,
+            ),
+            Back(Const('◀️ Назад'), id='back'),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_user_menu)
+            ,
+            width=1
+        ),
+        state=UserSG.send_predict_engine,
+        getter=get_all_engines_predict
+    ),
+    Window(
+        Const(text='Выберите <b>первого пилота</b>:'),
+        Group(
+            Select(
+                Format('{item}'),
+                id='select_first_driver',
+                item_id_getter=lambda x: x,
+                items='drivers_for_select',
+                on_click=select_first_driver,
+            ),
+            Back(Const('◀️ Назад'), id='back'),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_user_menu)
+            ,
+            width=1
+        ),
+        state=UserSG.send_predict_first,
+        getter=get_all_drivers_predict
+    ),
+    Window(
+        Const(text='Выберите <b>второго пилота</b>:'),
+        Group(
+            Select(
+                Format('{item}'),
+                id='select_second_driver',
+                item_id_getter=lambda x: x,
+                items='drivers_for_select',
+                on_click=select_second_driver,
+            ),
+            Back(Const('◀️ Назад'), id='back'),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_user_menu)
+            ,
+            width=1
+        ),
+        state=UserSG.send_predict_second,
+        getter=get_all_drivers_predict_second
+    ),
+    Window(
+        Const(text='Выберите <b>третьего пилота</b>:'),
+        Group(
+            Select(
+                Format('{item}'),
+                id='select_third_driver',
+                item_id_getter=lambda x: x,
+                items='drivers_for_select',
+                on_click=select_third_driver,
+            ),
+            Back(Const('◀️ Назад'), id='back'),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_user_menu)
+            ,
+            width=1
+        ),
+        state=UserSG.send_predict_third,
+        getter=get_all_drivers_predict_third
+    ),
+    Window(
+        Const(text='Выберите <b>четвертого пилота</b>:'),
+        Group(
+            Select(
+                Format('{item}'),
+                id='select_fourth_driver',
+                item_id_getter=lambda x: x,
+                items='drivers_for_select',
+                on_click=select_fourth_driver,
+            ),
+            Back(Const('◀️ Назад'), id='back'),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_user_menu)
+            ,
+            width=1
+        ),
+        state=UserSG.send_predict_fourth,
+        getter=get_all_drivers_predict_fourth
+    ),
+    Window(
+        Const(text='<b>Введите отставание от лидера в секундах (целое число)</b>:'),
+        TextInput(
+            id='loading_f1_result_sprint',
+            type_factory=is_correct_number,
+            on_success=select_gap,
+        ),
+        state=UserSG.send_predict_gap
+    ),
+    Window(
+        Const(text='<b>Введите количество круговых</b>:'),
+        TextInput(
+            id='loading_f1_result_sprint',
+            type_factory=is_correct_number,
+            on_success=select_laps,
+        ),
+        state=UserSG.send_predict_laps
+    ),
+    Window(
+        Format('Ваш прогноз на <b>{name_gp} GP</b>:\nКоманда: <b>{driver_team}</b>\nДвигатель: <b>{driver_engine}</b>\nПервый пилот: <b>{first_driver}</b>\nВторой пилот: <b>{second_driver}</b>\nТретий пилот: <b>{third_driver}</b>\nЧетвертый пилот: <b>{fourth_driver}</b>\nОтставание от лидера: <b>{gap}</b>\nКоличество круговых: <b>{lapped}</b>'),
+        Button(
+            text=Const('Подтвердить'),
+            id='button_confirm_predict',
+            on_click=button_user_confirm_predict
+        ),
+        Button(
+            text=Const('Ой, я ошибся, хочу ввести заново'),
+            id='button_send_predict',
+            on_click=button_send_predict
+        ),
+        Button(
+            text=Const('В главное меню (без отправки прогноза)'),
+            id='button_menu',
+            on_click=button_user_menu)
+        ,
+        getter=predict_ending,
+        state=UserSG.send_predict_ending,
+
+    ),
+)
+
+router: Router = Router()
+router.include_router(user_dialog)
+setup_dialogs(router)
+
+
+@router.message(Command(commands='menu'))
+async def command_start_process(message: Message, dialog_manager: DialogManager):
+    await dialog_manager.start(state=UserSG.start, mode=StartMode.RESET_STACK)

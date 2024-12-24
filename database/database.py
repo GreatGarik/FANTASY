@@ -80,6 +80,17 @@ def add_user(user_id, name: str, lastname: str):
         except:
             pass
 
+async def add_user_async(user_id, name: str, lastname: str):
+    async with async_session() as session:
+        async with session.begin():
+            try:
+                user = User(name=name + ' ' + lastname, id_telegram=user_id)
+                session.add(user)
+                # Коммит будет выполнен автоматически при выходе из блока session.begin()
+            except Exception as e:
+                # Обработка исключений, если необходимо
+                raise e
+
 
 # Запись прогноза на гонку
 def send_predict(tg_id, gp, first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap,
@@ -272,6 +283,23 @@ def get_users(id_telegram=None):
             statement = select(User)
             db_object = session.scalars(statement).all()
             return db_object
+
+async def get_users_async(id_telegram=None):
+    async with async_session() as session:
+        async with session.begin():
+            if id_telegram:
+                try:
+                    statement = select(User).where(User.id_telegram == id_telegram)
+                    result = await session.execute(statement)
+                    return result.scalars().one_or_none()
+                except Exception as e:
+                    # Обработка исключений, если необходимо
+                    return None
+            else:
+                statement = select(User)
+                result = await session.execute(statement)
+                return result.scalars().all()
+
 
 
 # Проверка просчитаны ли уже результаты на заданный GP

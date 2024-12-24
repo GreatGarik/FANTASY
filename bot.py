@@ -3,7 +3,7 @@ import logging
 from aiogram import Bot, Dispatcher
 from config_data.config import Config, load_config
 from handlers import user_handlers, admin_handlers, other_handlers
-from dialogs import admin_dialog
+from dialogs import admin_dialog, user_dialog
 from keyboards.menu_button import set_main_menu
 from aiogram.fsm.storage.redis import RedisStorage, Redis, DefaultKeyBuilder
 from aiogram.client.bot import DefaultBotProperties
@@ -48,6 +48,7 @@ async def main():
     # Регистрируем все хэндлеры
     #dp.include_router(admin_handlers.admin_router)
     dp.include_router(user_handlers.router)
+    dp.include_router(user_dialog.router)
     dp.include_router(admin_dialog.router)
     dp.include_router(other_handlers.other_router)
 

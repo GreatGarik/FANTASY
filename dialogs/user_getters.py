@@ -1,0 +1,216 @@
+from datetime import datetime, date, time
+import os
+from aiogram.fsm.state import State, StatesGroup
+from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs, ShowMode
+from aiogram_dialog.widgets.input import TextInput, ManagedTextInput, MessageInput
+from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar
+from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
+from string import ascii_letters, digits
+from dataprocessing.excel_forms import entry_list, last_stage, process_championship_full, championship_team_full, \
+    process_calculation_command
+from dataprocessing.calculation_gp_drivers import calculation_drivers
+from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
+    show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
+    is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
+    get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
+    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, get_users_async, add_user_async, get_end_grandprix_by_id, get_start_grandprix_by_id, get_penalty_grandprix_by_id
+
+
+class UserSG(StatesGroup):
+    start = State()
+    fill_form_name = State()
+    send_predict = State()
+    send_predict_engine = State()
+    send_predict_first = State()
+    send_predict_second = State()
+    send_predict_third = State()
+    send_predict_fourth = State()
+    send_predict_gap = State()
+    send_predict_laps = State()
+    send_predict_ending = State()
+
+
+def name_check(text: str) -> str:
+    if all(char in ascii_letters + ' ' for char in text) and text.count(' ') == 1:
+        return text
+    raise ValueError
+
+async def error_fill_form_name(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, error: ValueError):
+    await message.answer(text='В имени могут быть только латинские буквы и должен быть только один пробел между именем и фамилией.')
+
+async def fill_form_name(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    name, lastname = text.split()
+    await add_user_async(message.from_user.id, name.capitalize(), lastname.upper())
+    await message.answer(
+        text='Спасибо за регистрацию, теперь Вы можете делать прогнозы.')
+
+    await dialog_manager.switch_to(UserSG.start)
+
+
+
+async def user_name(event_from_user: User, **kwargs):
+    user = await get_users_async(event_from_user.id)
+    if user:
+        return {'user_name': user.name, 'unregistered': False, 'registered': True}
+    else:
+        return {'user_name': 'Незарегистрированный пользователь', 'unregistered': True, 'registered': False}
+
+async def button_registration(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(UserSG.fill_form_name)
+
+async def button_send_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    dialog_manager.dialog_data.clear()
+    actual_gp: int = get_actual_gp()
+    end_time = await get_end_grandprix_by_id(actual_gp)
+    start_time = await get_start_grandprix_by_id(actual_gp)
+    if is_prediced(callback.from_user.id, actual_gp):
+        await callback.answer(
+            text=f'Вы уже отправили прогноз на {get_name_gp(actual_gp)} GP')
+        await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
+
+    elif datetime.now() > start_time:
+        if datetime.now() < end_time:
+            penalty_time = await get_penalty_grandprix_by_id(actual_gp)
+            await callback.message.answer(
+                text=f'Окончание приема прогноза на <b>{get_name_gp(actual_gp)} GP</b> закончится <b>{end_time}</b>\n Без штрафа прогноз можно подать до <b>{penalty_time}</b>')
+            dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+            await dialog_manager.switch_to(UserSG.send_predict)
+        else:
+            await callback.message.answer(
+                text=f'В данный момент прогноз на {get_name_gp(actual_gp)} GP не принимается\n Прием прогнозов закончился {end_time}')
+            dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+            await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
+
+async def get_all_teams_predict(**kwargs):
+    return {'teams_for_select': sorted({i.driver_team + '  ' + i.engine_short for i in select_drivers()})}
+
+async def get_all_engines_predict(**kwargs):
+    return {'engines_for_select': sorted({i.driver_engine + '  ' + i.engine_short for i in select_drivers()})}
+
+async def get_all_drivers_predict(**kwargs):
+    return {'drivers_for_select': [i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short for i in select_drivers()]}
+
+async def get_all_drivers_predict_second(dialog_manager: DialogManager, **kwargs):
+    return {'drivers_for_select': [i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short for i in select_drivers() if
+                                                                    i.driver_name not in [*dialog_manager.dialog_data.values()]]}
+
+async def get_all_drivers_predict_third(dialog_manager: DialogManager, **kwargs):
+    return {'drivers_for_select': [i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short for i in select_drivers()[10:] if i.driver_name not in [*dialog_manager.dialog_data.values()]]}
+
+async def get_all_drivers_predict_fourth(dialog_manager: DialogManager, **kwargs):
+    return {'drivers_for_select': [i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short for i in select_drivers()[15:] if i.driver_name not in [*dialog_manager.dialog_data.values()]]}
+
+async def predict_ending(dialog_manager: DialogManager, **kwargs):
+    name_gp = get_name_gp(get_actual_gp())
+    driver_team = dialog_manager.dialog_data['selected_team']
+    driver_engine = dialog_manager.dialog_data['selected_engine']
+    first_driver = dialog_manager.dialog_data['first_driver']
+    second_driver = dialog_manager.dialog_data['second_driver']
+    third_driver = dialog_manager.dialog_data['third_driver']
+    fourth_driver = dialog_manager.dialog_data['fourth_driver']
+    gap = dialog_manager.dialog_data['gap']
+    lapped = dialog_manager.dialog_data['laps']
+    return {'name_gp': name_gp, 'driver_team': driver_team, 'driver_engine': driver_engine, 'first_driver': first_driver, 'second_driver': second_driver, 'third_driver': third_driver, 'fourth_driver': fourth_driver, 'gap': gap, 'lapped': lapped}
+
+
+async def select_team(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, item: str):
+    dialog_manager.dialog_data['selected_team'] = item.rsplit(' ', 1)[0].strip()
+    dialog_manager.dialog_data['select1_engine'] = item.split()[-1].strip()
+    await dialog_manager.switch_to(UserSG.send_predict_engine)
+
+def is_correct_number(text: str) -> str:
+    if all(ch.isdigit() for ch in text) and 0 <= int(text):
+        return text
+    raise ValueError
+
+async def select_engine(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, item: str):
+    dialog_manager.dialog_data['selected_engine'] = item.rsplit(' ', 1)[0].strip()
+    dialog_manager.dialog_data['select2_engine'] = item.split()[-1].strip()
+    await dialog_manager.switch_to(UserSG.send_predict_first)
+
+async def select_first_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, item: str):
+    dialog_manager.dialog_data['first_driver'] = item.split('(')[0].strip()
+    dialog_manager.dialog_data['select3_engine'] = item.split()[-1].strip()
+    await dialog_manager.switch_to(UserSG.send_predict_second)
+
+async def select_second_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, item: str):
+    dialog_manager.dialog_data['second_driver'] = item.split('(')[0].strip()
+    dialog_manager.dialog_data['select4_engine'] = item.split()[-1].strip()
+    if all(engine == dialog_manager.dialog_data['select1_engine'] for engine in
+           [dialog_manager.dialog_data['select2_engine'], dialog_manager.dialog_data['select3_engine'], dialog_manager.dialog_data['select4_engine']]):
+        await callback.message.answer('В вашем выборе 4 одинаковых двигателя!\nВыберите другого гонщика или вернитесь назад, чтобы изменить выбор на прошлых шагах')
+        dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+        await dialog_manager.switch_to(UserSG.send_predict_second)
+    else:
+        await dialog_manager.switch_to(UserSG.send_predict_third)
+
+async def select_third_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, item: str):
+    dialog_manager.dialog_data['third_driver'] = item.split('(')[0].strip()
+    dialog_manager.dialog_data['select5_engine'] = item.split()[-1].strip()
+    values = [dialog_manager.dialog_data['select1_engine'], dialog_manager.dialog_data['select2_engine'], dialog_manager.dialog_data['select3_engine'],
+              dialog_manager.dialog_data['select4_engine'], dialog_manager.dialog_data['select5_engine']]
+    if any(values.count(x) == 4 for x in set(values)):
+        await callback.message.answer('В вашем выборе 4 одинаковых двигателя!\nВыберите другого гонщика или вернитесь назад, чтобы изменить выбор на прошлых шагах')
+        dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+        await dialog_manager.switch_to(UserSG.send_predict_third)
+    else:
+        await dialog_manager.switch_to(UserSG.send_predict_fourth)
+
+async def select_fourth_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, item: str):
+    dialog_manager.dialog_data['fourth_driver'] = item.split('(')[0].strip()
+    dialog_manager.dialog_data['select6_engine'] = item.split()[-1].strip()
+    values = [dialog_manager.dialog_data['select1_engine'], dialog_manager.dialog_data['select2_engine'], dialog_manager.dialog_data['select3_engine'],
+              dialog_manager.dialog_data['select4_engine'], dialog_manager.dialog_data['select5_engine'], dialog_manager.dialog_data['select6_engine']]
+    if any(values.count(x) == 4 for x in set(values)):
+        await callback.message.answer('В вашем выборе 4 одинаковых двигателя!\nВыберите другого гонщика или вернитесь назад, чтобы изменить выбор на прошлых шагах')
+        dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+        await dialog_manager.switch_to(UserSG.send_predict_fourth)
+    else:
+        await dialog_manager.switch_to(UserSG.send_predict_gap)
+
+async def select_gap(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    dialog_manager.dialog_data['gap'] = int(text)
+    await dialog_manager.switch_to(UserSG.send_predict_laps)
+
+async def select_laps(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    dialog_manager.dialog_data['laps'] = int(text)
+    await dialog_manager.switch_to(UserSG.send_predict_ending)
+
+async def button_user_confirm_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    gp = get_actual_gp()
+    end_time = await get_end_grandprix_by_id(gp)
+    if end_time < datetime.now():
+        await callback.answer(
+            text=f'К сожалению Вы не успели сделать прогноз на {get_name_gp(gp)} GP, окончание приема заявок было до {end_time}')
+        dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+        await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
+    else:
+        penalty_time = await get_penalty_grandprix_by_id(gp)
+        if datetime.now() < penalty_time:
+            penalty = None
+        else:
+            penalty = 30
+
+        driver_team = dialog_manager.dialog_data['selected_team']
+        driver_engine = dialog_manager.dialog_data['selected_engine']
+        first_driver = dialog_manager.dialog_data['first_driver']
+        second_driver = dialog_manager.dialog_data['second_driver']
+        third_driver = dialog_manager.dialog_data['third_driver']
+        fourth_driver = dialog_manager.dialog_data['fourth_driver']
+        gap = dialog_manager.dialog_data['gap']
+        lapped = dialog_manager.dialog_data['laps']
+        #tg_id, gp, first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap,lapped, penalty, time
+        send_predict(tg_id=callback.from_user.id, gp=gp, first_driver=first_driver, second_driver=second_driver, third_driver=third_driver, fourth_driver=fourth_driver,driver_team=driver_team,driver_engine=driver_engine, gap=gap, lapped=lapped, penalty=penalty, time=datetime.now())
+        await callback.message.answer(f'Спасибо, принято!\nВаш прогноз на <b>{get_name_gp(gp)} GP:</b> \nКоманда: <b>{driver_team}</b>\nДвигатель: <b>{driver_engine}</b>\nПервый пилот: <b>{first_driver}</b>\nВторой пилот: <b>{second_driver}</b>\nТретий пилот: <b>{third_driver}</b>\nЧетвертый пилот: <b>{fourth_driver}</b>\nОтставание от лидера: <b>{gap}</b>\nКоличество круговых: <b>{lapped}</b>')
+        dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+        await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
+
+async def button_user_menu(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+    await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
+
+async def button_about(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    pass
+
+
+
