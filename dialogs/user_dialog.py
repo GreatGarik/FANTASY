@@ -11,6 +11,10 @@ from aiogram.enums import ContentType, ParseMode
 from aiogram.filters import Command, CommandStart, StateFilter, BaseFilter
 from .user_getters import *
 
+class IsAdmin(BaseFilter):
+    async def __call__(self, message: Message, all_admins) -> bool:
+        return message.from_user.id in all_admins
+
 user_dialog = Dialog(
     Window(
         Format('Здравствуйте, <b>{user_name}</b>'),
@@ -25,14 +29,19 @@ user_dialog = Dialog(
             id='button_send_predict',
             on_click=button_send_predict,
             when=F["registered"]
-        ),
+            ),
             Button(
                 text=Const('Информация о фэнтези'),
                 id='button_about',
                 on_click=button_about
             ),
-
+            Button(
+            text=Const('Выйти из пользовательского меню'),
+            id='button_exit',
+            on_click=button_exit_user,
+            when=F['admins']),
         ),
+
         state=UserSG.start,
         getter=user_name
     ),
@@ -212,11 +221,11 @@ user_dialog = Dialog(
     ),
 )
 
-router: Router = Router()
-router.include_router(user_dialog)
-setup_dialogs(router)
+user_router: Router = Router()
+user_router.include_router(user_dialog)
+setup_dialogs(user_router)
 
 
-@router.message(Command(commands='menu'))
+@user_router.message(Command(commands='menu'))
 async def command_start_process(message: Message, dialog_manager: DialogManager):
     await dialog_manager.start(state=UserSG.start, mode=StartMode.RESET_STACK)

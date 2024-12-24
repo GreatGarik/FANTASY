@@ -35,6 +35,7 @@ def name_check(text: str) -> str:
         return text
     raise ValueError
 
+
 async def error_fill_form_name(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, error: ValueError):
     await message.answer(text='В имени могут быть только латинские буквы и должен быть только один пробел между именем и фамилией.')
 
@@ -48,12 +49,16 @@ async def fill_form_name(message: Message, widget: ManagedTextInput, dialog_mana
 
 
 
-async def user_name(event_from_user: User, **kwargs):
+async def user_name(event_from_user: User, all_admins: list, **kwargs):
     user = await get_users_async(event_from_user.id)
+    is_admin = False
+    if event_from_user.id in all_admins:
+        is_admin = True
+
     if user:
-        return {'user_name': user.name, 'unregistered': False, 'registered': True}
+        return {'user_name': user.name, 'unregistered': False, 'registered': True, 'admins': is_admin}
     else:
-        return {'user_name': 'Незарегистрированный пользователь', 'unregistered': True, 'registered': False}
+        return {'user_name': 'Незарегистрированный пользователь', 'unregistered': True, 'admins': is_admin}
 
 async def button_registration(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(UserSG.fill_form_name)
@@ -212,5 +217,7 @@ async def button_user_menu(callback: CallbackQuery, button: Button, dialog_manag
 async def button_about(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     pass
 
-
+async def button_exit_user(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await callback.message.answer('Вы, вышли из пользовательского меню!')
+    await dialog_manager.done()
 

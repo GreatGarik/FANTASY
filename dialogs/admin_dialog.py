@@ -855,11 +855,11 @@ Window(
     ),
 )
 
-router: Router = Router()
-router.include_router(admin_dialog)
-setup_dialogs(router)
+admin_router: Router = Router()
+admin_router.include_router(admin_dialog)
+setup_dialogs(admin_router)
 
 
-@router.message(IsAdmin(), Command(commands='admin'))
+@admin_router.message(IsAdmin(), Command(commands='admin'))
 async def command_start_process(message: Message, dialog_manager: DialogManager):
     await dialog_manager.start(state=AdminSG.start, mode=StartMode.RESET_STACK)
