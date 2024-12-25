@@ -1,4 +1,5 @@
 from datetime import datetime, date, time
+import asyncio
 import os
 from aiogram.fsm.state import State, StatesGroup
 from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs, ShowMode
@@ -13,6 +14,7 @@ from database.database import select_drivers, add_user, get_users, send_predict,
     is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
     get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
     update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result
+from .dop_functions import send_message
 
 class AdminSG(StatesGroup):
     start = State()
@@ -496,6 +498,7 @@ async def predict_end(dialog_manager: DialogManager, **kwargs):
 
 
 async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+
     pattern = '%Y-%m-%d %H:%M:%S'
     gp_id = dialog_manager.dialog_data['predict_gp_selected']
     time_start = dialog_manager.dialog_data.get('start_datetime', datetime.now().replace(second=0).strftime('%Y-%m-%d %H:%M:%S'))
@@ -504,8 +507,25 @@ async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog
     await update_grandprix(gp_id=gp_id, time_start=datetime.strptime(time_start, pattern), time_penalty=datetime.strptime(time_penalty, pattern),
                            time_end=datetime.strptime(time_end, pattern))
     await callback.message.answer(f'Прогноз на {get_name_gp(gp_id)} открыт')
+
+    bot = dialog_manager.middleware_data.get('bot')
+    text = f'Привет!\nПриём прогнозов на <b> {get_name_gp(gp_id)} GP</b>\nоткроется<b>{time_start}</b>\nбез штрафа до <b>{time_penalty}</b>\nокончание прима <b>{time_end}</b>'
+    users = get_users()
+    # Создаем список задач
+    tasks = []
+    for user in users:
+        tasks.append(send_message(user.id_telegram, text, bot))
+        # Если количество задач достигло 25, ждем их завершения
+        if len(tasks) == 25:
+            await asyncio.gather(*tasks)
+            tasks = []  # Сбрасываем список задач
+            await asyncio.sleep(1)  # Пауза в 1 секунду, чтобы не превышать 25 сообщений в секунду
+
+    # Отправляем оставшиеся сообщения, если они есть
+    if tasks:
+        await asyncio.gather(*tasks)
+
     dialog_manager.dialog_data.clear()
-    #await (f'Прогноз на {get_name_gp(gp_id)} открыт')
     await dialog_manager.switch_to(AdminSG.start)
 
 
