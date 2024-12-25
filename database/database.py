@@ -35,6 +35,7 @@ engine2 = create_async_engine(async_database_url, echo=False)
 Session = sessionmaker(engine)
 async_session = sessionmaker(bind=engine2, class_=AsyncSession, expire_on_commit=False)
 
+Base.metadata.create_all(engine)
 
 # Выбор гонщиков для прогноза со срезами по местам
 def select_drivers(start=0, stop=None):
