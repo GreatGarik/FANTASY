@@ -1,3 +1,4 @@
+import platform
 from typing import Dict, Any, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from aiogram.utils.chat_member import USERS
@@ -6,12 +7,30 @@ from datetime import datetime
 from sqlalchemy import create_engine, select, update, case, func
 from sqlalchemy.orm import sessionmaker
 from database.models import *
+from config_data.config import Config, load_config
 
-# Подключаемся к базе данных
-engine = create_engine("sqlite:///fantasy.db", echo=False)
-engine2 = create_async_engine("sqlite+aiosqlite:///fantasy.db", echo=False)
+# Определяем текущую операционную систему
+current_os = platform.system()
 
-# Создаем сессию
+# Устанавливаем параметры подключения в зависимости от ОС
+if current_os == "Windows":
+    # Подключение к SQLite на Windows
+    database_url = "sqlite:///fantasy.db"
+    async_database_url = "sqlite+aiosqlite:///fantasy.db"
+elif current_os == "Linux":
+    # Загружаем конфиг в переменную config
+    config: Config = load_config()
+    # Подключение к PostgreSQL на Ubuntu
+    database_url = f"postgresql://{config.tg_bot.db_user}:{config.tg_bot.db_password}@localhost:5432/{config.tg_bot.db_name}"
+    async_database_url = f"postgresql+asyncpg://{config.tg_bot.db_user}:{config.tg_bot.db_password}@localhost:5432/{config.tg_bot.db_name}"
+else:
+    raise Exception("Unsupported operating system")
+
+# Создаем движки
+engine = create_engine(database_url, echo=False)
+engine2 = create_async_engine(async_database_url, echo=False)
+
+# Создаем сессии
 Session = sessionmaker(engine)
 async_session = sessionmaker(bind=engine2, class_=AsyncSession, expire_on_commit=False)
 
