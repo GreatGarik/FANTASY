@@ -3,7 +3,7 @@ from datetime import datetime, date, time
 from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs, ShowMode
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.input import TextInput, ManagedTextInput, MessageInput
-from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar, Radio, Back
+from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar, Radio, Back, Url
 from aiogram import Router, F
 from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
 from aiogram.fsm.state import State, StatesGroup
@@ -46,6 +46,23 @@ user_dialog = Dialog(
 
         state=UserSG.start,
         getter=user_name
+    ),
+    Window(Const('Я принимаю прогнозы на Фэнтези'),
+        Url(text=Const('Ссылка на регламент Fantasy'),
+            url=Const('https://docs.google.com/document/d/1s-qmH73Ji6zAX7U-M1q4unNKITnjgvIoIp_kPwkxx1Q'),
+            id='button_reglament'),
+        Url(text=Const('Группа ВК Silly Formula'),
+            url=Const('https://vk.com/sillyformula'),
+            id='button_vk_group'),
+        Url(text=Const('Чат ВК Fantasy'),
+            url=Const('https://vk.com/im/convo/2000000012'),
+            id='button_vk_group'),
+        Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_user_menu)
+        ,
+        state=UserSG.about_fantasy,
     ),
     Window(
         Const(text='Пожалуйста, введите ваше имя и фамилию латинским буквами через пробел:'),

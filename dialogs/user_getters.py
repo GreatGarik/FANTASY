@@ -29,6 +29,8 @@ class UserSG(StatesGroup):
     send_predict_gap = State()
     send_predict_laps = State()
     send_predict_ending = State()
+    about_fantasy = State()
+
 
 
 
@@ -217,7 +219,7 @@ async def button_user_menu(callback: CallbackQuery, button: Button, dialog_manag
     await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
 async def button_about(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    pass
+    await dialog_manager.switch_to(UserSG.about_fantasy)
 
 async def button_admin(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.start(state=AdminSG.start)
