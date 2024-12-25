@@ -10,7 +10,8 @@ from database.models import *
 from config_data.config import Config, load_config
 
 # Определяем текущую операционную систему
-current_os = platform.system()
+#current_os = platform.system()
+current_os = "Windows"
 
 # Устанавливаем параметры подключения в зависимости от ОС
 if current_os == "Windows":
