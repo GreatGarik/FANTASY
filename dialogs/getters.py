@@ -6,7 +6,7 @@ from aiogram_dialog.widgets.input import TextInput, ManagedTextInput, MessageInp
 from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar
 from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
 from dataprocessing.excel_forms import entry_list, last_stage, process_championship_full, championship_team_full, \
-    process_calculation_command
+    process_calculation_command, process_all_predicts
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
@@ -257,6 +257,15 @@ async def button_drivers_champ(callback: CallbackQuery, button: Button, dialog_m
     output = await process_championship_full()  # Получаем объект файла
     await callback.message.answer_document(
         document=BufferedInputFile(output.read(), filename='championship_points.xlsx')
+    )
+    output.close()  # Закрываем объект после использования
+    await dialog_manager.switch_to(AdminSG.tables)
+
+
+async def button_get_all_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    output = await process_all_predicts()  # Получаем объект файла
+    await callback.message.answer_document(
+        document=BufferedInputFile(output.read(), filename=f'predicts_for_{get_name_gp(get_actual_gp())}.xlsx')
     )
     output.close()  # Закрываем объект после использования
     await dialog_manager.switch_to(AdminSG.tables)

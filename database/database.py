@@ -786,3 +786,36 @@ async def get_grandprix_results(grandprix_id: int):
                 }
             else:
                 return None  # Если гонка не найдена
+
+async def get_predictions_by_gp(gp_id: int):
+    async with async_session() as session:
+        async with session.begin():
+            # Выполняем запрос с объединением таблиц
+            stmt = (
+                select(Predict, User)
+                .join(User, User.id_telegram == Predict.user_id)
+                .where(Predict.gp == gp_id)
+            )
+            result = await session.execute(stmt)
+            predictions = result.all()
+
+            # Формируем список результатов
+            predictions_list = [
+                {
+                    "id_telegram": user.id_telegram,  # Используем id_telegram из объекта User
+                    "user": user.name,  # Здесь добавляем имя пользователя
+                    "first_driver": pred.first_driver,
+                    "second_driver": pred.second_driver,
+                    "third_driver": pred.third_driver,
+                    "fourth_driver": pred.fourth_driver,
+                    "driver_team": pred.driver_team,
+                    "driver_engine": pred.driver_engine,
+                    "gap": pred.gap,
+                    "lapped": pred.lapped,
+                    "penalty": pred.penalty,
+                    "time": pred.time,
+                }
+                for pred, user in predictions
+            ]
+
+            return predictions_list

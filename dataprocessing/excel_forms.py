@@ -9,7 +9,7 @@ from io import BytesIO
 from database.database import select_drivers, add_user, get_users, send_predict, get_predict, add_result, \
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
     is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
-    get_name_gp, get_maximus, get_all_users
+    get_name_gp, get_maximus, get_all_users, get_predictions_by_gp
 
 async def entry_list():
     users_list: List[dict] = await get_all_users()
@@ -604,5 +604,22 @@ async def process_calculation_command(data):
     output = BytesIO()
     # Сохранение DataFrame в Excel-файл
     df.to_excel(output, index=False)
+    output.seek(0)  # Перемещаем указатель в начало
+    return output
+
+async def process_all_predicts():
+    gp = get_actual_gp()
+    data =  await get_predictions_by_gp(gp)
+    df = pd.DataFrame(data)
+
+    # Заменяем None на пустую строку для корректного сохранения в Excel
+    df.fillna('', inplace=True)
+    output = BytesIO()
+    # Сохраняем DataFrame в Excel
+    df.to_excel(output, index=False)
+    # Сохраняем книгу в BytesIO
+
+    # Сохранение DataFrame в Excel-файл
+    #df.to_excel(output, index=False)
     output.seek(0)  # Перемещаем указатель в начало
     return output

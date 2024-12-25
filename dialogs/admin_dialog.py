@@ -423,6 +423,11 @@ admin_dialog = Dialog(
                 on_click=button_clear_result)
             ,
             Button(
+                text=Const('Получить все прогнозы'),
+                id='button_get_all_predict',
+                on_click=button_get_all_predict)
+            ,
+            Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
                 on_click=button_menu)
