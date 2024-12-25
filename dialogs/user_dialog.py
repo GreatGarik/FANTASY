@@ -10,6 +10,8 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.enums import ContentType, ParseMode
 from aiogram.filters import Command, CommandStart, StateFilter, BaseFilter
 from .user_getters import *
+from .admin_dialog import admin_dialog
+
 
 class IsAdmin(BaseFilter):
     async def __call__(self, message: Message, all_admins) -> bool:
@@ -36,10 +38,10 @@ user_dialog = Dialog(
                 on_click=button_about
             ),
             Button(
-            text=Const('Выйти из пользовательского меню'),
-            id='button_exit',
-            on_click=button_exit_user,
-            when=F['admins']),
+                text=Const('Админка'),
+                id='button_admin',
+                on_click=button_admin,
+                when=F['admins']),
         ),
 
         state=UserSG.start,
@@ -221,11 +223,12 @@ user_dialog = Dialog(
     ),
 )
 
-user_router: Router = Router()
-user_router.include_router(user_dialog)
-setup_dialogs(user_router)
+router: Router = Router()
+router.include_router(user_dialog)
+router.include_router(admin_dialog)
+setup_dialogs(router)
 
 
-@user_router.message(Command(commands='menu'))
+@router.message(Command(commands='start'))
 async def command_start_process(message: Message, dialog_manager: DialogManager):
     await dialog_manager.start(state=UserSG.start, mode=StartMode.RESET_STACK)

@@ -6,6 +6,7 @@ from aiogram_dialog.widgets.input import TextInput, ManagedTextInput, MessageInp
 from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar
 from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
 from string import ascii_letters, digits
+from .getters import AdminSG
 from dataprocessing.excel_forms import entry_list, last_stage, process_championship_full, championship_team_full, \
     process_calculation_command
 from dataprocessing.calculation_gp_drivers import calculation_drivers
@@ -28,6 +29,7 @@ class UserSG(StatesGroup):
     send_predict_gap = State()
     send_predict_laps = State()
     send_predict_ending = State()
+
 
 
 def name_check(text: str) -> str:
@@ -216,6 +218,9 @@ async def button_user_menu(callback: CallbackQuery, button: Button, dialog_manag
 
 async def button_about(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     pass
+
+async def button_admin(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.start(state=AdminSG.start)
 
 async def button_exit_user(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await callback.message.answer('Вы, вышли из пользовательского меню!')
