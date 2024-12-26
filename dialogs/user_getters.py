@@ -79,7 +79,7 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
 
     elif datetime.now() < start_time:
         await callback.message.answer(
-            text=f'В данный момент прогноз на {get_name_gp(actual_gp)} GP еще не принимается\n Прием прогнозов начнётся {start_time}')
+            text=f'В данный момент прогноз на <b>{get_name_gp(actual_gp)} GP</b> еще не принимается\n Прием прогнозов начнётся <b>{start_time}</b>')
         dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
