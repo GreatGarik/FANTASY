@@ -77,6 +77,12 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
             text=f'Вы уже отправили прогноз на {get_name_gp(actual_gp)} GP')
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
+    elif datetime.now() < start_time:
+        await callback.message.answer(
+            text=f'В данный момент прогноз на {get_name_gp(actual_gp)} GP еще не принимается\n Прием прогнозов начнётся {start_time}')
+        dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+        await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
+
     elif datetime.now() > start_time:
         if datetime.now() < end_time:
             penalty_time = await get_penalty_grandprix_by_id(actual_gp)
