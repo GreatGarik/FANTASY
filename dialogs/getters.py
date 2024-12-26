@@ -162,7 +162,7 @@ async def team_number_font_color_input(message: Message, widget: ManagedTextInpu
 
 async def change_team_number_font_record(callback: CallbackQuery, source, dialog_manager: DialogManager, radio_id, **kwargs) -> None:
     dialog_manager.dialog_data['team_number_font_color_italic'] = radio_id[0]
-    await update_team(team_id=dialog_manager.dialog_data['team_id'], number_font=dialog_manager.dialog_data['team_number_font_font'], number_color=dialog_manager.dialog_data['team_number_font_color_input'], number_italic=int(dialog_manager.dialog_data['team_number_font_color_italic']))
+    await update_team(team_id=int(dialog_manager.dialog_data['team_id']), number_font=dialog_manager.dialog_data['team_number_font_font'], number_color=dialog_manager.dialog_data['team_number_font_color_input'], number_italic=int(dialog_manager.dialog_data['team_number_font_color_italic']))
     await callback.answer('Настройки номера успешно записаны', show_alert=True)
     await dialog_manager.switch_to(AdminSG.edit_team_menu)
 
@@ -209,7 +209,7 @@ async def new_team(message: Message, widget: ManagedTextInput, dialog_manager: D
 
 async def new_team_name(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
     dialog_manager.dialog_data['team_name'] = text
-    await update_team(team_id=dialog_manager.dialog_data['team_id'],
+    await update_team(team_id=int(dialog_manager.dialog_data['team_id']),
                       name=text)
     await message.answer(f'Название команды изменено на {text}')
     await dialog_manager.switch_to(AdminSG.edit_team_menu)
@@ -225,7 +225,7 @@ async def team_logo_receive(message: Message, widget: MessageInput, dialog_manag
     # Загружаем файл
     photo_data = await dialog_manager.middleware_data['bot'].download_file(file.file_path)
     file_name = '_'.join(dialog_manager.dialog_data['team_name'].replace("'",'').split()) + '.png'
-    await update_team(team_id=dialog_manager.dialog_data['team_id'],
+    await update_team(team_id=int(dialog_manager.dialog_data['team_id']),
                       logo=file_name)
     with open(os.path.join('logos', file_name), 'wb') as new_file:
         new_file.write(photo_data.getvalue())
@@ -240,7 +240,7 @@ async def team_font_color(callback: CallbackQuery, source, dialog_manager: Dialo
     await dialog_manager.switch_to(AdminSG.change_team_background_color)
 
 async def team_background_color(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
-    await update_team(team_id=dialog_manager.dialog_data['team_id'], background_color=text, text_color=dialog_manager.dialog_data['team_font_color'])
+    await update_team(team_id=int(dialog_manager.dialog_data['team_id']), background_color=text, text_color=dialog_manager.dialog_data['team_font_color'])
     await message.answer('Настройки цветов успешно записаны', show_alert=True)
     await dialog_manager.switch_to(AdminSG.edit_team_menu)
 
