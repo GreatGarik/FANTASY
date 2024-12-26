@@ -40,7 +40,7 @@ async_session = sessionmaker(bind=engine2, class_=AsyncSession, expire_on_commit
 with Session() as session:
     for driver in drivers:
         new_driver = Driver(driver_name=driver['driver'], driver_points=driver['position'], driver_team=driver['team'],
-                            driver_engine=driver['engine'], driver_nextgp=driver['nextGP'])
+                            driver_engine=driver['engine'], engine_short=driver['position'], driver_nextgp=driver['nextGP'])
         session.add(new_driver)
 
     for item in gps:
