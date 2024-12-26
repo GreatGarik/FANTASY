@@ -394,7 +394,7 @@ async def changing_driver(callback: CallbackQuery, button: Button, dialog_manage
 
 
 async def all_stages(**kwargs):
-    return {'grandprix_list': await get_grandprix_list(datetime.now().year)}
+    return {'grandprix_list': await get_grandprix_list(2025)}
 
 
 async def predict_gp_selected(callback: CallbackQuery, widget: Select,
