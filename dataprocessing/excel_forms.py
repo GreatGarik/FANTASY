@@ -318,7 +318,7 @@ async def last_stage():
     return output
 
 async def process_championship_full():
-    points_list: List[dict] = show_points_all(datetime.now().year)
+    points_list: List[dict] = show_points_all(2025)
 
     for entry in points_list:
         entry['CH.PTS'] = sum(
@@ -459,7 +459,7 @@ async def process_championship_full():
     return output
 
 async def championship_team_full():
-    points_list: List[dict] = show_points_team_all(datetime.now().year)
+    points_list: List[dict] = show_points_team_all(2025)
 
     for entry in points_list:
         entry['Points'] = sum(entry[key] for key in entry if key != 'Team' and entry[key])
