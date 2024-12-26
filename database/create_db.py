@@ -6,7 +6,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey
 from championship2025 import gps
 from drivers import drivers
 from models import *
-from ..config_data.config import Config, load_config
+from config_data.config import Config, load_config
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 # Определяем текущую операционную систему
@@ -39,8 +39,8 @@ async_session = sessionmaker(bind=engine2, class_=AsyncSession, expire_on_commit
 # Заполняем пилотов
 with Session() as session:
     for driver in drivers:
-        new_driver = Driver(driver_name=driver['driver'], driver_points=driver['position'], driver_team=driver['team'],
-                            driver_engine=driver['engine'], engine_short=driver['position'], driver_nextgp=driver['nextGP'])
+        new_driver = Driver(driver_name=driver['driver'], driver_position=driver['position'], driver_team=driver['team'],
+                            driver_engine=driver['engine'], engine_short=driver['engine_short'], driver_nextgp=driver['nextGP'])
         session.add(new_driver)
 
     for item in gps:
