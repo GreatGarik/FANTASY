@@ -5,6 +5,7 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import Column, Integer, String, ForeignKey
 from championship2025 import gps
 from drivers import drivers
+from teams import teams
 from database.models import *
 from config_data.config import Config, load_config
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
@@ -37,6 +38,36 @@ engine2 = create_async_engine(async_database_url, echo=False)
 Session = sessionmaker(engine)
 async_session = sessionmaker(bind=engine2, class_=AsyncSession, expire_on_commit=False)
 
+'''
+with Session() as session:
+
+    # Получите все команды
+    teams = session.query(Team).all()
+
+    # Преобразуйте записи в список словарей
+    teams_list = [
+        {
+            "id": team.id,
+            "name": team.name,
+            "first": team.first,
+            "second": team.second,
+            "third": team.third,
+            "logo": team.logo,
+            "captain": team.captain,
+            "background_color": team.background_color,
+            "text_color": team.text_color,
+            "number_color": team.number_color,
+            "number_font": team.number_font,
+            "number_italic": team.number_italic,
+        }
+        for team in teams
+    ]
+
+    # Выведите список словарей
+    print(teams_list)
+
+
+'''
 try:
     Base.metadata.create_all(engine)
     print("Таблицы успешно созданы.")
@@ -45,7 +76,11 @@ except SQLAlchemyError as e:
 
 # Заполняем пилотов
 with Session() as session:
+    for team in teams:
+        session.add((Team(**team)))
 
+
+    '''
     for driver in drivers:
         new_driver = Driver(driver_name=driver['driver'], driver_position=driver['position'], driver_team=driver['team'],
                             driver_engine=driver['engine'], engine_short=driver['engine_short'], driver_nextgp=driver['nextGP'])
@@ -54,6 +89,7 @@ with Session() as session:
     for item in gps:
         new_gp = Grandprix(gp_name=item['gp'], year=item['year'], nextgp=item['nextgp'], gp_name_abr=item['short'])
         session.add(new_gp)
+    '''
 
 
     session.commit()
