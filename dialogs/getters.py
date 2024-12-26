@@ -171,7 +171,7 @@ async def change_team_members(callback: CallbackQuery, button: Button, dialog_ma
     await dialog_manager.switch_to(AdminSG.team_members)
 
 async def team_members(dialog_manager: DialogManager, **kwargs):
-    return {'team_members': await get_team_members(dialog_manager.dialog_data['team_id'])}
+    return {'team_members': await get_team_members(int(dialog_manager.dialog_data['team_id']))}
 
 async def selected_team_member(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, member:str):
     dialog_manager.dialog_data['team_place_member'] = member.split('^')[-1]
