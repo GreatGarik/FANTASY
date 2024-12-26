@@ -8,6 +8,7 @@ from drivers import drivers
 from database.models import *
 from config_data.config import Config, load_config
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.exc import SQLAlchemyError
 
 # Определяем текущую операционную систему
 current_os = platform.system()
@@ -36,14 +37,20 @@ engine2 = create_async_engine(async_database_url, echo=False)
 Session = sessionmaker(engine)
 async_session = sessionmaker(bind=engine2, class_=AsyncSession, expire_on_commit=False)
 
+try:
+    Base.metadata.create_all(engine)
+    print("Таблицы успешно созданы.")
+except SQLAlchemyError as e:
+    print(f"Ошибка при создании таблиц: {e}")
+
 # Заполняем пилотов
 with Session() as session:
-    '''
+
     for driver in drivers:
         new_driver = Driver(driver_name=driver['driver'], driver_position=driver['position'], driver_team=driver['team'],
                             driver_engine=driver['engine'], engine_short=driver['engine_short'], driver_nextgp=driver['nextGP'])
         session.add(new_driver)
-    '''
+
     for item in gps:
         new_gp = Grandprix(gp_name=item['gp'], year=item['year'], nextgp=item['nextgp'], gp_name_abr=item['short'])
         session.add(new_gp)
