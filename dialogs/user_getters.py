@@ -123,8 +123,8 @@ async def predict_ending(dialog_manager: DialogManager, **kwargs):
     second_driver = dialog_manager.dialog_data['second_driver']
     third_driver = dialog_manager.dialog_data['third_driver']
     fourth_driver = dialog_manager.dialog_data['fourth_driver']
-    gap = dialog_manager.dialog_data['gap']
-    lapped = dialog_manager.dialog_data['laps']
+    gap = int(dialog_manager.dialog_data['gap'])
+    lapped = int(dialog_manager.dialog_data['laps'])
     return {'name_gp': name_gp, 'driver_team': driver_team, 'driver_engine': driver_engine, 'first_driver': first_driver, 'second_driver': second_driver, 'third_driver': third_driver, 'fourth_driver': fourth_driver, 'gap': gap, 'lapped': lapped}
 
 
@@ -212,8 +212,8 @@ async def button_user_confirm_predict(callback: CallbackQuery, button: Button, d
         second_driver = dialog_manager.dialog_data['second_driver']
         third_driver = dialog_manager.dialog_data['third_driver']
         fourth_driver = dialog_manager.dialog_data['fourth_driver']
-        gap = dialog_manager.dialog_data['gap']
-        lapped = dialog_manager.dialog_data['laps']
+        gap = int(dialog_manager.dialog_data['gap'])
+        lapped = int(dialog_manager.dialog_data['laps'])
         #tg_id, gp, first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap,lapped, penalty, time
         send_predict(tg_id=callback.from_user.id, gp=gp, first_driver=first_driver, second_driver=second_driver, third_driver=third_driver, fourth_driver=fourth_driver,driver_team=driver_team,driver_engine=driver_engine, gap=gap, lapped=lapped, penalty=penalty, time=datetime.now())
         await callback.message.answer(f'Спасибо, принято!\nВаш прогноз на <b>{get_name_gp(gp)} GP:</b> \nКоманда: <b>{driver_team}</b>\nДвигатель: <b>{driver_engine}</b>\nПервый пилот: <b>{first_driver}</b>\nВторой пилот: <b>{second_driver}</b>\nТретий пилот: <b>{third_driver}</b>\nЧетвертый пилот: <b>{fourth_driver}</b>\nОтставание от лидера: <b>{gap}</b>\nКоличество круговых: <b>{lapped}</b>')
