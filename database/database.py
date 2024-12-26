@@ -527,7 +527,7 @@ async def change_user_name_async(id_telegram: int, new_name: str):
             user_instance.name = new_name  # Обновляем имя напрямую
             await session.commit()  # Сохраняем изменения
 
-async def change_user_number_async(id_telegram: int, new_number: str):
+async def change_user_number_async(id_telegram: int, new_number: int):
     async with async_session() as session:
         async with session.begin():
             result = await session.execute(select(User).where(User.id_telegram == id_telegram))
