@@ -42,10 +42,10 @@ with Session() as session:
         new_driver = Driver(driver_name=driver['driver'], driver_position=driver['position'], driver_team=driver['team'],
                             driver_engine=driver['engine'], engine_short=driver['engine_short'], driver_nextgp=driver['nextGP'])
         session.add(new_driver)
-
+    '''
     for item in gps:
         new_gp = Grandprix(gp_name=item['gp'], year=item['year'], nextgp=item['nextgp'])
         session.add(new_gp)
-
+    '''
 
     session.commit()
