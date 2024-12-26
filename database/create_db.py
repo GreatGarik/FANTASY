@@ -6,7 +6,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey
 from championship2025 import gps
 from drivers import drivers
 from models import *
-from .config_data.config import Config, load_config
+from ..config_data.config import Config, load_config
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 # Определяем текущую операционную систему
