@@ -513,7 +513,6 @@ async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog
     users = get_users()
     # Создаем список задач
     tasks = []
-    '''
     for user in users:
         tasks.append(send_message(user.id_telegram, text, bot))
         # Если количество задач достигло 25, ждем их завершения
@@ -525,7 +524,7 @@ async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog
     # Отправляем оставшиеся сообщения, если они есть
     if tasks:
         await asyncio.gather(*tasks)
-    '''
+
     dialog_manager.dialog_data.clear()
     await dialog_manager.switch_to(AdminSG.start)
 
