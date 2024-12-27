@@ -54,14 +54,16 @@ user_dialog = Dialog(
         Url(text=Const('Группа ВК Silly Formula'),
             url=Const('https://vk.com/sillyformula'),
             id='button_vk_group'),
+        Url(text=Const('Телеграм канал Silly Formula'),
+            url=Const('https://t.me/sillyformula'),
+            id='button_tg_group'),
         Url(text=Const('Чат ВК Fantasy'),
             url=Const('https://vk.com/im/convo/2000000012'),
             id='button_vk_group'),
         Button(
-                text=Const('Вернуться в главное меню'),
-                id='button_menu',
-                on_click=button_user_menu)
-        ,
+            text=Const('Вернуться в главное меню'),
+            id='button_menu',
+            on_click=button_user_menu),
         state=UserSG.about_fantasy,
     ),
     Window(
