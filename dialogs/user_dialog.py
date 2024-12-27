@@ -120,7 +120,7 @@ user_dialog = Dialog(
         Group(
             Select(
                 Format('{item[0]}'),
-                id='select_first_driver',
+                id='select_first',
                 item_id_getter=lambda x: f'{x[1]}:{x[2]}',
                 items='drivers_for_select',
                 on_click=select_first_driver,
@@ -141,7 +141,7 @@ user_dialog = Dialog(
         Group(
             Select(
                 Format('{item[0]}'),
-                id='select_second_driver',
+                id='select_second',
                 item_id_getter=lambda x: f'{x[1]}:{x[2]}',
                 items='drivers_for_select',
                 on_click=select_second_driver,
@@ -162,7 +162,7 @@ user_dialog = Dialog(
         Group(
             Select(
                 Format('{item[0]}'),
-                id='select_third_driver',
+                id='select_third',
                 item_id_getter=lambda x: f'{x[1]}:{x[2]}',
                 items='drivers_for_select',
                 on_click=select_third_driver,
@@ -183,7 +183,7 @@ user_dialog = Dialog(
         Group(
             Select(
                 Format('{item[0]}'),
-                id='select_fourth_driver',
+                id='select_fourth',
                 item_id_getter=lambda x: f'{x[1]}:{x[2]}',
                 items='drivers_for_select',
                 on_click=select_fourth_driver,
