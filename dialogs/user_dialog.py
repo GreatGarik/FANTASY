@@ -57,9 +57,6 @@ user_dialog = Dialog(
         Url(text=Const('Телеграм канал Silly Formula'),
             url=Const('https://t.me/sillyformula'),
             id='button_tg_group'),
-        Url(text=Const('Чат ВК Fantasy'),
-            url=Const('https://vk.com/im/convo/2000000012'),
-            id='button_vk_group'),
         Button(
             text=Const('Вернуться в главное меню'),
             id='button_menu',
