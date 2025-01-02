@@ -839,3 +839,11 @@ async def get_predictions_by_gp(gp_id: int):
             ]
 
             return predictions_list
+
+
+async def is_sprint(gp_id: int) -> bool:
+    async with async_session() as session:  # Открываем сессию
+        async with session.begin():  # Начинаем транзакцию
+            result = await session.execute(select(Grandprix).where(Grandprix.id == gp_id))
+            grandprix = result.scalars().first()
+            return grandprix.sprint if grandprix else False

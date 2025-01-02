@@ -13,7 +13,7 @@ from database.database import select_drivers, add_user, get_users, send_predict,
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
     is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
     get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result
+    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint
 from .dop_functions import send_message
 
 class AdminSG(StatesGroup):
@@ -68,6 +68,10 @@ class AdminSG(StatesGroup):
     loading_f1_result_quali = State()
     loading_f1_result_race = State()
     exit_admin = State()
+
+
+async def sprint(event_from_user: User, **kwargs):
+    return {'sprint': await is_sprint(get_actual_gp())}
 
 async def go_back(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.back()
