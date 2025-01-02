@@ -111,6 +111,7 @@ class Grandprix(Base):
     sprint_result: Mapped[str] = mapped_column(String(400), nullable=True)
     quali_result: Mapped[str] = mapped_column(String(400), nullable=True)
     race_result: Mapped[str] = mapped_column(String(400), nullable=True)
+    sprint: Mapped[bool] = mapped_column(Boolean)
 
     race = relationship('Point', back_populates='gp')
     race_team: Mapped['TeamPoint'] = relationship('TeamPoint', back_populates='gp_team')
