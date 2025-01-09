@@ -77,6 +77,12 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
             text=f'Вы уже отправили прогноз на {get_name_gp(actual_gp)} GP')
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
+    elif datetime.now() < start_time:
+        await callback.message.answer(
+            text=f'В данный момент прогноз на <b>{get_name_gp(actual_gp)} GP</b> еще не принимается\n Прием прогнозов начнётся <b>{start_time}</b>')
+        dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+        await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
+
     elif datetime.now() > start_time:
         if datetime.now() < end_time:
             penalty_time = await get_penalty_grandprix_by_id(actual_gp)
@@ -97,17 +103,17 @@ async def get_all_engines_predict(**kwargs):
     return {'engines_for_select': sorted({i.driver_engine + '  ' + i.engine_short for i in select_drivers()})}
 
 async def get_all_drivers_predict(**kwargs):
-    return {'drivers_for_select': [i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short for i in select_drivers()]}
+    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in select_drivers()]}
 
 async def get_all_drivers_predict_second(dialog_manager: DialogManager, **kwargs):
-    return {'drivers_for_select': [i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short for i in select_drivers() if
+    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in select_drivers() if
                                                                     i.driver_name not in [*dialog_manager.dialog_data.values()]]}
 
 async def get_all_drivers_predict_third(dialog_manager: DialogManager, **kwargs):
-    return {'drivers_for_select': [i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short for i in select_drivers()[10:] if i.driver_name not in [*dialog_manager.dialog_data.values()]]}
+    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in select_drivers()[10:] if i.driver_name not in [*dialog_manager.dialog_data.values()]]}
 
 async def get_all_drivers_predict_fourth(dialog_manager: DialogManager, **kwargs):
-    return {'drivers_for_select': [i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short for i in select_drivers()[15:] if i.driver_name not in [*dialog_manager.dialog_data.values()]]}
+    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in select_drivers()[15:] if i.driver_name not in [*dialog_manager.dialog_data.values()]]}
 
 async def predict_ending(dialog_manager: DialogManager, **kwargs):
     name_gp = get_name_gp(get_actual_gp())
@@ -117,8 +123,8 @@ async def predict_ending(dialog_manager: DialogManager, **kwargs):
     second_driver = dialog_manager.dialog_data['second_driver']
     third_driver = dialog_manager.dialog_data['third_driver']
     fourth_driver = dialog_manager.dialog_data['fourth_driver']
-    gap = dialog_manager.dialog_data['gap']
-    lapped = dialog_manager.dialog_data['laps']
+    gap = int(dialog_manager.dialog_data['gap'])
+    lapped = int(dialog_manager.dialog_data['laps'])
     return {'name_gp': name_gp, 'driver_team': driver_team, 'driver_engine': driver_engine, 'first_driver': first_driver, 'second_driver': second_driver, 'third_driver': third_driver, 'fourth_driver': fourth_driver, 'gap': gap, 'lapped': lapped}
 
 
@@ -138,23 +144,23 @@ async def select_engine(callback: CallbackQuery, button: Button, dialog_manager:
     await dialog_manager.switch_to(UserSG.send_predict_first)
 
 async def select_first_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, item: str):
-    dialog_manager.dialog_data['first_driver'] = item.split('(')[0].strip()
-    dialog_manager.dialog_data['select3_engine'] = item.split()[-1].strip()
+    dialog_manager.dialog_data['first_driver'] = item.split(':')[0].strip()
+    dialog_manager.dialog_data['select3_engine'] = item.split(':')[-1].strip()
     await dialog_manager.switch_to(UserSG.send_predict_second)
 
 async def select_second_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, item: str):
-    dialog_manager.dialog_data['select4_engine'] = item.split()[-1].strip()
+    dialog_manager.dialog_data['select4_engine'] = item.split(':')[-1].strip()
     if all(engine == dialog_manager.dialog_data['select1_engine'] for engine in
            [dialog_manager.dialog_data['select2_engine'], dialog_manager.dialog_data['select3_engine'], dialog_manager.dialog_data['select4_engine']]):
         await callback.message.answer('В вашем выборе 4 одинаковых двигателя!\nВыберите другого гонщика или вернитесь назад, чтобы изменить выбор на прошлых шагах')
         dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         await dialog_manager.switch_to(UserSG.send_predict_second)
     else:
-        dialog_manager.dialog_data['second_driver'] = item.split('(')[0].strip()
+        dialog_manager.dialog_data['second_driver'] = item.split(':')[0].strip()
         await dialog_manager.switch_to(UserSG.send_predict_third)
 
 async def select_third_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, item: str):
-    dialog_manager.dialog_data['select5_engine'] = item.split()[-1].strip()
+    dialog_manager.dialog_data['select5_engine'] = item.split(':')[-1].strip()
     values = [dialog_manager.dialog_data['select1_engine'], dialog_manager.dialog_data['select2_engine'], dialog_manager.dialog_data['select3_engine'],
               dialog_manager.dialog_data['select4_engine'], dialog_manager.dialog_data['select5_engine']]
     if any(values.count(x) == 4 for x in set(values)):
@@ -162,11 +168,11 @@ async def select_third_driver(callback: CallbackQuery, button: Button, dialog_ma
         dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         await dialog_manager.switch_to(UserSG.send_predict_third)
     else:
-        dialog_manager.dialog_data['third_driver'] = item.split('(')[0].strip()
+        dialog_manager.dialog_data['third_driver'] = item.split(':')[0].strip()
         await dialog_manager.switch_to(UserSG.send_predict_fourth)
 
 async def select_fourth_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, item: str):
-    dialog_manager.dialog_data['select6_engine'] = item.split()[-1].strip()
+    dialog_manager.dialog_data['select6_engine'] = item.split(':')[-1].strip()
     values = [dialog_manager.dialog_data['select1_engine'], dialog_manager.dialog_data['select2_engine'], dialog_manager.dialog_data['select3_engine'],
               dialog_manager.dialog_data['select4_engine'], dialog_manager.dialog_data['select5_engine'], dialog_manager.dialog_data['select6_engine']]
     if any(values.count(x) == 4 for x in set(values)):
@@ -174,7 +180,7 @@ async def select_fourth_driver(callback: CallbackQuery, button: Button, dialog_m
         dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         await dialog_manager.switch_to(UserSG.send_predict_fourth)
     else:
-        dialog_manager.dialog_data['fourth_driver'] = item.split('(')[0].strip()
+        dialog_manager.dialog_data['fourth_driver'] = item.split(':')[0].strip()
         await dialog_manager.switch_to(UserSG.send_predict_gap)
 
 async def select_gap(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
@@ -206,8 +212,8 @@ async def button_user_confirm_predict(callback: CallbackQuery, button: Button, d
         second_driver = dialog_manager.dialog_data['second_driver']
         third_driver = dialog_manager.dialog_data['third_driver']
         fourth_driver = dialog_manager.dialog_data['fourth_driver']
-        gap = dialog_manager.dialog_data['gap']
-        lapped = dialog_manager.dialog_data['laps']
+        gap = int(dialog_manager.dialog_data['gap'])
+        lapped = int(dialog_manager.dialog_data['laps'])
         #tg_id, gp, first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap,lapped, penalty, time
         send_predict(tg_id=callback.from_user.id, gp=gp, first_driver=first_driver, second_driver=second_driver, third_driver=third_driver, fourth_driver=fourth_driver,driver_team=driver_team,driver_engine=driver_engine, gap=gap, lapped=lapped, penalty=penalty, time=datetime.now())
         await callback.message.answer(f'Спасибо, принято!\nВаш прогноз на <b>{get_name_gp(gp)} GP:</b> \nКоманда: <b>{driver_team}</b>\nДвигатель: <b>{driver_engine}</b>\nПервый пилот: <b>{first_driver}</b>\nВторой пилот: <b>{second_driver}</b>\nТретий пилот: <b>{third_driver}</b>\nЧетвертый пилот: <b>{fourth_driver}</b>\nОтставание от лидера: <b>{gap}</b>\nКоличество круговых: <b>{lapped}</b>')

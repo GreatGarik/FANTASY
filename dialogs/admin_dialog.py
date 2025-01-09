@@ -4,7 +4,7 @@ from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialo
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog.widgets.input import TextInput, ManagedTextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar, Radio, Back
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.enums import ContentType, ParseMode
@@ -446,7 +446,8 @@ admin_dialog = Dialog(
             Button(
                 text=Const('Спринт'),
                 id='button_f1_sprint',
-                on_click=button_f1_sprint
+                on_click=button_f1_sprint,
+                when=F["sprint"]
             ),
             Button(
                 text=Const('Квалификация'),
@@ -465,7 +466,8 @@ admin_dialog = Dialog(
                 on_click=button_menu)
             ,
         ),
-        state=AdminSG.loading_f1_results
+        state=AdminSG.loading_f1_results,
+        getter=sprint
     ),
     Window(
         Const(text='Введите результат спринта'),

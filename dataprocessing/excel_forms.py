@@ -569,7 +569,7 @@ async def championship_team_full():
         # Устанавливаем выравнивание по центру для нужных колонок
     center_alignment = Alignment(horizontal='center', vertical='center')
 
-    for cell in ws['A'] + ws['B'] + ws['D']:
+    for cell in ws['A'] + ws['B'] + ws['C']:
         cell.alignment = center_alignment
 
     # Устанавливаем ширину столбцов

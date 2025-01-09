@@ -54,14 +54,13 @@ user_dialog = Dialog(
         Url(text=Const('Группа ВК Silly Formula'),
             url=Const('https://vk.com/sillyformula'),
             id='button_vk_group'),
-        Url(text=Const('Чат ВК Fantasy'),
-            url=Const('https://vk.com/im/convo/2000000012'),
-            id='button_vk_group'),
+        Url(text=Const('Телеграм канал Silly Formula'),
+            url=Const('https://t.me/sillyformula'),
+            id='button_tg_group'),
         Button(
-                text=Const('Вернуться в главное меню'),
-                id='button_menu',
-                on_click=button_user_menu)
-        ,
+            text=Const('Вернуться в главное меню'),
+            id='button_menu',
+            on_click=button_user_menu),
         state=UserSG.about_fantasy,
     ),
     Window(
@@ -119,9 +118,9 @@ user_dialog = Dialog(
         Const(text='Выберите <b>первого пилота</b>:'),
         Group(
             Select(
-                Format('{item}'),
-                id='select_first_driver',
-                item_id_getter=lambda x: x,
+                Format('{item[0]}'),
+                id='select_first',
+                item_id_getter=lambda x: f'{x[1]}:{x[2]}',
                 items='drivers_for_select',
                 on_click=select_first_driver,
             ),
@@ -140,9 +139,9 @@ user_dialog = Dialog(
         Const(text='Выберите <b>второго пилота</b>:'),
         Group(
             Select(
-                Format('{item}'),
-                id='select_second_driver',
-                item_id_getter=lambda x: x,
+                Format('{item[0]}'),
+                id='select_second',
+                item_id_getter=lambda x: f'{x[1]}:{x[2]}',
                 items='drivers_for_select',
                 on_click=select_second_driver,
             ),
@@ -161,9 +160,9 @@ user_dialog = Dialog(
         Const(text='Выберите <b>третьего пилота</b>:'),
         Group(
             Select(
-                Format('{item}'),
-                id='select_third_driver',
-                item_id_getter=lambda x: x,
+                Format('{item[0]}'),
+                id='select_third',
+                item_id_getter=lambda x: f'{x[1]}:{x[2]}',
                 items='drivers_for_select',
                 on_click=select_third_driver,
             ),
@@ -182,9 +181,9 @@ user_dialog = Dialog(
         Const(text='Выберите <b>четвертого пилота</b>:'),
         Group(
             Select(
-                Format('{item}'),
-                id='select_fourth_driver',
-                item_id_getter=lambda x: x,
+                Format('{item[0]}'),
+                id='select_fourth',
+                item_id_getter=lambda x: f'{x[1]}:{x[2]}',
                 items='drivers_for_select',
                 on_click=select_fourth_driver,
             ),

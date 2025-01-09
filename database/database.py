@@ -153,8 +153,8 @@ def add_team_points(team_id, points, gp=None):
 
 
 # Заполнение таблицы результатов GP
-def add_result(tg_id, first_driver: int, second_driver: int, third_driver: int, fourth_driver: int, driver_team: int,
-               driver_engine: int, gap: int,
+def add_result(tg_id, first_driver: str, second_driver: str, third_driver: str, fourth_driver: str, driver_team: str,
+               driver_engine: str, gap: int,
                lapped: int, counter_best, max1_best, max2_best, max3_best, max1_not_best, max2_not_best, max3_not_best,
                max4_not_best, counter_lap_gap, max_lap_gap, penalty, gp=None):
     total = sum(
@@ -191,7 +191,7 @@ def show_points():
 def show_points_all(year):
     with Session() as session:
         # Получаем все гран-при
-        grandprix = session.query(Grandprix).filter(Grandprix.year == year).all()
+        grandprix = session.query(Grandprix).filter(Grandprix.year == year).order_by(Grandprix.id).all()
 
         # Получаем всех пользователей
         users = session.query(User).all()
@@ -227,7 +227,7 @@ def show_points_all(year):
 def show_points_team_all(year):
     with Session() as session:
         # Получаем все гран-при
-        grandprix = session.query(Grandprix).filter(Grandprix.year == year).all()
+        grandprix = session.query(Grandprix).filter(Grandprix.year == year).order_by(Grandprix.id).all()
 
         # Получаем всех пользователей
         teams = session.query(Team).all()
@@ -527,7 +527,7 @@ async def change_user_name_async(id_telegram: int, new_name: str):
             user_instance.name = new_name  # Обновляем имя напрямую
             await session.commit()  # Сохраняем изменения
 
-async def change_user_number_async(id_telegram: int, new_number: str):
+async def change_user_number_async(id_telegram: int, new_number: int):
     async with async_session() as session:
         async with session.begin():
             result = await session.execute(select(User).where(User.id_telegram == id_telegram))
@@ -540,7 +540,7 @@ async def get_grandprix_list(year: int):
     async with async_session() as session:
         async with session.begin():
             # Выполняем асинхронный запрос для получения всех гран-при за указанный год
-            result = await session.execute(select(Grandprix.id, Grandprix.gp_name).where(Grandprix.year == year))
+            result = await session.execute(select(Grandprix.id, Grandprix.gp_name).where(Grandprix.year == year).order_by(Grandprix.id))
             # Извлекаем данные из результата
             grandprix_list = result.all()
             # Преобразуем в список кортежей
@@ -606,7 +606,7 @@ async def get_start_grandprix_by_id(gp_id: int):
 async def get_all_teams() -> List[Tuple[int, str]]:
     async with async_session() as session:
         async with session.begin():
-            result = await session.execute(select(Team.name, Team.id))
+            result = await session.execute(select(Team.name, Team.id).order_by(Team.name))
             teams = result.all()
             return teams
 
@@ -839,3 +839,11 @@ async def get_predictions_by_gp(gp_id: int):
             ]
 
             return predictions_list
+
+
+async def is_sprint(gp_id: int) -> bool:
+    async with async_session() as session:  # Открываем сессию
+        async with session.begin():  # Начинаем транзакцию
+            result = await session.execute(select(Grandprix).where(Grandprix.id == gp_id))
+            grandprix = result.scalars().first()
+            return grandprix.sprint if grandprix else False

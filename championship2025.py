@@ -1,4 +1,4 @@
-gps = [{'gp': 'Australian', 'year': 2025, 'short': 'AUS', 'nextgp': False},
+gps = [{'gp': 'Australian', 'year': 2025, 'short': 'AUS', 'nextgp': True},
        {'gp': 'Chinese', 'year': 2025, 'short': 'CHN', 'nextgp': False},
        {'gp': 'Japanese', 'year': 2025, 'short': 'JPN', 'nextgp': False},
        {'gp': 'Bahrain', 'year': 2025, 'short': 'BHR', 'nextgp': False},

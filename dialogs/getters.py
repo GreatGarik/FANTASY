@@ -13,7 +13,7 @@ from database.database import select_drivers, add_user, get_users, send_predict,
     show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
     is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
     get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result
+    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint
 from .dop_functions import send_message
 
 class AdminSG(StatesGroup):
@@ -69,6 +69,10 @@ class AdminSG(StatesGroup):
     loading_f1_result_race = State()
     exit_admin = State()
 
+
+async def sprint(event_from_user: User, **kwargs):
+    return {'sprint': await is_sprint(get_actual_gp())}
+
 async def go_back(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.back()
 
@@ -108,14 +112,14 @@ async def button_change_user_number(callback: CallbackQuery, button: Button,
 
 
 async def new_name_user(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
-    await change_user_name_async(dialog_manager.dialog_data['user_tg_id'], text)
+    await change_user_name_async(int(dialog_manager.dialog_data['user_tg_id']), text)
     await message.answer(f'Вы изменили имя на {text}')
     dialog_manager.dialog_data.clear()
     await dialog_manager.switch_to(AdminSG.users_menu)
 
 
 async def new_number_user(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
-    await change_user_number_async(dialog_manager.dialog_data['user_tg_id'], text)
+    await change_user_number_async(int(dialog_manager.dialog_data['user_tg_id']), int(text))
     await message.answer(f'Вы изменили номер на {text}')
     dialog_manager.dialog_data.clear()
     await dialog_manager.switch_to(AdminSG.users_menu)
@@ -162,7 +166,7 @@ async def team_number_font_color_input(message: Message, widget: ManagedTextInpu
 
 async def change_team_number_font_record(callback: CallbackQuery, source, dialog_manager: DialogManager, radio_id, **kwargs) -> None:
     dialog_manager.dialog_data['team_number_font_color_italic'] = radio_id[0]
-    await update_team(team_id=dialog_manager.dialog_data['team_id'], number_font=dialog_manager.dialog_data['team_number_font_font'], number_color=dialog_manager.dialog_data['team_number_font_color_input'], number_italic=int(dialog_manager.dialog_data['team_number_font_color_italic']))
+    await update_team(team_id=int(dialog_manager.dialog_data['team_id']), number_font=dialog_manager.dialog_data['team_number_font_font'], number_color=dialog_manager.dialog_data['team_number_font_color_input'], number_italic=int(dialog_manager.dialog_data['team_number_font_color_italic']))
     await callback.answer('Настройки номера успешно записаны', show_alert=True)
     await dialog_manager.switch_to(AdminSG.edit_team_menu)
 
@@ -171,7 +175,7 @@ async def change_team_members(callback: CallbackQuery, button: Button, dialog_ma
     await dialog_manager.switch_to(AdminSG.team_members)
 
 async def team_members(dialog_manager: DialogManager, **kwargs):
-    return {'team_members': await get_team_members(dialog_manager.dialog_data['team_id'])}
+    return {'team_members': await get_team_members(int(dialog_manager.dialog_data['team_id']))}
 
 async def selected_team_member(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, member:str):
     dialog_manager.dialog_data['team_place_member'] = member.split('^')[-1]
@@ -209,7 +213,7 @@ async def new_team(message: Message, widget: ManagedTextInput, dialog_manager: D
 
 async def new_team_name(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
     dialog_manager.dialog_data['team_name'] = text
-    await update_team(team_id=dialog_manager.dialog_data['team_id'],
+    await update_team(team_id=int(dialog_manager.dialog_data['team_id']),
                       name=text)
     await message.answer(f'Название команды изменено на {text}')
     await dialog_manager.switch_to(AdminSG.edit_team_menu)
@@ -225,7 +229,7 @@ async def team_logo_receive(message: Message, widget: MessageInput, dialog_manag
     # Загружаем файл
     photo_data = await dialog_manager.middleware_data['bot'].download_file(file.file_path)
     file_name = '_'.join(dialog_manager.dialog_data['team_name'].replace("'",'').split()) + '.png'
-    await update_team(team_id=dialog_manager.dialog_data['team_id'],
+    await update_team(team_id=int(dialog_manager.dialog_data['team_id']),
                       logo=file_name)
     with open(os.path.join('logos', file_name), 'wb') as new_file:
         new_file.write(photo_data.getvalue())
@@ -240,7 +244,7 @@ async def team_font_color(callback: CallbackQuery, source, dialog_manager: Dialo
     await dialog_manager.switch_to(AdminSG.change_team_background_color)
 
 async def team_background_color(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
-    await update_team(team_id=dialog_manager.dialog_data['team_id'], background_color=text, text_color=dialog_manager.dialog_data['team_font_color'])
+    await update_team(team_id=int(dialog_manager.dialog_data['team_id']), background_color=text, text_color=dialog_manager.dialog_data['team_font_color'])
     await message.answer('Настройки цветов успешно записаны', show_alert=True)
     await dialog_manager.switch_to(AdminSG.edit_team_menu)
 
