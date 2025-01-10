@@ -1,18 +1,19 @@
 from dataprocessing.get_data_results_from_db import get_res_gp
-from database.database import get_predict, select_drivers, add_result, get_result, add_points, get_team, add_team_points, add_maximus
+from database.database import get_predict, add_result, get_result, add_points, get_team, add_team_points, add_maximus, select_drivers_async
 
 
 async def calculation_drivers(gp):
     deltas = {0: 10, 1: 7, 2: 5, 3: 3, 4: 2, 5: 1}
-    predicts_from_db = get_predict(gp)
+    predicts_from_db = await get_predict(gp)
     results_predict_gp = await get_res_gp()
 
-    names = [i.driver_name for i in select_drivers()]
-    first_max = max([results_predict_gp[name] for name in names])
-    names = [i.driver_name for i in select_drivers()[10:]]
-    second_max = max([results_predict_gp[name] for name in names])
-    names = [i.driver_name for i in select_drivers()[15:]]
-    third_max = max([results_predict_gp[name] for name in names])
+    drivers = await select_drivers_async(active=True)
+    names = [i.driver_name for i in drivers]
+
+    # Получаем максимальные значения для разных срезов
+    first_max = max(results_predict_gp[name] for name in names)
+    second_max = max(results_predict_gp[name] for name in names[10:])
+    third_max = max(results_predict_gp[name] for name in names[15:])
 
     for predict in predicts_from_db:
         counter_best = 0
@@ -91,10 +92,10 @@ async def calculation_drivers(gp):
 
 
     for key, value in teams_points.items():
-        add_team_points(team_id=key, points=value, gp=gp)
+        await add_team_points(team_id=key, points=value, gp=gp)
 
     results_predict_gp = results_predict_gp | {'MAX1': first_max, 'MAX2': second_max, 'MAX3': third_max}
     # Добавляем максимумы к GP
-    add_maximus(gp, results_predict_gp)
+    await add_maximus(gp, results_predict_gp)
 
     return results_predict_gp

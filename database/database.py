@@ -124,13 +124,13 @@ def send_predict(tg_id, gp, first_driver, second_driver, third_driver, fourth_dr
         except Exception as e:
             print(e)
 
-
-# Получение прогноза на гонку
-def get_predict(gp=None):
-    with Session() as session:
-        statement = select(Predict).where(Predict.gp == gp)
-        db_object = session.scalars(statement).all()
-        return db_object
+async def get_predict(gp=None):
+    async with async_session() as session:
+        async with session.begin():
+            statement = select(Predict).where(Predict.gp == gp)
+            result = await session.execute(statement)
+            db_object = result.scalars().all()
+            return db_object
 
 
 # Заполнение таблицы с очками по этапам
@@ -143,13 +143,15 @@ def add_points(user_id, points, gp=None):
             print(e)
 
 
-def add_team_points(team_id, points, gp=None):
-    with Session() as session:
-        try:
-            session.add(TeamPoint(team_id=team_id, race_id=gp, points=points))
-            session.commit()
-        except Exception as e:
-            print(e)
+
+async def add_team_points(team_id, points, gp=None):
+    async with async_session() as session:
+        async with session.begin():
+            try:
+                session.add(TeamPoint(team_id=team_id, race_id=gp, points=points))
+                await session.commit()
+            except Exception as e:
+                print(e)
 
 
 # Заполнение таблицы результатов GP
@@ -461,16 +463,17 @@ async def get_maximus(gp: int) -> dict:
                 return {'max1': None, 'max2': None, 'max3': None}  # или обработка случая, когда res не найден
 
 
-def add_maximus(gp, maximus):
-    with Session() as session:
-        grandprix = session.query(Grandprix).filter(Grandprix.id == gp).first()
+async def add_maximus(gp, maximus):
+    async with async_session() as session:
+        async with session.begin():
+            grandprix = await session.get(Grandprix, gp)
 
-        if grandprix:
-            # Обновляем значения
-            grandprix.max1 = maximus['MAX1']
-            grandprix.max2 = maximus['MAX2']
-            grandprix.max3 = maximus['MAX3']
-            session.commit()
+            if grandprix:
+                # Обновляем значения
+                grandprix.max1 = maximus['MAX1']
+                grandprix.max2 = maximus['MAX2']
+                grandprix.max3 = maximus['MAX3']
+                await session.commit()
 
 
 async def get_all_users():
