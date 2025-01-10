@@ -448,11 +448,17 @@ def get_name_gp(gp):
         return res.gp_name
 
 
-def get_maximus(gp):
-    with Session() as session:
-        statement = select(Grandprix).where(Grandprix.id == gp)
-        res = session.scalars(statement).first()
-        return {'max1': res.max1, 'max2': res.max2, 'max3': res.max3}
+async def get_maximus(gp: int) -> dict:
+    async with async_session() as session:
+        async with session.begin():
+            statement = select(Grandprix).where(Grandprix.id == gp)
+            result = await session.execute(statement)
+            res = result.scalars().first()
+
+            if res:
+                return {'max1': res.max1, 'max2': res.max2, 'max3': res.max3}
+            else:
+                return {'max1': None, 'max2': None, 'max3': None}  # или обработка случая, когда res не найден
 
 
 def add_maximus(gp, maximus):

@@ -203,7 +203,7 @@ async def last_stage():
         ws.merge_cells(start_row=ws.max_row, start_column=4, end_row=ws.max_row, end_column=5)
     teams_fonts: dict = get_teams_fonts_colors()
 
-    maximus: dict = get_maximus(gp)
+    maximus: dict = await get_maximus(gp)
 
     # Записываем данные
     for index, (user, result, points) in enumerate(data, 1):
