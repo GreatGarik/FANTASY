@@ -3,7 +3,7 @@ from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMar
 from aiogram.filters import Command, CommandStart, StateFilter
 from lexicon.lexicon_ru import LEXICON_RU
 from keyboards.inline_keyboards import create_inline_kb
-from database.database import select_drivers, add_user, get_users, send_predict, add_result, \
+from database.database import select_drivers, add_user, get_users, send_predict, \
     get_actual_gp, show_points, get_user_team, add_team, get_name_gp, get_end_grandprix_by_id, get_penalty_grandprix_by_id, get_start_grandprix_by_id
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup

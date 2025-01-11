@@ -5,7 +5,8 @@ from aiogram import Router, F
 from aiogram.enums import ContentType, ParseMode
 from aiogram.filters import Command, CommandStart, StateFilter, BaseFilter
 from .getters import *
-
+from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs, ShowMode
+from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar, Radio, Back, Url
 
 
 class IsAdmin(BaseFilter):

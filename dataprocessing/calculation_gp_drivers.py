@@ -67,7 +67,7 @@ async def calculation_drivers(gp):
         delta_gap = abs(results_predict_gp['gap'] - predict.gap)
         delta_laps = abs(results_predict_gp['laps'] - predict.lapped)
         max_lap_gap = max(deltas.get(delta_gap, 0), deltas.get(delta_laps, 0))
-        add_result(predict.user_id, results_predict_gp.get(predict.first_driver),
+        await add_result(predict.user_id, results_predict_gp.get(predict.first_driver),
                    results_predict_gp.get(predict.second_driver),
                    results_predict_gp.get(predict.third_driver), results_predict_gp.get(predict.fourth_driver),
                    results_predict_gp.get('team_' + predict.driver_team),
@@ -77,7 +77,7 @@ async def calculation_drivers(gp):
                    predict.penalty, gp)
 
 
-    data = get_result(gp)
+    data = await get_result(gp)
 
     POINST_GP = {1: 100, 2: 92, 3: 86, 4: 80, 5: 75, 6: 70, 7: 66, 8: 62, 9: 58, 10: 55, 11: 52, 12: 49, 13: 46, 14: 44,
                  15: 42, 16: 40, 17: 38, 18: 36, 19: 34, 20: 32, 21: 30, 22: 29, 23: 28, 24: 27, 25: 26, 26: 25, 27: 24,
@@ -85,8 +85,8 @@ async def calculation_drivers(gp):
                  41: 10, 42: 9, 43: 8, 44: 7, 45: 6, 46: 5, 47: 4, 48: 3, 49: 2, 50: 1}
     teams_points = {}
     for index, (user, result) in enumerate(data, 1):
-        add_points(user.id, POINST_GP.get(index, 0), gp)
-        team = get_team(user.id_telegram)
+        await add_points(user.id, POINST_GP.get(index, 0), gp)
+        team = await get_team(user.id_telegram)
         if team:
             teams_points[team.id] = teams_points.get(team.id, 0) + POINST_GP.get(index, 0)
 

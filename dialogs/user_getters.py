@@ -1,20 +1,13 @@
-from datetime import datetime, date, time
-import os
+from datetime import datetime
 from aiogram.fsm.state import State, StatesGroup
-from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs, ShowMode
-from aiogram_dialog.widgets.input import TextInput, ManagedTextInput, MessageInput
-from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar
-from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
-from string import ascii_letters, digits
+from aiogram_dialog import DialogManager, ShowMode
+from aiogram_dialog.widgets.input import ManagedTextInput
+from aiogram_dialog.widgets.kbd import Button
+from aiogram.types import Message, User, CallbackQuery
+from string import ascii_letters
 from .getters import AdminSG
-from dataprocessing.excel_forms import entry_list, last_stage, process_championship_full, championship_team_full, \
-    process_calculation_command
-from dataprocessing.calculation_gp_drivers import calculation_drivers
-from database.database import select_drivers, add_user, get_users, send_predict, add_result, \
-    show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
-    is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
-    get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, get_users_async, add_user_async, get_end_grandprix_by_id, get_start_grandprix_by_id, get_penalty_grandprix_by_id
+from database.database import select_drivers, send_predict, get_actual_gp, is_prediced, get_name_gp,  \
+     get_users_async, add_user_async, get_end_grandprix_by_id, get_start_grandprix_by_id, get_penalty_grandprix_by_id
 
 
 class UserSG(StatesGroup):

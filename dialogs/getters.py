@@ -2,17 +2,15 @@ from datetime import datetime, date, time
 import asyncio
 import os
 from aiogram.fsm.state import State, StatesGroup
-from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs, ShowMode
+from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.widgets.input import TextInput, ManagedTextInput, MessageInput
-from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar
+from aiogram_dialog.widgets.kbd import Button, Select
 from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
 from dataprocessing.excel_forms import entry_list, last_stage, process_championship_full, championship_team_full, \
     process_calculation_command, process_all_predicts
 from dataprocessing.calculation_gp_drivers import calculation_drivers
-from database.database import select_drivers, add_user, get_users, send_predict, add_result, \
-    show_result, get_actual_gp, add_points, show_result, show_points, get_result, check_res, show_points_all, \
-    is_prediced, get_user_team, add_team, get_team, show_points_team_all, get_teams_fonts_colors, clear_results, \
-    get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
+from database.database import get_users, get_actual_gp, check_res, \
+    clear_results, get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
     update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint
 from .dop_functions import send_message
 

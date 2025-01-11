@@ -158,13 +158,15 @@ async def get_predict(gp=None):
 
 
 # Заполнение таблицы с очками по этапам
-def add_points(user_id, points, gp=None):
-    with Session() as session:
-        try:
-            session.add(Point(user_id=user_id, race_id=gp, points=points))
-            session.commit()
-        except Exception as e:
-            print(e)
+async def add_points(user_id, points, gp=None):
+    async with async_session() as session:
+        async with session.begin():
+            try:
+                point_entry = Point(user_id=user_id, race_id=gp, points=points)
+                session.add(point_entry)
+                await session.commit()
+            except Exception as e:
+                print(e)
 
 
 
@@ -179,24 +181,29 @@ async def add_team_points(team_id, points, gp=None):
 
 
 # Заполнение таблицы результатов GP
-def add_result(tg_id, first_driver: str, second_driver: str, third_driver: str, fourth_driver: str, driver_team: str,
-               driver_engine: str, gap: int,
-               lapped: int, counter_best, max1_best, max2_best, max3_best, max1_not_best, max2_not_best, max3_not_best,
-               max4_not_best, counter_lap_gap, max_lap_gap, penalty, gp=None):
+async def add_result(tg_id, first_driver: str, second_driver: str, third_driver: str, fourth_driver: str,
+                     driver_team: str, driver_engine: str, gap: int, lapped: int, counter_best,
+                     max1_best, max2_best, max3_best, max1_not_best, max2_not_best, max3_not_best,
+                     max4_not_best, counter_lap_gap, max_lap_gap, penalty, gp=None):
     total = sum(
-        [first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap, lapped]) - (penalty if penalty else 0)
-    with Session() as session:
-        try:
-            session.add(Result(user_id=tg_id, first_driver=first_driver, second_driver=second_driver,
-                               third_driver=third_driver, fourth_driver=fourth_driver, driver_team=driver_team,
-                               driver_engine=driver_engine, gap=gap, lapped=lapped, total=total,
-                               counter_best=counter_best, max1_best=max1_best, max2_best=max2_best, max3_best=max3_best,
-                               max1_not_best=max1_not_best, max2_not_best=max2_not_best, max3_not_best=max3_not_best,
-                               max4_not_best=max4_not_best, counter_lap_gap=counter_lap_gap, max_lap_gap=max_lap_gap,
-                               penalty=penalty, gp=gp))
-            session.commit()
-        except Exception as e:
-            print(e)
+        [first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap, lapped]) - (
+                penalty if penalty else 0)
+
+    async with async_session() as session:
+        async with session.begin():
+            try:
+                result_entry = Result(user_id=tg_id, first_driver=first_driver, second_driver=second_driver,
+                                      third_driver=third_driver, fourth_driver=fourth_driver, driver_team=driver_team,
+                                      driver_engine=driver_engine, gap=gap, lapped=lapped, total=total,
+                                      counter_best=counter_best, max1_best=max1_best, max2_best=max2_best,
+                                      max3_best=max3_best, max1_not_best=max1_not_best, max2_not_best=max2_not_best,
+                                      max3_not_best=max3_not_best, max4_not_best=max4_not_best,
+                                      counter_lap_gap=counter_lap_gap, max_lap_gap=max_lap_gap,
+                                      penalty=penalty, gp=gp)
+                session.add(result_entry)
+                await session.commit()
+            except Exception as e:
+                print(e)
 
 
 # Возврат списка мз пользователей и их очков
@@ -275,24 +282,27 @@ def show_points_team_all(year):
 
 
 # Получение результатов GP без очков чемпионата
-def get_result(gp=None):
-    with Session() as session:
-        query = session.query(User, Result).where(Result.gp == gp)
-        # query = query.join(User, Result.user_id == User.id_telegram).order_by(Result.total.desc(),  case((Result.first_driver > Result.second_driver, Result.first_driver), else_=Result.second_driver).desc(), Result.third_driver.desc(), Result.fourth_driver.desc(), Result.driver_team.desc(), Result.driver_engine.desc(), Result.gap.desc(), Result.lapped.desc(), Result.id)
-        query = query.join(User, Result.user_id == User.id_telegram).order_by(Result.total.desc(),
-                                                                              Result.counter_best.desc(),
-                                                                              Result.max1_best.desc(),
-                                                                              Result.max2_best.desc(),
-                                                                              Result.max3_best.desc(),
-                                                                              Result.max1_not_best.desc(),
-                                                                              Result.max2_not_best.desc(),
-                                                                              Result.max3_not_best.desc(),
-                                                                              Result.max4_not_best.desc(),
-                                                                              Result.counter_lap_gap.desc(),
-                                                                              Result.max_lap_gap.desc(),
-                                                                              Result.id).all()
+async def get_result(gp=None):
+    async with async_session() as session:
+        async with session.begin():
+            query = select(User, Result).where(Result.gp == gp)
+            query = query.join(User, Result.user_id == User.id_telegram).order_by(
+                Result.total.desc(),
+                Result.counter_best.desc(),
+                Result.max1_best.desc(),
+                Result.max2_best.desc(),
+                Result.max3_best.desc(),
+                Result.max1_not_best.desc(),
+                Result.max2_not_best.desc(),
+                Result.max3_not_best.desc(),
+                Result.max4_not_best.desc(),
+                Result.counter_lap_gap.desc(),
+                Result.max_lap_gap.desc(),
+                Result.id
+            )
 
-        return query
+            result = await session.execute(query)
+            return result.all()
 
 
 # Получение результатов GP вместе с очками чемпионата
@@ -374,19 +384,27 @@ def get_user_team(id_telegram):
             return 'PERSONAL ENTRY'
 
 
-def get_team(id_telegram):
-    with Session() as session:
-        user = session.query(User).filter(User.id_telegram == id_telegram).first()
-        team = session.query(Team).filter(
-            (Team.first == user.id) |
-            (Team.second == user.id) |
-            (Team.third == user.id)
-        ).first()
+async def get_team(id_telegram):
+    async with async_session() as session:
+        async with session.begin():
+            # Получаем пользователя по id_telegram
+            user_query = select(User).filter(User.id_telegram == id_telegram)
+            user_result = await session.execute(user_query)
+            user = user_result.scalars().first()
 
-        if team:
-            return team
-        else:
-            return None
+            if user:
+                # Получаем команду, в которой участвует пользователь
+                team_query = select(Team).filter(
+                    (Team.first == user.id) |
+                    (Team.second == user.id) |
+                    (Team.third == user.id)
+                )
+                team_result = await session.execute(team_query)
+                team = team_result.scalars().first()
+
+                return team
+            else:
+                return None
 
 
 def is_prediced(user_id, gp):
