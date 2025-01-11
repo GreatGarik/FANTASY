@@ -11,7 +11,6 @@ from config_data.config import Config, load_config
 
 # Определяем текущую операционную систему
 current_os = platform.system()
-#current_os = "Windows"
 
 # Устанавливаем параметры подключения в зависимости от ОС
 if current_os == "Windows":
@@ -76,11 +75,28 @@ async def select_drivers_async(start=0, stop=None, active=None):
 
 
 # Выбор команд и моторов для прогноза
-def select_team_engine(pilot):
-    with Session() as session:
-        statement = select(Driver).where(Driver.driver_name == pilot, Driver.driver_nextgp == True)
-        db_object = session.scalars(statement).one()
-        return db_object.driver_team, db_object.driver_engine
+async def select_team_engine(pilot):
+    async with async_session() as session:
+        async with session.begin():
+            statement = select(Driver).where(Driver.driver_name == pilot, Driver.driver_nextgp == True)
+            result = await session.execute(statement)
+            db_object = result.scalars().one()
+            return db_object.driver_team, db_object.driver_engine
+
+
+async def select_all_teams_engines():
+    async with async_session() as session:
+        async with session.begin():
+            statement = select(Driver).where(Driver.driver_nextgp == True)
+            result = await session.execute(statement)
+            drivers = result.scalars().all()
+
+            # Создаем словарь, где ключ - имя пилота, а значение - список команда, двигатель
+            teams_engines_dict = {
+                driver.driver_name: [driver.driver_team, driver.driver_engine]
+                for driver in drivers
+            }
+            return teams_engines_dict
 
 
 # Запрос актуального GP
@@ -89,6 +105,14 @@ def get_actual_gp():
         statement = select(Grandprix).where(Grandprix.nextgp)
         db_object = session.scalars(statement).one()
         return db_object.id
+
+async def get_actual_gp_async():
+    async with async_session() as session:
+        async with session.begin():
+            statement = select(Grandprix).where(Grandprix.nextgp)
+            result = await session.execute(statement)
+            db_object = result.scalars().one()
+            return db_object.id
 
 
 # Добавление юзера

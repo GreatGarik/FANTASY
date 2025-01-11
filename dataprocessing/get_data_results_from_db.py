@@ -1,5 +1,5 @@
 import asyncio
-from database.database import select_team_engine, get_grandprix_results, get_actual_gp
+from database.database import get_grandprix_results, get_actual_gp_async, select_all_teams_engines
 
 POINTS_RACE = {1: 25, 2: 22, 3: 20, 4: 18, 5: 17, 6: 16, 7: 15, 8: 14, 9: 13, 10: 12, 11: 10, 12: 9, 13: 8, 14: 7,
                15: 6, 16: 5, 17: 4, 18: 3, 19: 2, 20: 1}
@@ -12,19 +12,20 @@ POINTS_QUALI = {1: 10, 2: 8, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1}
 POINTS_QUALI_TE = {1: 5, 2: 3, 3: 1}
 
 async def get_res_gp():
-    results_f1 = await get_grandprix_results(get_actual_gp())
+    results_f1 = await get_grandprix_results(await get_actual_gp_async())
+    teams_engines_dict = await select_all_teams_engines()
     results_gp = {}
 
     if results_f1['race_result']:
         for num, line in enumerate(results_f1['race_result'].split('\n'), 1):
             if not line.startswith('gap') and not line.startswith('laps') and not line.startswith('bestlap'):
                 results_gp.setdefault(line.strip(), POINTS_RACE[num])
-                team, engine = select_team_engine(line.strip())
+                team, engine = teams_engines_dict.get(line.strip())
                 results_gp['team_' + team] = results_gp.get('team_' + team, 0) + POINTS_RACE_TE.get(num, 0)
                 results_gp['engine_' + engine] = results_gp.get('engine_' + engine, 0) + POINTS_RACE_TE.get(num, 0)
             elif line.startswith('bestlap'):
                 results_gp[line.split(':')[-1].strip()] = results_gp.get(line.split(':')[-1].strip(), 0) + 3
-                team, engine = select_team_engine(line.split(':')[-1].strip())
+                team, engine = teams_engines_dict.get(line.split(':')[-1].strip())
                 results_gp['team_' + team] = results_gp.get('team_' + team, 0) + 2
                 results_gp['engine_' + engine] = results_gp.get('engine_' + engine, 0) + 1
             else:
@@ -34,52 +35,18 @@ async def get_res_gp():
     if results_f1['quali_result']:
         for num, line in enumerate(results_f1['quali_result'].split('\n'), 1):
             results_gp[line.strip()] = results_gp.get(line.strip(), 0) + POINTS_QUALI.get(num, 0)
-            team, engine = select_team_engine(line.strip())
+            team, engine = teams_engines_dict.get(line.strip())
             results_gp['team_' + team] = results_gp.get('team_' + team, 0) + POINTS_QUALI_TE.get(num, 0)
             results_gp['engine_' + engine] = results_gp.get('engine_' + engine, 0) + POINTS_QUALI_TE.get(num, 0)
 
     if results_f1['sprint_result']:
         for num, line in enumerate(results_f1['sprint_result'].split('\n'), 1):
             results_gp[line.strip()] = results_gp.get(line.strip(), 0) + POINTS_SPRINT.get(num, 0)
-            team, engine = select_team_engine(line.strip())
+            team, engine = teams_engines_dict.get(line.strip())
             results_gp['team_' + team] = results_gp.get('team_' + team, 0) + POINTS_SPRINT_TE.get(num, 0)
             results_gp['engine_' + engine] = results_gp.get('engine_' + engine, 0) + POINTS_SPRINT_TE.get(num, 0)
 
 
-
-
-
-    '''
-    with open('race.txt', encoding='UTF-8') as file:
-        for num, line in enumerate(file.readlines(), 1):
-            if not line.startswith('gap') and not line.startswith('laps') and not line.startswith('bestlap'):
-                results_gp.setdefault(line.strip(), POINTS_RACE[num])
-                team, engine = select_team_engine(line.strip())
-                results_gp['team_' + team] = results_gp.get('team_' + team, 0) + POINTS_RACE_TE.get(num, 0)
-                results_gp['engine_' + engine] = results_gp.get('engine_' + engine, 0) + POINTS_RACE_TE.get(num, 0)
-            elif line.startswith('bestlap'):
-                results_gp[line.split(':')[-1].strip()] = results_gp.get(line.split(':')[-1].strip(), 0) + 3
-                team, engine = select_team_engine(line.split(':')[-1].strip())
-                results_gp['team_' + team] = results_gp.get('team_' + team, 0) + 2
-                results_gp['engine_' + engine] = results_gp.get('engine_' + engine, 0) + 1
-            else:
-                key, value = line.strip().split()
-                results_gp.setdefault(key, int(value))
-                
-    with open('sprint.txt', encoding='UTF-8') as file:
-        for num, line in enumerate(file.readlines(), 1):
-            results_gp[line.strip()] = results_gp.get(line.strip(), 0) + POINTS_SPRINT.get(num, 0)
-            team, engine = select_team_engine(line.strip())
-            results_gp['team_' + team] = results_gp.get('team_' + team, 0) + POINTS_SPRINT_TE.get(num, 0)
-            results_gp['engine_' + engine] = results_gp.get('engine_' + engine, 0) + POINTS_SPRINT_TE.get(num, 0)
-
-    with open('quali.txt', encoding='UTF-8') as file:
-        for num, line in enumerate(file.readlines(), 1):
-            results_gp[line.strip()] = results_gp.get(line.strip(), 0) + POINTS_QUALI.get(num, 0)
-            team, engine = select_team_engine(line.strip())
-            results_gp['team_' + team] = results_gp.get('team_' + team, 0) + POINTS_QUALI_TE.get(num, 0)
-            results_gp['engine_' + engine] = results_gp.get('engine_' + engine, 0) + POINTS_QUALI_TE.get(num, 0)
-    '''
     return results_gp
 
 if __name__ == '__main__':
