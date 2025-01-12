@@ -4,10 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from aiogram.utils.chat_member import USERS
 from certifi import where
 from datetime import datetime
-from sqlalchemy import create_engine, select, update, case, func
+from sqlalchemy import create_engine, select, update, case, func, delete
 from sqlalchemy.orm import sessionmaker
 from database.models import *
 from config_data.config import Config, load_config
+from sqlalchemy.exc import NoResultFound
 
 # Определяем текущую операционную систему
 current_os = platform.system()
@@ -36,19 +37,6 @@ async_session = sessionmaker(bind=engine2, class_=AsyncSession, expire_on_commit
 
 
 # Выбор гонщиков для прогноза со срезами по местам
-def select_drivers(start=0, stop=None):
-    with Session() as session:
-        statement = select(Driver).where(Driver.driver_nextgp == True).order_by(Driver.driver_position.asc())
-        db_object = session.scalars(statement).all()
-
-        # Обработка случая, когда stop равно None
-        if stop is None:
-            stop = len(db_object)
-
-        # Возврат среза результатов
-        return db_object[start:stop]
-
-
 async def select_drivers_async(start=0, stop=None, active=None):
     async with async_session() as session:
         async with session.begin():
@@ -100,12 +88,6 @@ async def select_all_teams_engines():
 
 
 # Запрос актуального GP
-def get_actual_gp():
-    with Session() as session:
-        statement = select(Grandprix).where(Grandprix.nextgp)
-        db_object = session.scalars(statement).one()
-        return db_object.id
-
 async def get_actual_gp_async():
     async with async_session() as session:
         async with session.begin():
@@ -116,14 +98,6 @@ async def get_actual_gp_async():
 
 
 # Добавление юзера
-def add_user(user_id, name: str, lastname: str):
-    with Session() as session:
-        try:
-            session.add(User(name=name + ' ' + lastname, id_telegram=user_id))
-            session.commit()
-        except:
-            pass
-
 async def add_user_async(user_id, name: str, lastname: str):
     async with async_session() as session:
         async with session.begin():
@@ -137,16 +111,29 @@ async def add_user_async(user_id, name: str, lastname: str):
 
 
 # Запись прогноза на гонку
-def send_predict(tg_id, gp, first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap,
-                 lapped, penalty, time):
-    with Session() as session:
-        try:
-            session.add(Predict(user_id=tg_id, first_driver=first_driver, second_driver=second_driver,
-                                third_driver=third_driver, fourth_driver=fourth_driver, driver_team=driver_team,
-                                driver_engine=driver_engine, gap=gap, lapped=lapped, gp=gp, penalty=penalty, time=time))
-            session.commit()
-        except Exception as e:
-            print(e)
+async def send_predict(tg_id, gp, first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap,
+                       lapped, penalty, time):
+    async with async_session() as session:
+        async with session.begin():
+            try:
+                new_predict = Predict(
+                    user_id=tg_id,
+                    first_driver=first_driver,
+                    second_driver=second_driver,
+                    third_driver=third_driver,
+                    fourth_driver=fourth_driver,
+                    driver_team=driver_team,
+                    driver_engine=driver_engine,
+                    gap=gap,
+                    lapped=lapped,
+                    gp=gp,
+                    penalty=penalty,
+                    time=time
+                )
+                session.add(new_predict)
+                await session.commit()
+            except Exception as e:
+                print(e)
 
 async def get_predict(gp=None):
     async with async_session() as session:
@@ -206,42 +193,31 @@ async def add_result(tg_id, first_driver: str, second_driver: str, third_driver:
                 print(e)
 
 
-# Возврат списка мз пользователей и их очков
-def show_points():
-    with Session() as session:
-        result = session.query(User).outerjoin(Point).all()
-        points_list = [
-            {
-                'User': user.name,
-                **{point.race_id: point.points for point in user.points}
-            }
-            for user in result
-        ]
-        return points_list
-
-
 # Возврат списка пользователей и их очков по GP
-def show_points_all(year):
-    with Session() as session:
+async def show_points_all(year):
+    async with async_session() as session:
         # Получаем все гран-при
-        grandprix = session.query(Grandprix).filter(Grandprix.year == year).order_by(Grandprix.id).all()
+        result = await session.execute(select(Grandprix).where(Grandprix.year == year).order_by(Grandprix.id))
+        grandprix = result.scalars().all()
 
         # Получаем всех пользователей
-        users = session.query(User).all()
+        result = await session.execute(select(User))
+        users = result.scalars().all()
 
-        # Формируем список результатов
         points_list = []
-
         for user in users:
             user_entry = {'User': user.name}
             user_entry['Number'] = user.number
 
             # Находим команду пользователя
-            team = session.query(Team).filter(
-                (Team.first == user.id) |
-                (Team.second == user.id) |
-                (Team.third == user.id)
-            ).first()
+            result = await session.execute(
+                select(Team).where(
+                    (Team.first == user.id) |
+                    (Team.second == user.id) |
+                    (Team.third == user.id)
+                )
+            )
+            team = result.scalar_one_or_none()
 
             # Добавляем информацию о команде в user_entry
             user_entry['Team'] = team.name if team else 'PERSONAL ENTRY'
@@ -249,33 +225,41 @@ def show_points_all(year):
             # Инициализируем очки для каждого гран-при
             for gp in grandprix:
                 # Находим очки для текущего гран-при
-                points = next((point.points for point in user.points if point.race_id == gp.id), None)
-                user_entry[gp.gp_name_abr] = points
+                result = await session.execute(
+                    select(Point).where(Point.user_id == user.id, Point.race_id == gp.id)
+                )
+                point = result.scalar_one_or_none()
+                user_entry[gp.gp_name_abr] = point.points if point else None
+
             points_list.append(user_entry)
 
         return points_list
 
 
 # Возврат списка пользователей и их очков по GP
-def show_points_team_all(year):
-    with Session() as session:
+async def show_points_team_all(year):
+    async with async_session() as session:
         # Получаем все гран-при
-        grandprix = session.query(Grandprix).filter(Grandprix.year == year).order_by(Grandprix.id).all()
+        result = await session.execute(select(Grandprix).where(Grandprix.year == year).order_by(Grandprix.id))
+        grandprix = result.scalars().all()
 
-        # Получаем всех пользователей
-        teams = session.query(Team).all()
+        # Получаем все команды
+        result = await session.execute(select(Team))
+        teams = result.scalars().all()
 
-        # Формируем список результатов
         points_list = []
-
         for team in teams:
             user_entry = {'Team': team.name}
 
             # Инициализируем очки для каждого гран-при
             for gp in grandprix:
                 # Находим очки для текущего гран-при
-                points = next((point.points for point in team.team_points if point.race_id == gp.id), None)
-                user_entry[gp.gp_name_abr] = points
+                result = await session.execute(
+                    select(TeamPoint).where(TeamPoint.team_id == team.id, TeamPoint.race_id == gp.id)
+                )
+                point = result.scalar_one_or_none()
+                user_entry[gp.gp_name_abr] = point.points if point else None
+
             points_list.append(user_entry)
 
         return points_list
@@ -306,40 +290,37 @@ async def get_result(gp=None):
 
 
 # Получение результатов GP вместе с очками чемпионата
-def show_result(gp=None):
-    with Session() as session:
-        query = session.query(User, Result, Point).where(Result.gp == gp, Point.race_id == gp)
-        # query = query.join(User, Result.user_id == User.id_telegram).order_by(Result.total.desc(),  case((Result.first_driver > Result.second_driver, Result.first_driver), else_=Result.second_driver).desc(), Result.third_driver.desc(), Result.fourth_driver.desc(), Result.driver_team.desc(), Result.driver_engine.desc(), Result.gap.desc(), Result.lapped.desc(), Result.id)
-        query = query.join(User, Result.user_id == User.id_telegram).order_by(Result.total.desc(),
-                                                                              Result.counter_best.desc(),
-                                                                              Result.max1_best.desc(),
-                                                                              Result.max2_best.desc(),
-                                                                              Result.max3_best.desc(),
-                                                                              Result.max1_not_best.desc(),
-                                                                              Result.max2_not_best.desc(),
-                                                                              Result.max3_not_best.desc(),
-                                                                              Result.max4_not_best.desc(),
-                                                                              Result.counter_lap_gap.desc(),
-                                                                              Result.max_lap_gap.desc(),
-                                                                              Result.id).outerjoin(Point).all()
+async def show_result(gp=None):
+    async with async_session() as session:
+        # Формируем основной запрос
+        query = select(User, Result, Point).where(Result.gp == gp, Point.race_id == gp)
 
-        return query
+        # Добавляем соединения и порядок сортировки
+        query = query.join(User, Result.user_id == User.id_telegram).order_by(
+            Result.total.desc(),
+            Result.counter_best.desc(),
+            Result.max1_best.desc(),
+            Result.max2_best.desc(),
+            Result.max3_best.desc(),
+            Result.max1_not_best.desc(),
+            Result.max2_not_best.desc(),
+            Result.max3_not_best.desc(),
+            Result.max4_not_best.desc(),
+            Result.counter_lap_gap.desc(),
+            Result.max_lap_gap.desc(),
+            Result.id
+        ).outerjoin(Point)
+
+        # Выполняем запрос
+        result = await session.execute(query)
+
+        # Извлекаем результаты
+        results = result.all()
+
+        return results
 
 
 # Получение пользователя по его id в телеграме или всех, если id не задан
-def get_users(id_telegram=None):
-    with Session() as session:
-        if id_telegram:
-            try:
-                statement = select(User).where(User.id_telegram == id_telegram)
-                return session.scalars(statement).one()
-            except:
-                return
-        else:
-            statement = select(User)
-            db_object = session.scalars(statement).all()
-            return db_object
-
 async def get_users_async(id_telegram=None):
     async with async_session() as session:
         async with session.begin():
@@ -359,29 +340,38 @@ async def get_users_async(id_telegram=None):
 
 
 # Проверка просчитаны ли уже результаты на заданный GP
-def check_res(gp):
-    with Session() as session:
-        statement = select(Point).where(Point.race_id == gp)
-        res = session.scalars(statement).all()
-        if res:
-            return True
-        else:
-            return
+async def check_res(gp):
+    async with async_session() as session:
+        async with session.begin():
+            statement = select(Point).where(Point.race_id == gp)
+            result = await session.execute(statement)
+            res = result.scalars().all()
+            return bool(res)
 
 
 # Просмотр команды пользователя
-def get_user_team(id_telegram):
-    with Session() as session:
-        user = session.query(User).filter(User.id_telegram == id_telegram).first()
-        team = session.query(Team).filter(
-            (Team.first == user.id) |
-            (Team.second == user.id) |
-            (Team.third == user.id)
-        ).first()
-        if team:
-            return team.name
-        else:
-            return 'PERSONAL ENTRY'
+async def get_user_team(id_telegram):
+    async with async_session() as session:
+        async with session.begin():
+            # Получаем пользователя
+            user_stmt = select(User).where(User.id_telegram == id_telegram)
+            user_result = await session.execute(user_stmt)
+            user = user_result.scalars().first()
+
+            if user:
+                # Получаем команду, в которой состоит пользователь
+                team_stmt = select(Team).where(
+                    (Team.first == user.id) |
+                    (Team.second == user.id) |
+                    (Team.third == user.id)
+                )
+                team_result = await session.execute(team_stmt)
+                team = team_result.scalars().first()
+
+                if team:
+                    return team.name
+
+        return 'PERSONAL ENTRY'
 
 
 async def get_team(id_telegram):
@@ -407,23 +397,28 @@ async def get_team(id_telegram):
                 return None
 
 
-def is_prediced(user_id, gp):
-    with Session() as session:
-        statement = select(Predict).where(Predict.gp == gp, Predict.user_id == user_id)
-        res = session.scalars(statement).all()
-        if res:
-            return True
-        else:
-            return
+async def is_prediced(user_id, gp):
+    async with async_session() as session:
+        async with session.begin():
+            statement = select(Predict).where(Predict.gp == gp, Predict.user_id == user_id)
+            result = await session.execute(statement)
+            res = result.scalars().all()
+            return bool(res)  # Возвращает True, если есть результаты, иначе False
 
 
 # Добавление команды
-def add_team(user_id, name: str, new_number: str, logo: str=None, background_color: str='000000', text_color: str='FFFFFF', number_color: str=None,
-             number_font: str=None, number_italic: bool=0):
-    with Session() as session:
-        user = session.scalars(select(User).where(User.id_telegram == user_id)).one_or_none()
-
+async def add_team(user_id, name: str, new_number: str, logo: str = None, background_color: str = '000000',
+                   text_color: str = 'FFFFFF', number_color: str = None, number_font: str = None,
+                   number_italic: bool = False):
+    async with async_session() as session:
         try:
+            # Получаем пользователя по user_id
+            result = await session.execute(select(User).where(User.id_telegram == user_id))
+            user = result.scalars().one_or_none()
+
+            if not user:
+                raise ValueError(f"User with id_telegram {user_id} not found.")
+
             # Создаем новую команду
             new_team = Team(
                 name=name,
@@ -441,15 +436,20 @@ def add_team(user_id, name: str, new_number: str, logo: str=None, background_col
             # Обновляем номер пользователя
             user.number = int(new_number)
 
-            session.commit()
+            # Фиксируем изменения в базе данных
+            await session.commit()
+        except NoResultFound:
+            print(f"User with id_telegram {user_id} not found.")
         except Exception as e:
-            print(e)
+            print(f"An error occurred: {e}")
+            await session.rollback()
 
 
-def get_teams_fonts_colors() -> Dict[str, Dict[str, Any]]:
-    with Session() as session:
+async def get_teams_fonts_colors() -> Dict[str, Dict[str, Any]]:
+    async with async_session() as session:
         teams_dict = {}
-        teams = session.query(Team).all()  # Получаем все команды из базы данных
+        result = await session.execute(select(Team))  # Получаем все команды из базы данных
+        teams = result.scalars().all()
 
         for team in teams:
             teams_dict[team.name] = {
@@ -464,32 +464,33 @@ def get_teams_fonts_colors() -> Dict[str, Dict[str, Any]]:
         return teams_dict
 
 
-def clear_results(gp):
-    with Session() as session:
-        # Удаляем строки по условию
-        condition = Result.gp == gp  # Условие для удаления
-        session.query(Result).filter(condition).delete(synchronize_session='fetch')
+async def clear_results(gp):
+    async with async_session() as session:
+        async with session.begin():
+            # Удаляем строки по условию
+            await session.execute(delete(Result).where(Result.gp == gp))
 
-        condition = TeamPoint.race_id == gp  # Условие для удаления
-        session.query(TeamPoint).filter(condition).delete(synchronize_session='fetch')
+            await session.execute(delete(TeamPoint).where(TeamPoint.race_id == gp))
 
-        condition = Point.race_id == gp  # Условие для удаления
-        session.query(Point).filter(condition).delete(synchronize_session='fetch')
+            await session.execute(delete(Point).where(Point.race_id == gp))
 
-        # Сбрасываем значения max1, max2 и max3 для определенного гран-при
-        session.query(Grandprix).filter(Grandprix.id == gp).update(
-            {Grandprix.max1: None, Grandprix.max2: None, Grandprix.max3: None},
-            synchronize_session='fetch'
-        )
+            # Сбрасываем значения max1, max2 и max3 для определенного гран-при
+            await session.execute(
+                update(Grandprix).where(Grandprix.id == gp).values(
+                    max1=None, max2=None, max3=None
+                )
+            )
 
-        session.commit()
+            await session.commit()
 
 
-def get_name_gp(gp):
-    with Session() as session:
-        statement = select(Grandprix).where(Grandprix.id == gp)
-        res = session.scalars(statement).first()
-        return res.gp_name
+async def get_name_gp(gp):
+    async with async_session() as session:
+        async with session.begin():
+            statement = select(Grandprix).where(Grandprix.id == gp)
+            result = await session.execute(statement)
+            res = result.scalars().first()
+            return res.gp_name if res else None  # Возвращает имя gp или None, если не найдено
 
 
 async def get_maximus(gp: int) -> dict:

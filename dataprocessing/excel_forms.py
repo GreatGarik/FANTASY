@@ -6,7 +6,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.drawing.image import Image
 from io import BytesIO
-from database.database import get_actual_gp, show_result, show_points_all, get_user_team, show_points_team_all, get_teams_fonts_colors, get_name_gp, get_maximus, get_all_users, get_predictions_by_gp
+from database.database import get_actual_gp_async, show_result, show_points_all, get_user_team, show_points_team_all, get_teams_fonts_colors, get_name_gp, get_maximus, get_all_users, get_predictions_by_gp
 
 async def entry_list():
     users_list: List[dict] = await get_all_users()
@@ -65,7 +65,7 @@ async def entry_list():
         cell.border = thin_border
         # Объединяем ячейки в третьем и четвертом столбцах (C и D)
         ws.merge_cells(start_row=ws.max_row, start_column=3, end_row=ws.max_row, end_column=4)
-    teams_fonts: dict = get_teams_fonts_colors()
+    teams_fonts: dict = await get_teams_fonts_colors()
     # Добавляем данные в файл
     for entry in users_list:
         row = [entry['Number'] if entry['Number'] else 'N/A'] + [entry['User']] + [entry['Team']] + ['']
@@ -149,8 +149,8 @@ async def entry_list():
 
 
 async def last_stage():
-    gp = get_actual_gp()
-    data = show_result(gp)
+    gp = await get_actual_gp_async()
+    data = await show_result(gp)
 
     # Создаем новый Excel файл
     wb = Workbook()
@@ -163,7 +163,8 @@ async def last_stage():
     # Объединяем ячейки в третьем и четвертом столбцах (C и D)
     ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=12)
     ws.cell(row=4, column=4).font = Font(name='Formula1 Display Bold', size=18, bold=True, color='000000')
-    ws['D4'] = f'FORMULA 1 {get_name_gp(gp).upper()} GRAND PRIX'
+    gp_name = await get_name_gp(gp)
+    ws['D4'] = f'FORMULA 1 {gp_name.upper()} GRAND PRIX'
     ws['D4'].alignment = Alignment(horizontal='center', vertical='center')
 
     img_path = os.path.join('logos', 'Shirokoe_logo_bez_fona_silli.png')  # Укажите путь к вашему изображению
@@ -198,7 +199,7 @@ async def last_stage():
         cell.border = thin_border
         # Объединяем ячейки в третьем и четвертом столбцах (C и D)
         ws.merge_cells(start_row=ws.max_row, start_column=4, end_row=ws.max_row, end_column=5)
-    teams_fonts: dict = get_teams_fonts_colors()
+    teams_fonts: dict = await get_teams_fonts_colors()
 
     maximus: dict = await get_maximus(gp)
 
@@ -208,7 +209,7 @@ async def last_stage():
             index,
             user.number,
             user.name,
-            get_user_team(user.id_telegram),
+            await get_user_team(user.id_telegram),
             None,
             result.first_driver,
             result.second_driver,
@@ -240,8 +241,8 @@ async def last_stage():
             cell.fill = black_fill  # Устанавливаем черный фон
 
         # Устанавливаем фон для ячейки для команд
-        if teams_fonts.get(get_user_team(user.id_telegram), None):
-            team = teams_fonts.get(get_user_team(user.id_telegram), None)
+        if teams_fonts.get(await get_user_team(user.id_telegram), None):
+            team = teams_fonts.get(await get_user_team(user.id_telegram), None)
             # Устанавливаем фон для ячейки, например, в колонке
             font = Font(name='Formula1 Display Bold', size=11, bold=False, color=team['text_color'])
             fill = PatternFill(start_color=team['background_color'], end_color=team['background_color'],
@@ -315,7 +316,7 @@ async def last_stage():
     return output
 
 async def process_championship_full():
-    points_list: List[dict] = show_points_all(datetime.now().year)
+    points_list: List[dict] = await show_points_all(datetime.now().year)
 
     for entry in points_list:
         entry['CH.PTS'] = sum(
@@ -376,7 +377,7 @@ async def process_championship_full():
         cell.border = thin_border
         # Объединяем ячейки в третьем и четвертом столбцах (C и D)
         ws.merge_cells(start_row=ws.max_row, start_column=4, end_row=ws.max_row, end_column=5)
-    teams_fonts: dict = get_teams_fonts_colors()
+    teams_fonts: dict = await get_teams_fonts_colors()
     # Добавляем данные в файл
     for num, entry in enumerate(points_list, 1):
         row = [num] + [entry['Number']] + [entry['User']] + [entry['Team']] + [''] + [entry[key] for key in header[5:]]
@@ -456,7 +457,7 @@ async def process_championship_full():
     return output
 
 async def championship_team_full():
-    points_list: List[dict] = show_points_team_all(datetime.now().year)
+    points_list: List[dict] = await show_points_team_all(datetime.now().year)
 
     for entry in points_list:
         entry['Points'] = sum(entry[key] for key in entry if key != 'Team' and entry[key])
@@ -515,7 +516,7 @@ async def championship_team_full():
         cell.border = thin_border
         # Объединяем ячейки в третьем и четвертом столбцах (C и D)
         ws.merge_cells(start_row=ws.max_row, start_column=2, end_row=ws.max_row, end_column=3)
-    teams_fonts: dict = get_teams_fonts_colors()
+    teams_fonts: dict = await get_teams_fonts_colors()
 
     # Добавляем данные в файл
     for num, entry in enumerate(points_list, 1):
@@ -605,7 +606,7 @@ async def process_calculation_command(data):
     return output
 
 async def process_all_predicts():
-    gp = get_actual_gp()
+    gp = await get_actual_gp_async()
     data =  await get_predictions_by_gp(gp)
     df = pd.DataFrame(data)
 

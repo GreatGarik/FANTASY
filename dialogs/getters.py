@@ -9,9 +9,9 @@ from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
 from dataprocessing.excel_forms import entry_list, last_stage, process_championship_full, championship_team_full, \
     process_calculation_command, process_all_predicts
 from dataprocessing.calculation_gp_drivers import calculation_drivers
-from database.database import get_users, get_actual_gp, check_res, \
+from database.database import get_users_async, check_res, \
     clear_results, get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint
+    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async
 from .dop_functions import send_message
 
 class AdminSG(StatesGroup):
@@ -69,7 +69,7 @@ class AdminSG(StatesGroup):
 
 
 async def sprint(event_from_user: User, **kwargs):
-    return {'sprint': await is_sprint(get_actual_gp())}
+    return {'sprint': await is_sprint(await get_actual_gp_async())}
 
 async def go_back(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.back()
@@ -251,7 +251,7 @@ async def team_background_color(message: Message, widget: ManagedTextInput, dial
 async def button_last_stage(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     output = await last_stage()  # Получаем объект файла
     await callback.message.answer_document(
-        document=BufferedInputFile(output.read(), filename=f'results {get_name_gp(get_actual_gp())}.xlsx')
+        document=BufferedInputFile(output.read(), filename=f'results {await get_name_gp(await get_actual_gp_async())}.xlsx')
     )
     output.close()  # Закрываем объект после использования
     await dialog_manager.switch_to(AdminSG.tables)
@@ -269,7 +269,7 @@ async def button_drivers_champ(callback: CallbackQuery, button: Button, dialog_m
 async def button_get_all_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     output = await process_all_predicts()  # Получаем объект файла
     await callback.message.answer_document(
-        document=BufferedInputFile(output.read(), filename=f'predicts_for_{get_name_gp(get_actual_gp())}.xlsx')
+        document=BufferedInputFile(output.read(), filename=f'predicts_for_{await get_name_gp(await get_actual_gp_async())}.xlsx')
     )
     output.close()  # Закрываем объект после использования
     await dialog_manager.switch_to(AdminSG.tables)
@@ -293,8 +293,8 @@ async def receive_data(callback: CallbackQuery, button: Button, dialog_manager: 
 
 
 async def button_calculate(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    gp = get_actual_gp()
-    if check_res(gp):
+    gp = await get_actual_gp_async()
+    if await check_res(gp):
         await callback.message.answer(f'Вы уже сделали расчет для этого GP')
     else:
         output = await process_calculation_command(await calculation_drivers(gp))
@@ -313,7 +313,7 @@ async def button_f1_sprint(callback: CallbackQuery, button: Button, dialog_manag
     await dialog_manager.switch_to(AdminSG.loading_f1_result_sprint)
 
 async def loading_f1_result_sprint(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
-    await update_grandprix_result(grandprix_id=get_actual_gp(), result_type='sprint', result_text=text)
+    await update_grandprix_result(grandprix_id= await get_actual_gp_async(), result_type='sprint', result_text=text)
     await message.answer('Результат Спринта записан')
     await dialog_manager.switch_to(AdminSG.loading_f1_results)
 
@@ -321,7 +321,7 @@ async def button_f1_quali(callback: CallbackQuery, button: Button, dialog_manage
     await dialog_manager.switch_to(AdminSG.loading_f1_result_quali)
 
 async def loading_f1_result_quali(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
-    await update_grandprix_result(grandprix_id=get_actual_gp(), result_type='qualifying', result_text=text)
+    await update_grandprix_result(grandprix_id=await get_actual_gp_async(), result_type='qualifying', result_text=text)
     await message.answer('Результат Квалификации записан')
     await dialog_manager.switch_to(AdminSG.loading_f1_results)
 
@@ -329,12 +329,12 @@ async def button_f1_race(callback: CallbackQuery, button: Button, dialog_manager
     await dialog_manager.switch_to(AdminSG.loading_f1_result_race)
 
 async def loading_f1_result_race(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
-    await update_grandprix_result(grandprix_id=get_actual_gp(), result_type='race', result_text=text)
+    await update_grandprix_result(grandprix_id=await get_actual_gp_async(), result_type='race', result_text=text)
     await message.answer('Результат Гонки записан')
     await dialog_manager.switch_to(AdminSG.loading_f1_results)
 
 async def button_clear_result(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    clear_results(get_actual_gp())
+    await clear_results(await get_actual_gp_async())
     await callback.message.answer('Результат удалён')
     await dialog_manager.switch_to(AdminSG.stage)
 
@@ -492,7 +492,7 @@ async def get_minutes(dialog_manager, **kwargs):
 
 
 async def predict_end(dialog_manager: DialogManager, **kwargs):
-    return {'GP': get_name_gp(dialog_manager.dialog_data['predict_gp_selected']),
+    return {'GP': await get_name_gp(dialog_manager.dialog_data['predict_gp_selected']),
             'penalty': dialog_manager.dialog_data['penalty_datetime'],
             'end': dialog_manager.dialog_data['end_datetime'],
             'start': dialog_manager.dialog_data.get('start_datetime', datetime.now().replace(second=0).strftime('%Y-%m-%d %H:%M:%S'))
@@ -508,11 +508,11 @@ async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog
     time_end = dialog_manager.dialog_data['end_datetime']
     await update_grandprix(gp_id=gp_id, time_start=datetime.strptime(time_start, pattern), time_penalty=datetime.strptime(time_penalty, pattern),
                            time_end=datetime.strptime(time_end, pattern))
-    await callback.message.answer(f'Прогноз на {get_name_gp(gp_id)} открыт')
+    await callback.message.answer(f'Прогноз на {await get_name_gp(gp_id)} открыт')
 
     bot = dialog_manager.middleware_data.get('bot')
-    text = f'Привет!\nПриём прогнозов на <b> {get_name_gp(gp_id)} GP</b>\nоткроется<b>{time_start}</b>\nбез штрафа до <b>{time_penalty}</b>\nокончание прима <b>{time_end}</b>'
-    users = get_users()
+    text = f'Привет!\nПриём прогнозов на <b> {await get_name_gp(gp_id)} GP</b>\nоткроется<b> {time_start}</b>\nбез штрафа до <b>{time_penalty}</b>\nокончание прима <b>{time_end}</b>'
+    users = await get_users_async()
     # Создаем список задач
     tasks = []
     for user in users:

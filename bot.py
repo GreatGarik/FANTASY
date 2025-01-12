@@ -2,7 +2,7 @@ import asyncio
 import logging
 from aiogram import Bot, Dispatcher
 from config_data.config import Config, load_config
-from handlers import user_handlers, admin_handlers, other_handlers
+# from handlers import user_handlers, admin_handlers, other_handlers
 from dialogs import user_dialog
 from keyboards.menu_button import set_main_menu
 from aiogram.fsm.storage.redis import RedisStorage, Redis, DefaultKeyBuilder

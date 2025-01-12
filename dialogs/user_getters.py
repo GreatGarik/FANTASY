@@ -6,8 +6,9 @@ from aiogram_dialog.widgets.kbd import Button
 from aiogram.types import Message, User, CallbackQuery
 from string import ascii_letters
 from .getters import AdminSG
-from database.database import select_drivers, send_predict, get_actual_gp, is_prediced, get_name_gp,  \
-     get_users_async, add_user_async, get_end_grandprix_by_id, get_start_grandprix_by_id, get_penalty_grandprix_by_id
+from database.database import send_predict, is_prediced, get_name_gp, \
+    get_users_async, add_user_async, get_end_grandprix_by_id, get_start_grandprix_by_id, get_penalty_grandprix_by_id, \
+    select_drivers_async, get_actual_gp_async
 
 
 class UserSG(StatesGroup):
@@ -62,17 +63,17 @@ async def button_registration(callback: CallbackQuery, button: Button, dialog_ma
 
 async def button_send_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     dialog_manager.dialog_data.clear()
-    actual_gp: int = get_actual_gp()
+    actual_gp: int = await get_actual_gp_async()
     end_time = await get_end_grandprix_by_id(actual_gp)
     start_time = await get_start_grandprix_by_id(actual_gp)
-    if is_prediced(callback.from_user.id, actual_gp):
+    if await is_prediced(callback.from_user.id, actual_gp):
         await callback.answer(
-            text=f'Вы уже отправили прогноз на {get_name_gp(actual_gp)} GP')
+            text=f'Вы уже отправили прогноз на {await get_name_gp(actual_gp)} GP')
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
     elif datetime.now() < start_time:
         await callback.message.answer(
-            text=f'В данный момент прогноз на <b>{get_name_gp(actual_gp)} GP</b> еще не принимается\n Прием прогнозов начнётся <b>{start_time}</b>')
+            text=f'В данный момент прогноз на <b>{await get_name_gp(actual_gp)} GP</b> еще не принимается\n Прием прогнозов начнётся <b>{start_time}</b>')
         dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
@@ -80,36 +81,36 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
         if datetime.now() < end_time:
             penalty_time = await get_penalty_grandprix_by_id(actual_gp)
             await callback.message.answer(
-                text=f'Окончание приема прогноза на <b>{get_name_gp(actual_gp)} GP</b> закончится <b>{end_time}</b>\n Без штрафа прогноз можно подать до <b>{penalty_time}</b>')
+                text=f'Окончание приема прогноза на <b>{await get_name_gp(actual_gp)} GP</b> закончится <b>{end_time}</b>\n Без штрафа прогноз можно подать до <b>{penalty_time}</b>')
             dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
             await dialog_manager.switch_to(UserSG.send_predict)
         else:
             await callback.message.answer(
-                text=f'В данный момент прогноз на {get_name_gp(actual_gp)} GP не принимается\n Прием прогнозов закончился {end_time}')
+                text=f'В данный момент прогноз на {await get_name_gp(actual_gp)} GP не принимается\n Прием прогнозов закончился {end_time}')
             dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
             await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
 async def get_all_teams_predict(**kwargs):
-    return {'teams_for_select': sorted({i.driver_team + '  ' + i.engine_short for i in select_drivers()})}
+    return {'teams_for_select': sorted({i.driver_team + '  ' + i.engine_short for i in await select_drivers_async(active=True)})}
 
 async def get_all_engines_predict(**kwargs):
-    return {'engines_for_select': sorted({i.driver_engine + '  ' + i.engine_short for i in select_drivers()})}
+    return {'engines_for_select': sorted({i.driver_engine + '  ' + i.engine_short for i in await select_drivers_async(active=True)})}
 
 async def get_all_drivers_predict(**kwargs):
-    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in select_drivers()]}
+    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(active=True)]}
 
 async def get_all_drivers_predict_second(dialog_manager: DialogManager, **kwargs):
-    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in select_drivers() if
+    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(active=True) if
                                                                     i.driver_name not in [*dialog_manager.dialog_data.values()]]}
 
 async def get_all_drivers_predict_third(dialog_manager: DialogManager, **kwargs):
-    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in select_drivers()[10:] if i.driver_name not in [*dialog_manager.dialog_data.values()]]}
+    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(start=10, active=True) if i.driver_name not in [*dialog_manager.dialog_data.values()]]}
 
 async def get_all_drivers_predict_fourth(dialog_manager: DialogManager, **kwargs):
-    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in select_drivers()[15:] if i.driver_name not in [*dialog_manager.dialog_data.values()]]}
+    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(start=15, active=True) if i.driver_name not in [*dialog_manager.dialog_data.values()]]}
 
 async def predict_ending(dialog_manager: DialogManager, **kwargs):
-    name_gp = get_name_gp(get_actual_gp())
+    name_gp = await get_name_gp(await get_actual_gp_async())
     driver_team = dialog_manager.dialog_data['selected_team']
     driver_engine = dialog_manager.dialog_data['selected_engine']
     first_driver = dialog_manager.dialog_data['first_driver']
@@ -185,11 +186,11 @@ async def select_laps(message: Message, widget: ManagedTextInput, dialog_manager
     await dialog_manager.switch_to(UserSG.send_predict_ending)
 
 async def button_user_confirm_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    gp = get_actual_gp()
+    gp = await get_actual_gp_async()
     end_time = await get_end_grandprix_by_id(gp)
     if end_time < datetime.now():
         await callback.answer(
-            text=f'К сожалению Вы не успели сделать прогноз на {get_name_gp(gp)} GP, окончание приема заявок было до {end_time}')
+            text=f'К сожалению Вы не успели сделать прогноз на {await get_name_gp(gp)} GP, окончание приема заявок было до {end_time}')
         dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
     else:
@@ -208,8 +209,8 @@ async def button_user_confirm_predict(callback: CallbackQuery, button: Button, d
         gap = int(dialog_manager.dialog_data['gap'])
         lapped = int(dialog_manager.dialog_data['laps'])
         #tg_id, gp, first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap,lapped, penalty, time
-        send_predict(tg_id=callback.from_user.id, gp=gp, first_driver=first_driver, second_driver=second_driver, third_driver=third_driver, fourth_driver=fourth_driver,driver_team=driver_team,driver_engine=driver_engine, gap=gap, lapped=lapped, penalty=penalty, time=datetime.now())
-        await callback.message.answer(f'Спасибо, принято!\nВаш прогноз на <b>{get_name_gp(gp)} GP:</b> \nКоманда: <b>{driver_team}</b>\nДвигатель: <b>{driver_engine}</b>\nПервый пилот: <b>{first_driver}</b>\nВторой пилот: <b>{second_driver}</b>\nТретий пилот: <b>{third_driver}</b>\nЧетвертый пилот: <b>{fourth_driver}</b>\nОтставание от лидера: <b>{gap}</b>\nКоличество круговых: <b>{lapped}</b>')
+        await send_predict(tg_id=callback.from_user.id, gp=gp, first_driver=first_driver, second_driver=second_driver, third_driver=third_driver, fourth_driver=fourth_driver,driver_team=driver_team,driver_engine=driver_engine, gap=gap, lapped=lapped, penalty=penalty, time=datetime.now())
+        await callback.message.answer(f'Спасибо, принято!\nВаш прогноз на <b>{await get_name_gp(gp)} GP:</b> \nКоманда: <b>{driver_team}</b>\nДвигатель: <b>{driver_engine}</b>\nПервый пилот: <b>{first_driver}</b>\nВторой пилот: <b>{second_driver}</b>\nТретий пилот: <b>{third_driver}</b>\nЧетвертый пилот: <b>{fourth_driver}</b>\nОтставание от лидера: <b>{gap}</b>\nКоличество круговых: <b>{lapped}</b>')
         dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
