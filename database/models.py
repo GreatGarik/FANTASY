@@ -78,7 +78,7 @@ class Predict(Base):
     __tablename__ = 'predicts'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(Integer)
+    user_id: Mapped[int] = mapped_column(BigInteger)
     first_driver: Mapped[str] = mapped_column(String)
     second_driver: Mapped[str] = mapped_column(String)
     third_driver: Mapped[str] = mapped_column(String)
