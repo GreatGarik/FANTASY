@@ -48,7 +48,7 @@ class Result(Base):
     __tablename__ = 'results'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(Integer)
+    user_id: Mapped[int] = mapped_column(BigInteger)
     first_driver: Mapped[int] = mapped_column(Integer)
     second_driver: Mapped[int] = mapped_column(Integer)
     third_driver: Mapped[int] = mapped_column(Integer)
