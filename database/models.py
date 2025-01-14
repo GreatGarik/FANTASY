@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from aiogram.types import DateTime
 from pandas import isnull
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime, BigInteger
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -16,7 +16,7 @@ class User(Base):
     __tablename__ = 'users'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    id_telegram: Mapped[int] = mapped_column(Integer, unique=True)
+    id_telegram: Mapped[int] = mapped_column(BigInteger, unique=True)
     name: Mapped[str] = mapped_column(String(60))
     number: Mapped[int] = mapped_column(Integer, unique=True, nullable=True)
     #team: Mapped[int] = mapped_column(Integer, ForeignKey('teams.id'))
