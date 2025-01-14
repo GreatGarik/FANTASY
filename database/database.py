@@ -560,7 +560,7 @@ async def get_all_users():
 async def get_users_by_name(user_name: str):
     async with async_session() as session:
         async with session.begin():
-            result = await session.execute(select(User).where(User.name == user_name))
+            result = await session.execute(select(User).where(User.name.like(f'%{user_name}%')))
             users = result.scalars().all()  # Получаем всех пользователей с указанным именем
 
             # Если пользователей нет, возвращаем None
@@ -579,7 +579,7 @@ async def change_user_name_async(id_telegram: int, new_name: str):
             user_instance.name = new_name  # Обновляем имя напрямую
             await session.commit()  # Сохраняем изменения
 
-async def change_user_number_async(id_telegram: int, new_number: int):
+async def change_user_number_async(id_telegram: int, new_number: int|None):
     async with async_session() as session:
         async with session.begin():
             result = await session.execute(select(User).where(User.id_telegram == id_telegram))
