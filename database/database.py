@@ -144,6 +144,7 @@ async def get_predict(gp=None):
             return db_object
 
 
+
 # Заполнение таблицы с очками по этапам
 async def add_points(user_id, points, gp=None):
     async with async_session() as session:
