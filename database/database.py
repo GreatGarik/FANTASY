@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from aiogram.utils.chat_member import USERS
 from certifi import where
 from datetime import datetime
-from sqlalchemy import create_engine, select, update, case, func, delete
+from sqlalchemy import create_engine, select, update, case, func, delete, asc
 from sqlalchemy.orm import sessionmaker
 from database.models import *
 from config_data.config import Config, load_config
