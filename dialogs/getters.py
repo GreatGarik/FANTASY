@@ -108,6 +108,12 @@ async def button_change_user_number(callback: CallbackQuery, button: Button,
                                     dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.new_number_user)
 
+async def button_delite_user_number(callback: CallbackQuery, button: Button,
+                                    dialog_manager: DialogManager):
+    await change_user_number_async(int(dialog_manager.dialog_data['user_tg_id']), None)
+    await callback.answer(f'Вы удалили номер')
+    await dialog_manager.switch_to(AdminSG.users_menu)
+
 
 async def new_name_user(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
     await change_user_name_async(int(dialog_manager.dialog_data['user_tg_id']), text)

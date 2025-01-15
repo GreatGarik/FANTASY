@@ -347,6 +347,12 @@ admin_dialog = Dialog(
             )
             ,
             Button(
+                text=Const('Удалить номер'),
+                id='button_delite_user_number',
+                on_click=button_delite_user_number,
+            )
+            ,
+            Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
                 on_click=button_menu)
