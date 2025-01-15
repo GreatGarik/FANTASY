@@ -138,7 +138,7 @@ async def send_predict(tg_id, gp, first_driver, second_driver, third_driver, fou
 async def get_predict(gp=None):
     async with async_session() as session:
         async with session.begin():
-            statement = select(Predict).where(Predict.gp == gp)
+            statement = select(Predict).where(Predict.gp == gp).order_by(asc(Predict.time))
             result = await session.execute(statement)
             db_object = result.scalars().all()
             return db_object
