@@ -605,14 +605,33 @@ async def update_driver_positions(text: str):
 
     async with async_session() as session:
         async with session.begin():
+            # Проверяем наличие всех пилотов
+            existing_drivers = await session.execute(select(Driver.driver_name))
+            existing_driver_names = {driver for driver in existing_drivers.scalars().all()}
+
+            # Находим отсутствующих водителей
+            missing_drivers = set(driver_names) - existing_driver_names
+            if missing_drivers:
+                return f"В базе не найдены следующие пилоты: {', '.join(missing_drivers)}. Исправьте и заново откройте прогноз"
+
+            # Проверяем наличие активных пилотов
+            existing_drivers = await session.execute(select(Driver.driver_name).where(Driver.driver_nextgp.is_(True)))
+            existing_driver_names = {driver for driver in existing_drivers.scalars().all()}
+
+            # Находим отсутствующих водителей
+            missing_drivers = set(driver_names) - existing_driver_names
+            if missing_drivers:
+                return f"Не найдены пилоты среди участников следующего этапа: {', '.join(missing_drivers)}. Исправьте и заново откройте прогноз"
+
+            # Обновляем позиции водителей
             for position, driver_name in enumerate(driver_names, start=1):
-                # Обновляем позицию водителя по имени
                 stmt = (
                     update(Driver)
                     .where(Driver.driver_name == driver_name)
                     .values(driver_position=position)
                 )
                 await session.execute(stmt)
+            return 'OK'
 
 
 async def update_grandprix(gp_id: int, time_start: datetime, time_penalty: datetime, time_end: datetime):

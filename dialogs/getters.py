@@ -416,8 +416,13 @@ async def update_drivers_standing(
         widget: ManagedTextInput,
         dialog_manager: DialogManager,
         text: str) -> None:
-    await update_driver_positions(text)
-    await dialog_manager.switch_to(AdminSG.datetime_start)
+    answer = await update_driver_positions(text)
+    if answer == 'OK':
+        await dialog_manager.switch_to(AdminSG.datetime_start)
+    else:
+        await  message.answer(answer)
+        await dialog_manager.switch_to(AdminSG.start)
+
 
 async def button_start_time_now(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.datetime_penalty)
