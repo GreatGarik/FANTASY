@@ -128,7 +128,7 @@ async def select_team(callback: CallbackQuery, button: Button, dialog_manager: D
     await dialog_manager.switch_to(UserSG.send_predict_engine)
 
 def is_correct_number(text: str) -> str:
-    if all(ch.isdigit() for ch in text) and 0 <= int(text):
+    if all(ch.isdigit() for ch in text) and 0 <= int(text) <=600:
         return text
     raise ValueError
 
