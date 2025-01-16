@@ -11,9 +11,9 @@ async def calculation_drivers(gp):
     names = [i.driver_name for i in drivers]
 
     # Получаем максимальные значения для разных срезов
-    first_max = max(results_predict_gp[name] for name in names)
-    second_max = max(results_predict_gp[name] for name in names[10:])
-    third_max = max(results_predict_gp[name] for name in names[15:])
+    first_max = max(results_predict_gp.get(name, 0) for name in names)
+    second_max = max(results_predict_gp.get(name, 0) for name in names[10:])
+    third_max = max(results_predict_gp.get(name, 0) for name in names[15:])
 
     for predict in predicts_from_db:
         counter_best = 0
@@ -33,21 +33,21 @@ async def calculation_drivers(gp):
             max_not_best.append(results_predict_gp.get(predict.first_driver))
             max_not_best.append(results_predict_gp.get(predict.second_driver))
         elif results_predict_gp.get(predict.first_driver) != first_max:
-            max_not_best.append(results_predict_gp.get(predict.first_driver))
+            max_not_best.append(results_predict_gp.get(predict.first_driver, 0))
         else:
-            max_not_best.append(results_predict_gp.get(predict.second_driver))
+            max_not_best.append(results_predict_gp.get(predict.second_driver, 0))
 
         if results_predict_gp.get(predict.third_driver) == second_max:
             counter_best += 1
             max_best.append(second_max)
         else:
-            max_not_best.append(results_predict_gp.get(predict.third_driver))
+            max_not_best.append(results_predict_gp.get(predict.third_driver, 0))
 
         if results_predict_gp.get(predict.fourth_driver) == third_max:
             counter_best += 1
             max_best.append(third_max)
         else:
-            max_not_best.append(results_predict_gp.get(predict.fourth_driver))
+            max_not_best.append(results_predict_gp.get(predict.fourth_driver, 0))
 
         if results_predict_gp['gap'] == predict.gap:
             counter_lap_gap += 1
@@ -60,18 +60,17 @@ async def calculation_drivers(gp):
         if len(max_not_best) < 4:
             max_not_best.extend([0] * (4 - len(max_not_best)))
 
-
         max1_best, max2_best, max3_best = sorted(max_best, reverse=True)
         max1_not_best, max2_not_best, max3_not_best, max4_not_best = sorted(max_not_best, reverse=True)
 
         delta_gap = abs(results_predict_gp['gap'] - predict.gap)
         delta_laps = abs(results_predict_gp['laps'] - predict.lapped)
         max_lap_gap = max(deltas.get(delta_gap, 0), deltas.get(delta_laps, 0))
-        await add_result(predict.user_id, results_predict_gp.get(predict.first_driver),
-                   results_predict_gp.get(predict.second_driver),
-                   results_predict_gp.get(predict.third_driver), results_predict_gp.get(predict.fourth_driver),
-                   results_predict_gp.get('team_' + predict.driver_team),
-                   results_predict_gp.get('engine_' + predict.driver_engine),
+        await add_result(predict.user_id, results_predict_gp.get(predict.first_driver, 0),
+                   results_predict_gp.get(predict.second_driver, 0),
+                   results_predict_gp.get(predict.third_driver, 0), results_predict_gp.get(predict.fourth_driver, 0),
+                   results_predict_gp.get('team_' + predict.driver_team, 0),
+                   results_predict_gp.get('engine_' + predict.driver_engine, 0),
                    deltas.get(delta_gap, 0), deltas.get(delta_laps, 0), counter_best, max1_best, max2_best, max3_best,
                    max1_not_best, max2_not_best, max3_not_best, max4_not_best, counter_lap_gap, max_lap_gap,
                    predict.penalty, gp)

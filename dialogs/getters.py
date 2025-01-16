@@ -319,25 +319,38 @@ async def button_f1_sprint(callback: CallbackQuery, button: Button, dialog_manag
     await dialog_manager.switch_to(AdminSG.loading_f1_result_sprint)
 
 async def loading_f1_result_sprint(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
-    await update_grandprix_result(grandprix_id= await get_actual_gp_async(), result_type='sprint', result_text=text)
-    await message.answer('Результат Спринта записан')
-    await dialog_manager.switch_to(AdminSG.loading_f1_results)
+    res = await update_grandprix_result(grandprix_id= await get_actual_gp_async(), result_type='sprint', result_text=text)
+    if res == 'OK':
+        await message.answer('Результат Спринта записан')
+        await dialog_manager.switch_to(AdminSG.loading_f1_results)
+    else:
+        await message.answer(res)
+        await dialog_manager.switch_to(AdminSG.loading_f1_results)
+
 
 async def button_f1_quali(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.loading_f1_result_quali)
 
 async def loading_f1_result_quali(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
-    await update_grandprix_result(grandprix_id=await get_actual_gp_async(), result_type='qualifying', result_text=text)
-    await message.answer('Результат Квалификации записан')
-    await dialog_manager.switch_to(AdminSG.loading_f1_results)
+    res = await update_grandprix_result(grandprix_id=await get_actual_gp_async(), result_type='qualifying', result_text=text)
+    if res == 'OK':
+        await message.answer('Результат Квалификации записан')
+        await dialog_manager.switch_to(AdminSG.loading_f1_results)
+    else:
+        await message.answer(res)
+        await dialog_manager.switch_to(AdminSG.loading_f1_results)
 
 async def button_f1_race(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.loading_f1_result_race)
 
 async def loading_f1_result_race(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
-    await update_grandprix_result(grandprix_id=await get_actual_gp_async(), result_type='race', result_text=text)
-    await message.answer('Результат Гонки записан')
-    await dialog_manager.switch_to(AdminSG.loading_f1_results)
+    res = await update_grandprix_result(grandprix_id=await get_actual_gp_async(), result_type='race', result_text=text)
+    if res == 'OK':
+        await message.answer('Результат Гонки записан')
+        await dialog_manager.switch_to(AdminSG.loading_f1_results)
+    else:
+        await message.answer(res)
+        await dialog_manager.switch_to(AdminSG.loading_f1_results)
 
 async def button_clear_result(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await clear_results(await get_actual_gp_async())

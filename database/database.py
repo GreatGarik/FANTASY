@@ -847,21 +847,33 @@ async def update_driver_team(driver_name: str, new_team: str):
             await session.commit()
 
 async def update_grandprix_result(grandprix_id: int, result_type: str, result_text: str):
-    # Определяем, какое поле обновлять
-    if result_type == 'sprint':
-        column_to_update = Grandprix.sprint_result
-    elif result_type == 'qualifying':
-        column_to_update = Grandprix.quali_result
-    elif result_type == 'race':
-        column_to_update = Grandprix.race_result
-    else:
-        raise ValueError("Invalid result type. Choose 'sprint', 'qualifying', or 'race'.")
-
     async with async_session() as session:
         async with session.begin():
+            driver_names = [name.strip() for name in result_text.splitlines() if name.strip()]
+            # Проверяем наличие активных пилотов
+            existing_drivers = await session.execute(select(Driver.driver_name).where(Driver.driver_nextgp.is_(True)))
+            existing_driver_names = {driver for driver in existing_drivers.scalars().all()}
+
+            # Находим отсутствующих водителей
+            missing_drivers = set(driver_names) - existing_driver_names
+            if missing_drivers:
+                return f"Не найдены пилоты среди участников этапа: {', '.join(missing_drivers)}. Введите корректные результаты"
+
+            # Определяем, какое поле обновлять
+            if result_type == 'sprint':
+                column_to_update = Grandprix.sprint_result
+            elif result_type == 'qualifying':
+                column_to_update = Grandprix.quali_result
+            elif result_type == 'race':
+                column_to_update = Grandprix.race_result
+            else:
+                raise ValueError("Invalid result type. Choose 'sprint', 'qualifying', or 'race'.")
+
+
             stmt = update(Grandprix).where(Grandprix.id == grandprix_id).values({column_to_update: result_text})
             await session.execute(stmt)
             await session.commit()  # Фиксация изменений
+            return 'OK'
 
 async def get_grandprix_results(grandprix_id: int):
     async with async_session() as session:
