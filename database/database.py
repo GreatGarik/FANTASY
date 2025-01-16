@@ -614,6 +614,7 @@ async def update_driver_positions(text: str):
             if missing_drivers:
                 return f"В базе не найдены следующие пилоты: {', '.join(missing_drivers)}. Исправьте и заново откройте прогноз"
 
+
             # Проверяем наличие активных пилотов
             existing_drivers = await session.execute(select(Driver.driver_name).where(Driver.driver_nextgp.is_(True)))
             existing_driver_names = {driver for driver in existing_drivers.scalars().all()}
