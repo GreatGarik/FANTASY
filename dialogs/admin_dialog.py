@@ -353,6 +353,18 @@ admin_dialog = Dialog(
             )
             ,
             Button(
+                text=Const('Забанить пользователя'),
+                id='button_ban_user',
+                on_click=button_ban_user,
+            )
+            ,
+            Button(
+                text=Const('Разбанить пользователя'),
+                id='button_unban_user',
+                on_click=button_unban_user,
+            )
+            ,
+            Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
                 on_click=button_menu)

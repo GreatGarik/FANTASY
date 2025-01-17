@@ -11,7 +11,7 @@ from dataprocessing.excel_forms import entry_list, last_stage, process_champions
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 from database.database import get_users_async, check_res, \
     clear_results, get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async
+    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async, change_user_banned_status
 from .dop_functions import send_message
 
 class AdminSG(StatesGroup):
@@ -112,6 +112,18 @@ async def button_delite_user_number(callback: CallbackQuery, button: Button,
                                     dialog_manager: DialogManager):
     await change_user_number_async(int(dialog_manager.dialog_data['user_tg_id']), None)
     await callback.answer(f'Вы удалили номер')
+    await dialog_manager.switch_to(AdminSG.users_menu)
+
+async def button_ban_user(callback: CallbackQuery, button: Button,
+                                    dialog_manager: DialogManager):
+    await change_user_banned_status(int(dialog_manager.dialog_data['user_tg_id']), True)
+    await callback.message.answer(f'Вы забанили пользователя')
+    await dialog_manager.switch_to(AdminSG.users_menu)
+
+async def button_unban_user(callback: CallbackQuery, button: Button,
+                                    dialog_manager: DialogManager):
+    await change_user_banned_status(int(dialog_manager.dialog_data['user_tg_id']), False)
+    await callback.message.answer(f'Вы разбанили пользователя')
     await dialog_manager.switch_to(AdminSG.users_menu)
 
 

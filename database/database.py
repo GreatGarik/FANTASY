@@ -134,7 +134,7 @@ async def send_predict(tg_id, gp, first_driver, second_driver, third_driver, fou
                 await session.commit()
             except Exception as e:
                 print(e)
-
+'''
 async def get_predict(gp=None):
     async with async_session() as session:
         async with session.begin():
@@ -142,7 +142,22 @@ async def get_predict(gp=None):
             result = await session.execute(statement)
             db_object = result.scalars().all()
             return db_object
+'''
 
+async def get_predict(gp=None):
+    async with async_session() as session:
+        async with session.begin():
+            # Создаем запрос с объединением таблиц Predict и User
+            statement = (
+                select(Predict)
+                .join(User, User.id_telegram == Predict.user_id)  # Объединяем по telegram_id
+                .where(Predict.gp == gp)
+                .where(User.banned == False)  # Условие, чтобы не возвращать забаненных пользователей
+                .order_by(asc(Predict.time))
+            )
+            result = await session.execute(statement)
+            db_object = result.scalars().all()
+            return db_object
 
 
 # Заполнение таблицы с очками по этапам
@@ -202,7 +217,7 @@ async def show_points_all(year):
         grandprix = result.scalars().all()
 
         # Получаем всех пользователей
-        result = await session.execute(select(User))
+        result = await session.execute(select(User).where(User.banned == False))
         users = result.scalars().all()
 
         points_list = []
@@ -334,8 +349,7 @@ async def get_users_async(id_telegram=None):
                     # Обработка исключений, если необходимо
                     return None
             else:
-                statement = select(User)
-                result = await session.execute(statement)
+                result = await session.execute(select(User).where(User.banned == False))
                 return result.scalars().all()
 
 
@@ -523,7 +537,7 @@ async def add_maximus(gp, maximus):
 async def get_all_users():
     # Получаем всех пользователей
     async with async_session() as session:
-        result = await session.execute(select(User))
+        result = await session.execute(select(User).where(User.banned == False))
         users = result.scalars().all()
 
         # Формируем список результатов
@@ -932,3 +946,12 @@ async def is_sprint(gp_id: int) -> bool:
             result = await session.execute(select(Grandprix).where(Grandprix.id == gp_id))
             grandprix = result.scalars().first()
             return grandprix.sprint if grandprix else False
+
+
+async def change_user_banned_status(id_telegram: int, banned: bool):
+    async with async_session() as session:
+        async with session.begin():
+            # Обновляем статус banned для указанного пользователя
+            stmt = update(User).where(User.id_telegram == id_telegram).values(banned=banned)
+            await session.execute(stmt)
+            await session.commit()
