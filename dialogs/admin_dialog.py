@@ -378,6 +378,7 @@ admin_dialog = Dialog(
         state=AdminSG.users_edit_select
     ),
 
+
     Window(
         Const('Это меню с таблицами'),
         Column(

@@ -948,6 +948,7 @@ async def is_sprint(gp_id: int) -> bool:
             return grandprix.sprint if grandprix else False
 
 
+
 async def change_user_banned_status(id_telegram: int, banned: bool):
     async with async_session() as session:
         async with session.begin():

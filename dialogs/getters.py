@@ -309,7 +309,6 @@ async def receive_data(callback: CallbackQuery, button: Button, dialog_manager: 
     return dialog_manager
 
 
-
 async def button_calculate(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     gp = await get_actual_gp_async()
     if await check_res(gp):
