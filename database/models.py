@@ -19,7 +19,7 @@ class User(Base):
     id_telegram: Mapped[int] = mapped_column(BigInteger, unique=True)
     name: Mapped[str] = mapped_column(String(60))
     number: Mapped[int] = mapped_column(Integer, unique=True, nullable=True)
-    #team: Mapped[int] = mapped_column(Integer, ForeignKey('teams.id'))
+    banned: Mapped[bool] = mapped_column(Boolean,nullable=True, default=0)
 
     points: Mapped[List['Point']] = relationship('Point', back_populates='user')
     # Связи с командами
