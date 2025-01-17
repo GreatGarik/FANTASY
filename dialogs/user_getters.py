@@ -5,10 +5,13 @@ from aiogram_dialog.widgets.input import ManagedTextInput
 from aiogram_dialog.widgets.kbd import Button
 from aiogram.types import Message, User, CallbackQuery
 from string import ascii_letters
+
+from sqlalchemy.util import await_fallback
+
 from .getters import AdminSG
 from database.database import send_predict, is_prediced, get_name_gp, \
     get_users_async, add_user_async, get_end_grandprix_by_id, get_start_grandprix_by_id, get_penalty_grandprix_by_id, \
-    select_drivers_async, get_actual_gp_async
+    select_drivers_async, get_actual_gp_async, is_user_banned
 
 
 class UserSG(StatesGroup):
@@ -66,7 +69,13 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
     actual_gp: int = await get_actual_gp_async()
     end_time = await get_end_grandprix_by_id(actual_gp)
     start_time = await get_start_grandprix_by_id(actual_gp)
-    if await is_prediced(callback.from_user.id, actual_gp):
+
+    if await is_user_banned(callback.from_user.id):
+        await callback.answer(
+            text=f'Вы забанены в Fantasy, обратитесь к администрации')
+        await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
+
+    elif await is_prediced(callback.from_user.id, actual_gp):
         await callback.answer(
             text=f'Вы уже отправили прогноз на {await get_name_gp(actual_gp)} GP')
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())

@@ -956,3 +956,11 @@ async def change_user_banned_status(id_telegram: int, banned: bool):
             stmt = update(User).where(User.id_telegram == id_telegram).values(banned=banned)
             await session.execute(stmt)
             await session.commit()
+
+async def is_user_banned(id_telegram: int) -> bool:
+    async with async_session() as session:
+        async with session.begin():
+            statement = select(User).where(User.id_telegram == id_telegram)
+            result = await session.execute(statement)
+            user = result.scalars().first()
+            return user.banned if user else False
