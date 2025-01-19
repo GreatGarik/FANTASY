@@ -546,7 +546,7 @@ async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog
     await callback.message.answer(f'Прогноз на {await get_name_gp(gp_id)} открыт')
 
     bot = dialog_manager.middleware_data.get('bot')
-    text = f'Привет!\nПриём прогнозов на <b> {await get_name_gp(gp_id)} GP</b>\nоткроется<b> {time_start}</b>\nбез штрафа до <b>{time_penalty}</b>\nокончание прима <b>{time_end}</b>'
+    text = f'Привет!\nПриём прогнозов на <b> {await get_name_gp(gp_id)} GP</b>\nоткроется<b> {time_start}</b>\nбез штрафа до <b>{time_penalty}</b>\nокончание приёма <b>{time_end}</b>'
     users = await get_users_async()
     # Создаем список задач
     tasks = []
