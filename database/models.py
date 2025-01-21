@@ -150,6 +150,12 @@ class TeamPoint(Base):
     race_id: Mapped[int] = mapped_column(ForeignKey('grandprix.id'))
     points: Mapped[int] = mapped_column(Integer)
 
+    '''
+    res1: Mapped[int] = mapped_column(Integer)
+    res2: Mapped[int] = mapped_column(Integer)
+    res3: Mapped[int] = mapped_column(Integer)
+    '''
+
     team: Mapped[User] = relationship('Team', back_populates='team_points')
     gp_team: Mapped[Grandprix] = relationship('Grandprix', back_populates='race_team')
 

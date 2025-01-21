@@ -202,7 +202,7 @@ user_dialog = Dialog(
         Const(text='<b>Введите отставание от лидера в секундах (целое число)</b>:'),
         TextInput(
             id='loading_f1_result_sprint',
-            type_factory=is_correct_number,
+            type_factory=is_correct_gap,
             on_success=select_gap,
         ),
         state=UserSG.send_predict_gap
@@ -211,7 +211,7 @@ user_dialog = Dialog(
         Const(text='<b>Введите количество круговых</b>:'),
         TextInput(
             id='loading_f1_result_sprint',
-            type_factory=is_correct_number,
+            type_factory=is_correct_laps,
             on_success=select_laps,
         ),
         state=UserSG.send_predict_laps
