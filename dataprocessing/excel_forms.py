@@ -320,7 +320,7 @@ def sort_points(entry):
     total_points = sum(points)
     sorted_point  = sorted(points, reverse=True)
     # Находим максимальное значение
-    max_value = max(points) if points else 500
+    max_value = max(points) if points else None
 
     # Находим первый индекс максимального значения
     first_max_index = points.index(max_value) if max_value in points else -1
