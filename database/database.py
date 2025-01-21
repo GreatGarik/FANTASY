@@ -914,6 +914,7 @@ async def get_predictions_by_gp(gp_id: int):
                 select(Predict, User)
                 .join(User, User.id_telegram == Predict.user_id)
                 .where(Predict.gp == gp_id)
+                .order_by(asc(Predict.time))
             )
             result = await session.execute(stmt)
             predictions = result.all()

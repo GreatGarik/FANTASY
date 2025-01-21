@@ -290,7 +290,7 @@ async def button_get_all_predict(callback: CallbackQuery, button: Button, dialog
         document=BufferedInputFile(output.read(), filename=f'predicts_for_{await get_name_gp(await get_actual_gp_async())}.xlsx')
     )
     output.close()  # Закрываем объект после использования
-    await dialog_manager.switch_to(AdminSG.tables)
+    await dialog_manager.switch_to(AdminSG.stage)
 
 
 async def button_teams_champ(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
