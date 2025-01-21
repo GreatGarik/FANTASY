@@ -137,12 +137,12 @@ async def select_team(callback: CallbackQuery, button: Button, dialog_manager: D
     await dialog_manager.switch_to(UserSG.send_predict_engine)
 
 def is_correct_gap(text: str) -> str:
-    if all(ch.isdigit() for ch in text) and 0 <= int(text) <=600:
+    if text.isdigit() and 0 <= int(text) <=600:
         return text
     raise ValueError
 
 def is_correct_laps(text: str) -> str:
-    if all(ch.isdigit() for ch in text) and 0 <= int(text) < 20:
+    if text.isdigit() and 0 <= int(text) < 20:
         return text
     raise ValueError
 
