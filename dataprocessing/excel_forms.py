@@ -316,10 +316,17 @@ async def last_stage():
     return output
 
 def sort_points(entry):
-    points = [entry[key] for key in entry if key != 'User' and key != 'Team' and key != 'Number' and key !='CH.PTS' and entry[key]]
+    points =  [entry[key] if entry[key] else 0 for key in entry if key not in ['User', 'Team', 'Number', 'CH.PTS']]
     total_points = sum(points)
-    points.sort(reverse=True)
-    return (total_points, points)
+    sorted_point  = sorted(points, reverse=True)
+    # Находим максимальное значение
+    max_value = max(points) if points else 500
+
+    # Находим первый индекс максимального значения
+    first_max_index = points.index(max_value) if max_value in points else -1
+    print(first_max_index)
+
+    return total_points, sorted_point, -first_max_index
 
 async def process_championship_full():
     points_list: List[dict] = await show_points_all(datetime.now().year)
