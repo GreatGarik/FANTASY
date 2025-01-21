@@ -315,15 +315,22 @@ async def last_stage():
     output.seek(0)  # Перемещаем указатель в начало
     return output
 
+def sort_points(entry):
+    points = [entry[key] for key in entry if key != 'User' and key != 'Team' and key != 'Number' and key !='CH.PTS' and entry[key]]
+    total_points = sum(points)
+    points.sort(reverse=True)
+    return (total_points, points)
+
 async def process_championship_full():
     points_list: List[dict] = await show_points_all(datetime.now().year)
+
+
+    # Сортируем по общему количеству очков
+    points_list.sort(key=sort_points, reverse=True)
 
     for entry in points_list:
         entry['CH.PTS'] = sum(
             entry[key] for key in entry if key != 'User' and key != 'Team' and key != 'Number' and entry[key])
-
-    # Сортируем по общему количеству очков
-    points_list.sort(key=lambda x: x['CH.PTS'], reverse=True)
 
     # Создаем новый Excel файл
     wb = Workbook()
