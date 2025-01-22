@@ -482,7 +482,7 @@ async def championship_team_full():
     points_list: List[dict] = await show_points_team_all(datetime.now().year)
 
     for entry in points_list:
-        entry['Points'] = sum(entry[key] for key in entry if key != 'Team' and entry[key])
+        entry['Points'] = sum(entry[key] for key in entry if key != 'Team' and key != 'all_res'  and entry[key])
 
     # Сортируем по общему количеству очков
     points_list.sort(key=lambda x: x['Points'], reverse=True)
@@ -518,7 +518,7 @@ async def championship_team_full():
 
     # Заголовки таблицы
     header = ['POS'] + ['Team'] + [''] + [key for key in points_list[0] if
-                                          key != 'Points' and key != 'Team'] + ['Points']
+                                          key != 'Points' and key != 'Team' and key != 'all_res'] + ['Points']
     ws.append(header)  # Добавляем заголовки в первую строку
     ws.row_dimensions[ws.max_row].height = 17
 
@@ -542,7 +542,7 @@ async def championship_team_full():
 
     # Добавляем данные в файл
     for num, entry in enumerate(points_list, 1):
-        row = [num] + [entry['Team']] + [''] + [entry[key] for key in header[1:] if key != '' and key != 'Team']
+        row = [num] + [entry['Team']] + [''] + [entry[key] for key in header[1:] if key != '' and key != 'Team' and key != 'all_res']
         ws.append(row)  # Добавляем строку с данными
         ws.row_dimensions[ws.max_row].height = 17
         wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
