@@ -470,6 +470,14 @@ async def process_championship_full():
     output.seek(0)  # Перемещаем указатель в начало
     return output
 
+def sort_points_team(entry):
+    points =  [entry[key] if entry[key] else 0 for key in entry if key not in ['User', 'Team', 'Number', 'CH.PTS']]
+    total_points = sum(points)
+    sorted_point  = sorted(points, reverse=True)
+    # Находим максимальное значение
+    max_value = max(points) if points else None
+
+
 async def championship_team_full():
     points_list: List[dict] = await show_points_team_all(datetime.now().year)
 

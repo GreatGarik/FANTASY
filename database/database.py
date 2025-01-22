@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from database.models import *
 from config_data.config import Config, load_config
 from sqlalchemy.exc import NoResultFound
-
+'''
 # Определяем текущую операционную систему
 current_os = platform.system()
 
@@ -26,6 +26,12 @@ elif current_os == "Linux":
     async_database_url = f"postgresql+asyncpg://{config.tg_bot.db_user}:{config.tg_bot.db_password}@localhost:5432/{config.tg_bot.db_name}"
 else:
     raise Exception("Unsupported operating system")
+'''
+# Загружаем конфиг в переменную config
+config: Config = load_config()
+# Подключение к PostgreSQL на Ubuntu
+database_url = f"postgresql://{config.tg_bot.db_user}:{config.tg_bot.db_password}@localhost:5432/{config.tg_bot.db_name}"
+async_database_url = f"postgresql+asyncpg://{config.tg_bot.db_user}:{config.tg_bot.db_password}@localhost:5432/{config.tg_bot.db_name}"
 
 # Создаем движки
 engine = create_engine(database_url, echo=False)
@@ -173,11 +179,11 @@ async def add_points(user_id, points, gp=None):
 
 
 
-async def add_team_points(team_id, points, gp=None):
+async def add_team_points(team_id, points: list, gp=None):
     async with async_session() as session:
         async with session.begin():
             try:
-                session.add(TeamPoint(team_id=team_id, race_id=gp, points=points))
+                session.add(TeamPoint(team_id=team_id, race_id=gp, points=sum(points), results=points))
                 await session.commit()
             except Exception as e:
                 print(e)
@@ -266,7 +272,7 @@ async def show_points_team_all(year):
         points_list = []
         for team in teams:
             user_entry = {'Team': team.name}
-
+            all_res = []
             # Инициализируем очки для каждого гран-при
             for gp in grandprix:
                 # Находим очки для текущего гран-при
@@ -275,6 +281,8 @@ async def show_points_team_all(year):
                 )
                 point = result.scalar_one_or_none()
                 user_entry[gp.gp_name_abr] = point.points if point else None
+                all_res.extend(sorted(point.results, reverse=True) if point else [])
+            user_entry['all_res'] = all_res
 
             points_list.append(user_entry)
 
@@ -863,7 +871,7 @@ async def update_driver_team(driver_name: str, new_team: str):
 async def update_grandprix_result(grandprix_id: int, result_type: str, result_text: str):
     async with async_session() as session:
         async with session.begin():
-            driver_names = [name.strip() for name in result_text.splitlines() if name.strip()]
+            driver_names = [name.strip() for name in result_text.splitlines() if name.strip() and not name.startswith(('bestlap:', 'gap:', 'laps:'))]
             # Проверяем наличие активных пилотов
             existing_drivers = await session.execute(select(Driver.driver_name).where(Driver.driver_nextgp.is_(True)))
             existing_driver_names = {driver for driver in existing_drivers.scalars().all()}

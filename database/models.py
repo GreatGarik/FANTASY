@@ -2,7 +2,7 @@ from typing import Optional, List
 
 from aiogram.types import DateTime
 from pandas import isnull
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime, BigInteger
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime, BigInteger, ARRAY
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -149,12 +149,9 @@ class TeamPoint(Base):
     team_id: Mapped[int] = mapped_column(ForeignKey('teams.id'))
     race_id: Mapped[int] = mapped_column(ForeignKey('grandprix.id'))
     points: Mapped[int] = mapped_column(Integer)
+    results: Mapped[list[int]] = mapped_column(ARRAY(Integer))
 
-    '''
-    res1: Mapped[int] = mapped_column(Integer)
-    res2: Mapped[int] = mapped_column(Integer)
-    res3: Mapped[int] = mapped_column(Integer)
-    '''
+
 
     team: Mapped[User] = relationship('Team', back_populates='team_points')
     gp_team: Mapped[Grandprix] = relationship('Grandprix', back_populates='race_team')

@@ -1,5 +1,6 @@
 from dataprocessing.get_data_results_from_db import get_res_gp
-from database.database import get_predict, add_result, get_result, add_points, get_team, add_team_points, add_maximus, select_drivers_async
+from database.database import get_predict, add_result, get_result, add_points, get_team, add_team_points, add_maximus, \
+    select_drivers_async
 
 
 async def calculation_drivers(gp):
@@ -67,14 +68,15 @@ async def calculation_drivers(gp):
         delta_laps = abs(results_predict_gp['laps'] - predict.lapped)
         max_lap_gap = max(deltas.get(delta_gap, 0), deltas.get(delta_laps, 0))
         await add_result(predict.user_id, results_predict_gp.get(predict.first_driver, 0),
-                   results_predict_gp.get(predict.second_driver, 0),
-                   results_predict_gp.get(predict.third_driver, 0), results_predict_gp.get(predict.fourth_driver, 0),
-                   results_predict_gp.get('team_' + predict.driver_team, 0),
-                   results_predict_gp.get('engine_' + predict.driver_engine, 0),
-                   deltas.get(delta_gap, 0), deltas.get(delta_laps, 0), counter_best, max1_best, max2_best, max3_best,
-                   max1_not_best, max2_not_best, max3_not_best, max4_not_best, counter_lap_gap, max_lap_gap,
-                   predict.penalty, gp)
-
+                         results_predict_gp.get(predict.second_driver, 0),
+                         results_predict_gp.get(predict.third_driver, 0),
+                         results_predict_gp.get(predict.fourth_driver, 0),
+                         results_predict_gp.get('team_' + predict.driver_team, 0),
+                         results_predict_gp.get('engine_' + predict.driver_engine, 0),
+                         deltas.get(delta_gap, 0), deltas.get(delta_laps, 0), counter_best, max1_best, max2_best,
+                         max3_best,
+                         max1_not_best, max2_not_best, max3_not_best, max4_not_best, counter_lap_gap, max_lap_gap,
+                         predict.penalty, gp)
 
     data = await get_result(gp)
 
@@ -82,13 +84,13 @@ async def calculation_drivers(gp):
                  15: 42, 16: 40, 17: 38, 18: 36, 19: 34, 20: 32, 21: 30, 22: 29, 23: 28, 24: 27, 25: 26, 26: 25, 27: 24,
                  28: 23, 29: 22, 30: 21, 31: 20, 32: 19, 33: 18, 34: 17, 35: 16, 36: 15, 37: 14, 38: 13, 39: 12, 40: 11,
                  41: 10, 42: 9, 43: 8, 44: 7, 45: 6, 46: 5, 47: 4, 48: 3, 49: 2, 50: 1}
-    teams_points = {}
+    teams_points: dict = {}
     for index, (user, result) in enumerate(data, 1):
         await add_points(user.id, POINST_GP.get(index, 0), gp)
         team = await get_team(user.id_telegram)
         if team:
-            teams_points[team.id] = teams_points.get(team.id, 0) + POINST_GP.get(index, 0)
-
+            # teams_points[team.id] = teams_points.get(team.id, 0) + POINST_GP.get(index, 0)
+            teams_points.setdefault(team.id, []).append(POINST_GP.get(index, 0))
 
     for key, value in teams_points.items():
         await add_team_points(team_id=key, points=value, gp=gp)
