@@ -324,8 +324,6 @@ def sort_points(entry):
 
     # Находим первый индекс максимального значения
     first_max_index = points.index(max_value) if max_value in points else -1
-    print(first_max_index)
-
     return total_points, sorted_point, -first_max_index
 
 async def process_championship_full():
@@ -471,11 +469,14 @@ async def process_championship_full():
     return output
 
 def sort_points_team(entry):
-    points =  [entry[key] if entry[key] else 0 for key in entry if key not in ['User', 'Team', 'Number', 'CH.PTS']]
-    total_points = sum(points)
-    sorted_point  = sorted(points, reverse=True)
+    total_points = entry['Points']
+    sorted_point  = sorted(entry['all_res'], reverse=True)
     # Находим максимальное значение
-    max_value = max(points) if points else None
+    max_value = max(sorted_point) if sorted_point else None
+
+    # Находим первый индекс максимального значения
+    first_max_index = entry['all_res'].index(max_value) if max_value in entry['all_res'] else -1
+    return total_points, sorted_point, -first_max_index
 
 
 async def championship_team_full():
@@ -485,7 +486,8 @@ async def championship_team_full():
         entry['Points'] = sum(entry[key] for key in entry if key != 'Team' and key != 'all_res'  and entry[key])
 
     # Сортируем по общему количеству очков
-    points_list.sort(key=lambda x: x['Points'], reverse=True)
+    #points_list.sort(key=lambda x: x['Points'], reverse=True)
+    points_list.sort(key=sort_points_team, reverse=True)
 
     # Создаем новый Excel файл
     wb = Workbook()
