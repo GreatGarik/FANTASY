@@ -31,8 +31,8 @@ async def calculation_drivers(gp):
             max_not_best.append(first_max)
         elif results_predict_gp.get(predict.first_driver) != first_max and results_predict_gp.get(
                 predict.second_driver) != first_max:
-            max_not_best.append(results_predict_gp.get(predict.first_driver))
-            max_not_best.append(results_predict_gp.get(predict.second_driver))
+            max_not_best.append(results_predict_gp.get(predict.first_driver, 0))
+            max_not_best.append(results_predict_gp.get(predict.second_driver, 0))
         elif results_predict_gp.get(predict.first_driver) != first_max:
             max_not_best.append(results_predict_gp.get(predict.first_driver, 0))
         else:
@@ -62,6 +62,7 @@ async def calculation_drivers(gp):
             max_not_best.extend([0] * (4 - len(max_not_best)))
 
         max1_best, max2_best, max3_best = sorted(max_best, reverse=True)
+        print(max_not_best)
         max1_not_best, max2_not_best, max3_not_best, max4_not_best = sorted(max_not_best, reverse=True)
 
         delta_gap = abs(results_predict_gp.get('gap', 4000) - predict.gap)
