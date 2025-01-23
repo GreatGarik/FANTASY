@@ -979,6 +979,8 @@ async def delete_team_from_db(team_id: int):
     async with async_session() as session:
         async with session.begin():
             # Создаем запрос на удаление команды с указанным id
+            await session.execute(delete(TeamPoint).where(TeamPoint.team_id == team_id))
+
             stmt = delete(Team).where(Team.id == team_id)
 
             # Выполняем запрос
