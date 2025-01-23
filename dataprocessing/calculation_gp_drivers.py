@@ -50,9 +50,9 @@ async def calculation_drivers(gp):
         else:
             max_not_best.append(results_predict_gp.get(predict.fourth_driver, 0))
 
-        if results_predict_gp['gap'] == predict.gap:
+        if results_predict_gp.get('gap', -1) == predict.gap:
             counter_lap_gap += 1
-        if results_predict_gp['laps'] == predict.lapped:
+        if results_predict_gp.get('laps', -1) == predict.lapped:
             counter_lap_gap += 1
 
         if len(max_best) < 3:
@@ -64,8 +64,8 @@ async def calculation_drivers(gp):
         max1_best, max2_best, max3_best = sorted(max_best, reverse=True)
         max1_not_best, max2_not_best, max3_not_best, max4_not_best = sorted(max_not_best, reverse=True)
 
-        delta_gap = abs(results_predict_gp['gap'] - predict.gap)
-        delta_laps = abs(results_predict_gp['laps'] - predict.lapped)
+        delta_gap = abs(results_predict_gp.get('gap', 4000) - predict.gap)
+        delta_laps = abs(results_predict_gp.get('laps', 4000) - predict.lapped)
         max_lap_gap = max(deltas.get(delta_gap, 0), deltas.get(delta_laps, 0))
         await add_result(predict.user_id, results_predict_gp.get(predict.first_driver, 0),
                          results_predict_gp.get(predict.second_driver, 0),
