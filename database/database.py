@@ -729,11 +729,11 @@ async def create_team_only_name(team_name: str):
         async with session.begin():
             new_team = Team(
                 name=team_name,
-                text_color='#FFFFFF',  # Устанавливаем цвет текста в белый
+                text_color='FFFFFF',  # Устанавливаем цвет текста в белый
                 logo='',  # Например, пустая строка для логотипа
-                background_color='',  # Пустая строка для фона
-                number_color='',  # Пустая строка для цвета номера
-                number_font='',  # Пустая строка для шрифта номера
+                background_color='000000',  # Пустая строка для фона
+                number_color='000000',  # Пустая строка для цвета номера
+                number_font='000000',  # Пустая строка для шрифта номера
                 number_italic=False  # По умолчанию не курсив
             )
 
@@ -973,3 +973,16 @@ async def is_user_banned(id_telegram: int) -> bool:
             result = await session.execute(statement)
             user = result.scalars().first()
             return user.banned if user else False
+
+
+async def delete_team_from_db(team_id: int):
+    async with async_session() as session:
+        async with session.begin():
+            # Создаем запрос на удаление команды с указанным id
+            stmt = delete(Team).where(Team.id == team_id)
+
+            # Выполняем запрос
+            await session.execute(stmt)
+
+            # Сохраняем изменения в базе данных
+            await session.commit()

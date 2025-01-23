@@ -11,7 +11,7 @@ from dataprocessing.excel_forms import entry_list, last_stage, process_champions
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 from database.database import get_users_async, check_res, \
     clear_results, get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async, change_user_banned_status
+    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async, change_user_banned_status, delete_team_from_db
 from .dop_functions import send_message
 
 class AdminSG(StatesGroup):
@@ -48,6 +48,7 @@ class AdminSG(StatesGroup):
     change_team_number_font_italic = State()
     change_team_logo = State()
     change_team_name = State()
+    delete_team = State()
     new_team = State()
     team_members = State()
     team_members_menu = State()
@@ -222,9 +223,25 @@ async def member_selected(callback: CallbackQuery, widget: Select,
 async def change_team_name(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
     await dialog_manager.switch_to(AdminSG.enter_team_member)
 
+async def delete_team(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    await dialog_manager.switch_to(AdminSG.delete_team)
+
+def is_yes(text: str) -> str:
+    if text == 'ДА':
+        return text
+    raise ValueError
+
+async def delete_team_not_confirmed(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, error: ValueError):
+    await dialog_manager.switch_to(AdminSG.team_management)
+
+async def delete_team_confirmation(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    await delete_team_from_db(int(dialog_manager.dialog_data['team_id']))
+    await message.answer(f'Команда {dialog_manager.dialog_data['team_name']} удалена')
+    await dialog_manager.switch_to(AdminSG.team_management)
+
 async def new_team(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
     await create_team_only_name(text)
-    await message.answer(f'Команда {text} создан')
+    await message.answer(f'Команда {text} создана')
     await dialog_manager.switch_to(AdminSG.team_management)
 
 async def new_team_name(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:

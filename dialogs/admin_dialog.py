@@ -576,6 +576,11 @@ admin_dialog = Dialog(
                 on_click=change_team_name)
             ,
             Button(
+                text=Const('Удалить команду'),
+                id='delete_team',
+                on_click=delete_team)
+            ,
+            Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
                 on_click=button_menu)
@@ -653,6 +658,16 @@ admin_dialog = Dialog(
             on_success=new_team_name,
         ),
         state=AdminSG.change_team_name,
+    ),
+    Window(
+        Const(text='Напишите <b>ДА</b> если Вы уверены, что хотите удалить команду, если вы введете, что-то другое Вы вернетесь в меню команд'),
+        TextInput(
+            id='delite_team_confirmation',
+            type_factory=is_yes,
+            on_success=delete_team_confirmation,
+            on_error=delete_team_not_confirmed,
+        ),
+        state=AdminSG.delete_team,
     ),
     Window(
         Const(text='Введите название команды'),
