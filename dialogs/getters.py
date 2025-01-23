@@ -153,6 +153,20 @@ async def button_show_users(callback: CallbackQuery, button: Button, dialog_mana
 async def button_edit_team(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.edit_team)
 
+async def cancel_team_edit(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    await dialog_manager.switch_to(AdminSG.edit_team_menu)
+
+async def cancel_team(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    await dialog_manager.switch_to(AdminSG.team_management)
+
+async def cancel_f1_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    await dialog_manager.switch_to(AdminSG.f1_drivers_menu)
+
+async def cancel_user_menu(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    await dialog_manager.switch_to(AdminSG.users_menu)
+
+async def cancel_loading_f1_results(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    await dialog_manager.switch_to(AdminSG.loading_f1_results)
 
 async def all_teams(**kwargs):
     return {'all_teams': await get_all_teams()}
@@ -219,9 +233,9 @@ async def member_selected(callback: CallbackQuery, widget: Select,
     await update_or_remove_team_member(int(dialog_manager.dialog_data['team_id']), dialog_manager.dialog_data['team_place_member'], int(user_id))
     await dialog_manager.switch_to(AdminSG.team_members)
 
-
 async def change_team_name(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
-    await dialog_manager.switch_to(AdminSG.enter_team_member)
+    await dialog_manager.switch_to(AdminSG.change_team_name)
+
 
 async def delete_team(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
     await dialog_manager.switch_to(AdminSG.delete_team)

@@ -81,6 +81,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Const(text='Введите полное имя пользователя'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_user_menu',
+            on_click=cancel_user_menu)
+        ,
         TextInput(
             id='select_user',
             on_success=correct_name,
@@ -477,6 +482,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Const(text='Введите результат спринта'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_loading_f1_results',
+            on_click=cancel_loading_f1_results)
+        ,
         TextInput(
             id='loading_f1_result_sprint',
             type_factory=str,
@@ -486,6 +496,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Const(text='Введите результат квалификации'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_loading_f1_results',
+            on_click=cancel_loading_f1_results)
+        ,
         TextInput(
             id='loading_f1_result_quali',
             type_factory=str,
@@ -495,6 +510,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Const(text='Введите результат гонки'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_loading_f1_results',
+            on_click=cancel_loading_f1_results)
+        ,
         TextInput(
             id='loading_f1_result_race',
             type_factory=str,
@@ -590,6 +610,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Const(text='Введите название шрифта номера'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_team',
+            on_click=cancel_team_edit)
+        ,
         TextInput(
             id='team_number_font_input',
             type_factory=str,
@@ -599,6 +624,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Const(text='Введите цвет номера'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_team',
+            on_click=cancel_team_edit)
+        ,
         TextInput(
             id='team_number_font_color_input',
             type_factory=str,
@@ -608,6 +638,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Const(text='Номер курсивом или нет'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_team',
+            on_click=cancel_team_edit)
+        ,
         Row(
             Radio(
                 checked_text=Format('🔘 {item[0]}'),
@@ -621,6 +656,11 @@ admin_dialog = Dialog(
         state=AdminSG.change_team_number_font_italic,
     ),
     Window(Const(text='Выберите цвет шрифта команды'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_team',
+            on_click=cancel_team_edit)
+        ,
         Row(
             Radio(
                 checked_text=Format('🔘 {item[0]}'),
@@ -635,6 +675,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Const(text='Введите цвет фона названия команды'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_team',
+            on_click=cancel_team_edit)
+        ,
         TextInput(
             id='team_background_color_input',
             type_factory=str,
@@ -644,6 +689,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Const(text='Пришлите мне логотип команды в формате png, размер 140х49'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_team',
+            on_click=cancel_team_edit)
+        ,
         MessageInput(
             func=team_logo_receive,
             content_types=ContentType.PHOTO,
@@ -652,6 +702,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Const(text='Введите новое название команды'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_team',
+            on_click=cancel_team_edit)
+        ,
         TextInput(
             id='new_team_name',
             type_factory=str,
@@ -661,6 +716,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Const(text='Напишите <b>ДА</b> если Вы уверены, что хотите удалить команду, если вы введете, что-то другое Вы вернетесь в меню команд'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_team',
+            on_click=cancel_team_edit)
+        ,
         TextInput(
             id='delite_team_confirmation',
             type_factory=is_yes,
@@ -671,6 +731,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Const(text='Введите название команды'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_team',
+            on_click=cancel_team)
+        ,
         TextInput(
             id='new_team',
             type_factory=str,
@@ -690,6 +755,11 @@ admin_dialog = Dialog(
             ),
             width=1
             ),
+            Button(
+            text=Const('✕ Отмена'),
+            id='cancel_team',
+            on_click=cancel_team_edit)
+            ,
             Row(Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
@@ -782,6 +852,7 @@ admin_dialog = Dialog(
                 items='f1_drivers_active',
                 on_click=f1_driver_active_selected,
             ),
+
             Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
@@ -814,6 +885,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Const(text='Введите пилота'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_f1_driver',
+            on_click=cancel_f1_driver)
+        ,
         TextInput(
             id='add_f1_driver',
             type_factory=str,
