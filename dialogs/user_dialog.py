@@ -27,16 +27,19 @@ user_dialog = Dialog(
                 when=F["unregistered"]
             ),
             Button(
-            text=Const('Отправить прогноз на ближайший GP'),
+            text=Const('🏎️ Отправить прогноз'),
             id='button_send_predict',
             on_click=button_send_predict,
             when=F["registered"]
             ),
             Button(
-                text=Const('Информация о фэнтези'),
+                text=Const('📜 Информация о фэнтези'),
                 id='button_about',
                 on_click=button_about
             ),
+            Url(text=Const('👍🏻 Поделиться ботом'),
+            url=Const('https://t.me/share/url?url=https://t.me/sillyf1fantasy_bot&text=Присоединяйся!'),
+            id='button_share'),
             Button(
                 text=Const('Админка'),
                 id='button_admin',

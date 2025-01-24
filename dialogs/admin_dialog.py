@@ -151,6 +151,11 @@ admin_dialog = Dialog(
     ),
     Window(
         Const(text='Введите актуальное положение пилотов:'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_open_predict',
+            on_click=cancel_open_predict)
+        ,
         TextInput(
             type_factory=str,
             id='update_drivers_standing',

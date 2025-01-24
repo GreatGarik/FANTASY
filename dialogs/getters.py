@@ -168,6 +168,9 @@ async def cancel_user_menu(callback: CallbackQuery, button: Button, dialog_manag
 async def cancel_loading_f1_results(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
     await dialog_manager.switch_to(AdminSG.loading_f1_results)
 
+async def cancel_open_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    await dialog_manager.switch_to(AdminSG.start)
+
 async def all_teams(**kwargs):
     return {'all_teams': await get_all_teams()}
 
