@@ -37,6 +37,12 @@ user_dialog = Dialog(
                 id='button_about',
                 on_click=button_about
             ),
+            Button(
+                text=Const('✉️ Обратная связь'),
+                id='feedback',
+                on_click=button_feedback,
+                when=F["registered"]
+            ),
             Url(text=Const('👍🏻 Поделиться ботом'),
             url=Const('https://t.me/share/url?url=https://t.me/sillyf1fantasy_bot&text=Присоединяйся!'),
             id='button_share'),
@@ -75,6 +81,21 @@ user_dialog = Dialog(
             on_error=error_fill_form_name
         ),
         state=UserSG.fill_form_name,
+    ),
+    Window(
+        Const(text='Введите Ваше сообщение для админов Fantasy:'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_feedback',
+            on_click=cancel_feedback)
+        ,
+        TextInput(
+            type_factory=str,
+            id='feedback',
+            on_success=feedback,
+            on_error=error_feedback
+        ),
+        state=UserSG.feedback,
     ),
     Window(
         Const(text='Выберите <b>команду</b>:'),

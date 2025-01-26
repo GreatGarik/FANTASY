@@ -7,11 +7,11 @@ from aiogram.types import Message, User, CallbackQuery
 from string import ascii_letters
 
 from sqlalchemy.util import await_fallback
-
+from .dop_functions import send_message
 from .getters import AdminSG
 from database.database import send_predict, is_prediced, get_name_gp, \
     get_users_async, add_user_async, get_end_grandprix_by_id, get_start_grandprix_by_id, get_penalty_grandprix_by_id, \
-    select_drivers_async, get_actual_gp_async, is_user_banned
+    select_drivers_async, get_actual_gp_async, is_user_banned, get_user_team
 
 
 class UserSG(StatesGroup):
@@ -27,6 +27,7 @@ class UserSG(StatesGroup):
     send_predict_laps = State()
     send_predict_ending = State()
     about_fantasy = State()
+    feedback = State()
 
 
 
@@ -40,13 +41,30 @@ def name_check(text: str) -> str:
 async def error_fill_form_name(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, error: ValueError):
     await message.answer(text='В имени могут быть только латинские буквы и должен быть только один пробел между именем и фамилией.')
 
+async def error_feedback(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, error: ValueError):
+    await message.answer(text='Вы можете отправить только текст')
+
+async def cancel_feedback(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    await dialog_manager.switch_to(UserSG.start)
+
 async def fill_form_name(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
     name, lastname = text.split()
     await add_user_async(message.from_user.id, name.capitalize(), lastname.upper())
     await message.answer(
         text='Спасибо за регистрацию, теперь Вы можете делать прогнозы.')
-
     await dialog_manager.switch_to(UserSG.start)
+
+async def feedback(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
+    user = await get_users_async(message.from_user.id)
+    team = await get_user_team(message.from_user.id)
+    text = (f'Сообщение от <b>{user.name}</b> из команды {team}:\n'
+            f'{text}')
+    bot = dialog_manager.middleware_data.get('bot')
+    await send_message(user_id=-1002341617853, text=text, bot=bot)
+    await message.answer(text='Спасибо. Ваше сообщение отправлено')
+    dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+    await dialog_manager.switch_to(UserSG.start)
+
 
 
 
@@ -234,6 +252,10 @@ async def button_user_menu(callback: CallbackQuery, button: Button, dialog_manag
 
 async def button_about(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(UserSG.about_fantasy)
+
+async def button_feedback(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(UserSG.feedback)
+
 
 async def button_admin(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.start(state=AdminSG.start)

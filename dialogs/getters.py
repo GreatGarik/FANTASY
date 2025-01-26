@@ -72,6 +72,7 @@ class AdminSG(StatesGroup):
 
 
 
+
 async def sprint(event_from_user: User, **kwargs):
     return {'sprint': await is_sprint(await get_actual_gp_async())}
 
