@@ -66,7 +66,10 @@ class AdminSG(StatesGroup):
     loading_f1_result_sprint = State()
     loading_f1_result_quali = State()
     loading_f1_result_race = State()
+    send_message = State()
     exit_admin = State()
+    send_all = State()
+
 
 
 async def sprint(event_from_user: User, **kwargs):
@@ -88,6 +91,30 @@ async def correct_name(message: Message,widget: ManagedTextInput,dialog_manager:
     else:
         await message.answer(text=f'Я никого не нашел.')
         await dialog_manager.switch_to(AdminSG.users_menu)
+
+async def send_all(message: Message,widget: ManagedTextInput,dialog_manager: DialogManager,text: str) -> None:
+    bot = dialog_manager.middleware_data.get('bot')
+    if dialog_manager.dialog_data.get('user_tg_id'):
+        await send_message(dialog_manager.dialog_data.get('user_tg_id'), text, bot)
+    else:
+        users = await get_users_async()
+        # Создаем список задач
+        tasks = []
+        for user in users:
+            tasks.append(send_message(user.id_telegram, text, bot))
+            # Если количество задач достигло 25, ждем их завершения
+            if len(tasks) == 25:
+                await asyncio.gather(*tasks)
+                tasks = []  # Сбрасываем список задач
+                await asyncio.sleep(1)  # Пауза в 1 секунду, чтобы не превышать 25 сообщений в секунду
+            # Отправляем оставшиеся сообщения, если они есть
+        if tasks:
+            await asyncio.gather(*tasks)
+
+    dialog_manager.dialog_data.clear()
+    await dialog_manager.switch_to(AdminSG.send_message)
+
+
 
 
 async def found_users(dialog_manager: DialogManager, **kwargs):
@@ -170,6 +197,9 @@ async def cancel_loading_f1_results(callback: CallbackQuery, button: Button, dia
 
 async def cancel_open_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
     await dialog_manager.switch_to(AdminSG.start)
+
+async def cancel_send_message(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    await dialog_manager.switch_to(AdminSG.send_message)
 
 async def all_teams(**kwargs):
     return {'all_teams': await get_all_teams()}
@@ -603,6 +633,9 @@ async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog
 async def button_tables(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.tables)
 
+async def button_send_all(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.send_all)
+
 
 async def button_stage(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.stage)
@@ -617,7 +650,11 @@ async def button_team_management(callback: CallbackQuery, button: Button, dialog
 async def button_f1_drivers(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.f1_drivers_menu)
 
+async def button_send_message(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.send_message)
+
 async def button_menu(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    dialog_manager.dialog_data.clear()
     dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
     await dialog_manager.switch_to(AdminSG.start)
 

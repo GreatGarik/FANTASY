@@ -48,6 +48,11 @@ admin_dialog = Dialog(
             on_click=button_f1_drivers
         ),
         Button(
+            text=Const('Отправить сообщение'),
+            id='button_send_message',
+            on_click=button_send_message
+        ),
+        Button(
             text=Const('Выйти из админки'),
             id='button_exit',
             on_click=button_exit),
@@ -79,6 +84,46 @@ admin_dialog = Dialog(
         ),
         state=AdminSG.users_menu
     ),
+    Window(
+        Const('Меню отправки сообщения'),
+        Column(
+        Button(
+                text=Const('Отправить всем'),
+                id='button_send_all',
+                on_click=button_send_all)
+            ,
+            Button(
+                text=Const('Найти пользователя для отправки сообщения'),
+                id='button_users',
+                on_click=button_find_user
+            ),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+            Button(
+                text=Const('Выйти из админки'),
+                id='button_exit',
+                on_click=button_exit),
+
+        ),
+        state=AdminSG.send_message
+    ),
+    Window(
+        Const(text='Введите сообщение для отправки'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_send_message',
+            on_click=cancel_send_message)
+        ,
+        TextInput(
+            id='send_all',
+            on_success=send_all,
+        ),
+        state=AdminSG.send_all,
+    ),
+
     Window(
         Const(text='Введите полное имя пользователя'),
         Button(
@@ -345,6 +390,11 @@ admin_dialog = Dialog(
     Window(
         Format('Что мы хотим сделать с пользователем'),
         Column(
+    Button(
+                text=Const('Отправить сообщение'),
+                id='button_send_message_one',
+                on_click=button_send_all
+            ),
             Button(
                 text=Const('Изменить имя'),
                 id='button_change_user_name',
