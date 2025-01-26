@@ -55,13 +55,18 @@ async def fill_form_name(message: Message, widget: ManagedTextInput, dialog_mana
     await dialog_manager.switch_to(UserSG.start)
 
 async def feedback(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
-    user = await get_users_async(message.from_user.id)
-    team = await get_user_team(message.from_user.id)
-    text = (f'Сообщение от <b>{user.name}</b> из команды {team}:\n'
-            f'{text}')
-    bot = dialog_manager.middleware_data.get('bot')
-    await send_message(user_id=-1002341617853, text=text, bot=bot)
-    await message.answer(text='Спасибо. Ваше сообщение отправлено')
+
+    if await is_user_banned(message.from_user.id):
+        await message.answer(
+            text=f'Вы забанены в Fantasy, обратитесь к администрации в общем чате')
+    else:
+        user = await get_users_async(message.from_user.id)
+        team = await get_user_team(message.from_user.id)
+        text = (f'Сообщение от <b>{user.name}</b> из команды {team}:\n'
+                f'{text}')
+        bot = dialog_manager.middleware_data.get('bot')
+        await send_message(user_id=-1002341617853, text=text, bot=bot)
+        await message.answer(text='Спасибо. Ваше сообщение отправлено')
     dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
     await dialog_manager.switch_to(UserSG.start)
 
