@@ -630,18 +630,38 @@ async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog
     if tasks:
         await asyncio.gather(*tasks)
     '''
-
+    # Отправка уведомлений о создании прогноза
     bot = dialog_manager.middleware_data.get('bot')
     text = f'Привет!\nПриём прогнозов на <b> {await get_name_gp(gp_id)} GP</b>\nоткроется<b> {time_start}</b>\nбез штрафа до <b>{time_penalty}</b>\nокончание приёма <b>{time_end}</b>'
     await add_scheduled_message(0, text, datetime.now() + timedelta(minutes=1))
     scheduler.add_job(schedule_message, 'date', run_date=(datetime.now() + timedelta(minutes=1)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
-
-    text = f'Приём прогнозов на <b> {await get_name_gp(gp_id)} GP</b> открылся!\nБез штрафа можно подать до <b>{time_penalty}</b>\nОкончание приёма прогнозов <b>{time_end}</b>'
+    # Уведомление о начале принятия прогноза
+    text = f'❗ Приём прогнозов на <b> {await get_name_gp(gp_id)} GP</b> открылся!\nБез штрафа можно подать до <b>{time_penalty}</b>\nОкончание приёма прогнозов <b>{time_end}</b>'
     await add_scheduled_message(0, text, datetime.strptime(time_start, "%Y-%m-%d %H:%M:%S"))
     scheduler.add_job(schedule_message, 'date', run_date=dialog_manager.dialog_data.get('start_datetime'), args=[0, text, bot])
 
+    # Уведомление, что осталось 24 часа до штрафа
+    text = f'⏱️ Осталось 24 часа, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b> без штрафа до <b>{time_penalty}</b>\nОкончание приёма прогнозов <b>{time_end}</b>'
+    await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M:%S") - timedelta(hours=24))
+    scheduler.add_job(schedule_message, 'date', run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M:%S") - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
+    # Уведомление, что осталось 4 часа до штрафа
+    text = f'⏱️ Осталось 4 часа, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b> без штрафа до <b>{time_penalty}</b>\nОкончание приёма прогнозов <b>{time_end}</b>'
+    await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M:%S") - timedelta(hours=4))
+    scheduler.add_job(schedule_message, 'date', run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M:%S") - timedelta(hours=4)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
+
+    # Уведомление, что осталось 2 часа до штрафа
+    text = f'⚠️Осталось 3 часа, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b> без штрафа до <b>{time_penalty}</b>\nОкончание приёма прогнозов <b>{time_end}</b>'
+    await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M:%S") - timedelta(hours=3))
+    scheduler.add_job(schedule_message, 'date', run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M:%S") - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
+
+    # Уведомление, что осталось 2 часа до дедлайна
+    text = f'‼️ Осталось 2 часа, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b>\nОкончание приёма прогнозов <b>{time_end}</b>'
+    await add_scheduled_message(0, text, datetime.strptime(time_end, "%Y-%m-%d %H:%M:%S") - timedelta(hours=2))
+    scheduler.add_job(schedule_message, 'date',
+                      run_date=(datetime.strptime(time_end, "%Y-%m-%d %H:%M:%S") - timedelta(hours=2)).strftime(
+                          "%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
     dialog_manager.dialog_data.clear()
     await dialog_manager.switch_to(AdminSG.start)
