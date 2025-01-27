@@ -21,7 +21,7 @@ async def schedule_message(chat_id: int, text: str, bot: Bot):
 
         for user in users:
             if not await is_prediced(user.id_telegram, actual_gp):
-                tasks.append(send_message(user_id=chat_id, text=text, bot=bot))
+                tasks.append(send_message(user_id=user.id_telegram, text=text, bot=bot))
                 # Если количество задач достигло 25, ждем их завершения
             if len(tasks) == 25:
                 await asyncio.gather(*tasks)
