@@ -6,13 +6,16 @@ from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.widgets.input import TextInput, ManagedTextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Button, Select
 from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
+from asyncpg.pgproto.pgproto import timedelta
+
 from dataprocessing.excel_forms import entry_list, last_stage, process_championship_full, championship_team_full, \
     process_calculation_command, process_all_predicts
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 from database.database import get_users_async, check_res, \
     clear_results, get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async, change_user_banned_status, delete_team_from_db
+    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async, change_user_banned_status, delete_team_from_db, add_scheduled_message
 from .dop_functions import send_message
+from scheduler.scheduler import scheduler, schedule_message
 
 class AdminSG(StatesGroup):
     start = State()
@@ -608,10 +611,10 @@ async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog
     time_end = dialog_manager.dialog_data['end_datetime']
     await update_grandprix(gp_id=gp_id, time_start=datetime.strptime(time_start, pattern), time_penalty=datetime.strptime(time_penalty, pattern),
                            time_end=datetime.strptime(time_end, pattern))
-    await callback.message.answer(f'Прогноз на {await get_name_gp(gp_id)} открыт')
+    await callback.message.answer(f'Прогноз на {await get_name_gp(gp_id)} GP создан')
 
-    bot = dialog_manager.middleware_data.get('bot')
-    text = f'Привет!\nПриём прогнозов на <b> {await get_name_gp(gp_id)} GP</b>\nоткроется<b> {time_start}</b>\nбез штрафа до <b>{time_penalty}</b>\nокончание приёма <b>{time_end}</b>'
+    '''
+    # Отправка перенесена в шедулер
     users = await get_users_async()
     # Создаем список задач
     tasks = []
@@ -626,6 +629,19 @@ async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog
     # Отправляем оставшиеся сообщения, если они есть
     if tasks:
         await asyncio.gather(*tasks)
+    '''
+
+    bot = dialog_manager.middleware_data.get('bot')
+    text = f'Привет!\nПриём прогнозов на <b> {await get_name_gp(gp_id)} GP</b>\nоткроется<b> {time_start}</b>\nбез штрафа до <b>{time_penalty}</b>\nокончание приёма <b>{time_end}</b>'
+    await add_scheduled_message(1065647002, text, datetime.now() + timedelta(minutes=1))
+    scheduler.add_job(schedule_message, 'date', run_date=(datetime.now() + timedelta(minutes=1)).strftime("%Y-%m-%d %H:%M:%S"), args=[1065647002, text, bot])
+
+
+    text = f'Приём прогнозов на <b> {await get_name_gp(gp_id)} GP</b> открылся!\nБез штрафа можно подать до <b>{time_penalty}</b>\nОкончание приёма прогнозов <b>{time_end}</b>'
+    await add_scheduled_message(1065647002, text, datetime.strptime(time_start, "%Y-%m-%d %H:%M:%S"))
+    scheduler.add_job(schedule_message, 'date', run_date=dialog_manager.dialog_data.get('start_datetime'), args=[1065647002, text, bot])
+
+
 
     dialog_manager.dialog_data.clear()
     await dialog_manager.switch_to(AdminSG.start)

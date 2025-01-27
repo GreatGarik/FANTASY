@@ -8,6 +8,7 @@ from keyboards.menu_button import set_main_menu
 from aiogram.fsm.storage.redis import RedisStorage, Redis, DefaultKeyBuilder
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
+from scheduler.scheduler import start_scheduler, schedule_messages_on_start
 from aiogram_dialog import setup_dialogs
 
 # Инициализируем логгер
@@ -59,6 +60,8 @@ async def main():
 
 
     # Запускаем polling
+    start_scheduler()  # Запускаем планировщик
+    await schedule_messages_on_start(bot)  # Запланируем отправку сообщений при старте
     await dp.start_polling(bot)
 
 

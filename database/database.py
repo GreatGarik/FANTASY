@@ -988,3 +988,24 @@ async def delete_team_from_db(team_id: int):
 
             # Сохраняем изменения в базе данных
             await session.commit()
+
+# Шедулер
+async def delete_old_scheduled_messages():
+    async with async_session() as session:
+        async with session.begin():
+            now = datetime.now()
+            await session.execute(delete(ScheduledMessage).where(ScheduledMessage.send_time < now))
+            await session.commit()
+
+async def get_scheduled_messages():
+    async with async_session() as session:
+        async with session.begin():
+            result = await session.execute(select(ScheduledMessage))
+            return result.scalars().all()
+
+async def add_scheduled_message(chat_id: int, text: str, send_time: datetime):
+    async with async_session() as session:
+        async with session.begin():
+            message = ScheduledMessage(chat_id=chat_id, text=text, send_time=send_time)
+            session.add(message)
+            await session.commit()

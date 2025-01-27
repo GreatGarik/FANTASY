@@ -168,4 +168,12 @@ class Point(Base):
     user: Mapped[User] = relationship('User', back_populates='points')
     gp: Mapped[Grandprix] = relationship('Grandprix', back_populates='race')
 
+class ScheduledMessage(Base):
+    __tablename__ = 'scheduled_messages'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    chat_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    text: Mapped[str] = mapped_column(String, nullable=False)
+    send_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+
 
