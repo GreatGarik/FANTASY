@@ -652,15 +652,15 @@ async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog
     scheduler.add_job(schedule_message, 'date', run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M:%S") - timedelta(hours=4)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
     # Уведомление, что осталось 2 часа до штрафа
-    text = f'⚠️Осталось 3 часа, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b> без штрафа до <b>{time_penalty}</b>\nОкончание приёма прогнозов <b>{time_end}</b>'
-    await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M:%S") - timedelta(hours=3))
-    scheduler.add_job(schedule_message, 'date', run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M:%S") - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
+    text = f'⚠️Осталось 2 часа, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b> без штрафа до <b>{time_penalty}</b>\nОкончание приёма прогнозов <b>{time_end}</b>'
+    await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M:%S") - timedelta(hours=2))
+    scheduler.add_job(schedule_message, 'date', run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M:%S") - timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
     # Уведомление, что осталось 2 часа до дедлайна
-    text = f'‼️ Осталось 2 часа, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b>\nОкончание приёма прогнозов <b>{time_end}</b>'
-    await add_scheduled_message(0, text, datetime.strptime(time_end, "%Y-%m-%d %H:%M:%S") - timedelta(hours=2))
+    text = f'‼️ Остался 1 час, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b>\nОкончание приёма прогнозов <b>{time_end}</b>'
+    await add_scheduled_message(0, text, datetime.strptime(time_end, "%Y-%m-%d %H:%M:%S") - timedelta(hours=1))
     scheduler.add_job(schedule_message, 'date',
-                      run_date=(datetime.strptime(time_end, "%Y-%m-%d %H:%M:%S") - timedelta(hours=2)).strftime(
+                      run_date=(datetime.strptime(time_end, "%Y-%m-%d %H:%M:%S") - timedelta(hours=1)).strftime(
                           "%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
     dialog_manager.dialog_data.clear()
