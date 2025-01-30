@@ -31,7 +31,7 @@ class UserSG(StatesGroup):
     feedback = State()
 
 # Установите локаль на русский язык
-locale.setlocale(locale.LC_TIME, 'Russian_Russia')
+locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
 
 def name_check(text: str) -> str:
