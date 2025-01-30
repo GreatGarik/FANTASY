@@ -117,7 +117,7 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
 
     elif datetime.now() < start_time:
         await callback.message.answer(
-            text=f'В данный момент прогноз на <b>{await get_name_gp(actual_gp)} GP</b> еще не принимается\nПрием прогнозов начнётся <b>{start_time.strftime("%A %Y-%m-%d %H:%M")}</b>')
+            text=f'В данный момент прогноз на <b>{await get_name_gp(actual_gp)} GP</b> еще не принимается\nПрием прогнозов начнётся <b>{start_time.strftime("%A %Y-%m-%d %H:%M").lower()}</b>')
         dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
@@ -125,7 +125,7 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
         if datetime.now() < end_time:
             penalty_time = await get_penalty_grandprix_by_id(actual_gp)
             await callback.message.answer(
-                text=f'Окончание приема прогноза на <b>{await get_name_gp(actual_gp)} GP</b> закончится <b>{end_time.strftime("%A %Y-%m-%d %H:%M")}</b>\n Без штрафа прогноз можно подать до <b>{penalty_time.strftime("%A %Y-%m-%d %H:%M")}</b>')
+                text=f'Окончание приема прогноза на <b>{await get_name_gp(actual_gp)} GP</b> закончится <b>{end_time.strftime("%A %Y-%m-%d %H:%M").lower()}</b>\n Без штрафа прогноз можно подать до <b>{penalty_time.strftime("%A %Y-%m-%d %H:%M").lower()}</b>')
             dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
             await dialog_manager.switch_to(UserSG.send_predict)
         else:
