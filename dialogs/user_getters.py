@@ -1,4 +1,5 @@
 from datetime import datetime
+import locale
 from aiogram.fsm.state import State, StatesGroup
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.widgets.input import ManagedTextInput
@@ -29,7 +30,8 @@ class UserSG(StatesGroup):
     about_fantasy = State()
     feedback = State()
 
-
+# Установите локаль на русский язык
+locale.setlocale(locale.LC_TIME, 'Russian_Russia')
 
 
 def name_check(text: str) -> str:
@@ -118,7 +120,7 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
             await dialog_manager.switch_to(UserSG.send_predict)
         else:
             await callback.message.answer(
-                text=f'В данный момент прогноз на {await get_name_gp(actual_gp)} GP не принимается\n Прием прогнозов закончился {end_time}')
+                text=f'В данный момент прогноз на {await get_name_gp(actual_gp)} GP не принимается\n Прием прогнозов закончился {end_time} {end_time.strftime("%A")}')
             dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
             await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
