@@ -1,4 +1,5 @@
 from datetime import datetime
+import platform
 import locale
 from aiogram.fsm.state import State, StatesGroup
 from aiogram_dialog import DialogManager, ShowMode
@@ -30,8 +31,16 @@ class UserSG(StatesGroup):
     about_fantasy = State()
     feedback = State()
 
+current_os = platform.system()
+
 # Устанавливаем локаль на русский язык
-locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
+if current_os == "Windows":
+    locale.setlocale(locale.LC_TIME, 'Russian_Russia')
+elif current_os == "Linux":
+    locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
+else:
+    raise Exception("Unsupported operating system")
+
 
 
 

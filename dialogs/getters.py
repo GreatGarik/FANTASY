@@ -1,4 +1,6 @@
 from datetime import datetime, date, time
+import locale
+import platform
 import asyncio
 import os
 from aiogram.fsm.state import State, StatesGroup
@@ -73,8 +75,15 @@ class AdminSG(StatesGroup):
     exit_admin = State()
     send_all = State()
 
+current_os = platform.system()
 
-
+# Устанавливаем локаль на русский язык
+if current_os == "Windows":
+    locale.setlocale(locale.LC_TIME, 'Russian_Russia')
+elif current_os == "Linux":
+    locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
+else:
+    raise Exception("Unsupported operating system")
 
 async def sprint(event_from_user: User, **kwargs):
     return {'sprint': await is_sprint(await get_actual_gp_async())}
@@ -632,7 +641,7 @@ async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog
     '''
     # Отправка уведомлений о создании прогноза
     bot = dialog_manager.middleware_data.get('bot')
-    text = f'Привет!\nПриём прогнозов на <b> {await get_name_gp(gp_id)} GP</b>\nоткроется<b> {time_start}</b>\nбез штрафа до <b>{time_penalty}</b>\nокончание приёма <b>{time_end}</b>'
+    text = f'Привет!\nПриём прогнозов на <b> {await get_name_gp(gp_id)} GP</b>\nоткроется<b> {time_start} {datetime.strptime(time_start, "%Y-%m-%d %H:%M:%S").strftime('%A')}</b>\nбез штрафа до <b>{time_penalty}</b>\nокончание приёма <b>{time_end}</b>'
     await add_scheduled_message(0, text, datetime.now() + timedelta(minutes=1))
     scheduler.add_job(schedule_message, 'date', run_date=(datetime.now() + timedelta(minutes=1)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
