@@ -1,5 +1,4 @@
 from datetime import datetime
-import locale
 from aiogram.fsm.state import State, StatesGroup
 from aiogram_dialog import DialogManager, ShowMode
 from aiogram_dialog.widgets.input import ManagedTextInput
@@ -30,8 +29,7 @@ class UserSG(StatesGroup):
     about_fantasy = State()
     feedback = State()
 
-# Установите локаль на русский язык
-locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
+
 
 
 def name_check(text: str) -> str:
