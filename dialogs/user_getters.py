@@ -99,6 +99,19 @@ async def user_name(event_from_user: User, all_admins: list, **kwargs):
 async def button_registration(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(UserSG.fill_form_name)
 
+
+def get_day_of_week(day_number, case):
+    days = {
+        "именительный": ["понедельник", "вторник", "среда", "четверг", "пятница", "суббота", "воскресенье"],
+        "родительный": ["понедельника", "вторника", "среды", "четверга", "пятницы", "субботы", "воскресенья"],
+        "дательный": ["понедельнику", "вторнику", "среде", "четвергу", "пятнице", "субботе", "воскресенью"],
+        "винительный": ["понедельник", "вторник", "среду", "четверг", "пятницу", "субботу", "воскресенье"],
+        "творительный": ["понедельником", "вторником", "средой", "четвергом", "пятницей", "субботой", "воскресеньем"],
+        "предложный": ["о понедельнике", "о вторнике", "о среде", "о четверге", "о пятнице", "о субботе",
+                       "о воскресенье"]
+    }
+    return days[case][day_number]
+
 async def button_send_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     dialog_manager.dialog_data.clear()
     actual_gp: int = await get_actual_gp_async()
@@ -117,7 +130,7 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
 
     elif datetime.now() < start_time:
         await callback.message.answer(
-            text=f'В данный момент прогноз на <b>{await get_name_gp(actual_gp)} GP</b> еще не принимается\nПрием прогнозов начнётся <b>{start_time.strftime("%A %Y-%m-%d %H:%M").lower()}</b>')
+            text=f'В данный момент прогноз на <b>{await get_name_gp(actual_gp)} GP</b> еще не принимается\nПрием прогнозов начнётся в <b>{get_day_of_week(start_time.weekday(), "винительный")} {start_time.strftime("%Y-%m-%d %H:%M")}</b>')
         dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
@@ -125,12 +138,12 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
         if datetime.now() < end_time:
             penalty_time = await get_penalty_grandprix_by_id(actual_gp)
             await callback.message.answer(
-                text=f'Окончание приема прогноза на <b>{await get_name_gp(actual_gp)} GP</b> закончится <b>{end_time.strftime("%A %Y-%m-%d %H:%M").lower()}</b>\n Без штрафа прогноз можно подать до <b>{penalty_time.strftime("%A %Y-%m-%d %H:%M").lower()}</b>')
+                text=f'Окончание приема прогноза на <b>{await get_name_gp(actual_gp)} GP</b> закончится в <b>{get_day_of_week(end_time.weekday(), "винительный")} {end_time.strftime("%Y-%m-%d %H:%M")}</b>\n Без штрафа прогноз можно подать до <b>{get_day_of_week(end_time.weekday(), "родительный")} {penalty_time.strftime("%Y-%m-%d %H:%M")}</b>')
             dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
             await dialog_manager.switch_to(UserSG.send_predict)
         else:
             await callback.message.answer(
-                text=f'В данный момент прогноз на {await get_name_gp(actual_gp)} GP не принимается\nПрием прогнозов закончился {end_time.strftime("%A %Y-%m-%d %H:%M").lower()}')
+                text=f'В данный момент прогноз на {await get_name_gp(actual_gp)} GP не принимается\nПрием прогнозов закончился в {get_day_of_week(end_time.weekday(), "винительный")} {end_time.strftime("%Y-%m-%d %H:%M")}')
             dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
             await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 

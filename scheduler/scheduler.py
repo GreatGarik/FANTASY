@@ -1,4 +1,5 @@
 import asyncio
+import random
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,7 @@ scheduler = AsyncIOScheduler()
 async def schedule_message(chat_id: int, text: str, bot: Bot):
     if chat_id == 0:
         users = await get_users_async()
+        random.shuffle(users)
         actual_gp: int = await get_actual_gp_async()
         # Создаем список задач
         tasks = []
