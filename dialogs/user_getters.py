@@ -134,6 +134,7 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
         dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
+
     elif datetime.now() > start_time:
         if datetime.now() < end_time:
             penalty_time = await get_penalty_grandprix_by_id(actual_gp)
