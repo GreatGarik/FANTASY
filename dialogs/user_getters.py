@@ -289,6 +289,7 @@ async def button_feedback(callback: CallbackQuery, button: Button, dialog_manage
 
 
 async def button_admin(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
     await dialog_manager.start(state=AdminSG.start)
 
 async def button_exit_user(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):

@@ -732,5 +732,7 @@ async def button_menu(callback: CallbackQuery, button: Button, dialog_manager: D
 
 
 async def button_exit(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    await callback.message.answer('Вы, вышли из админки!')
+    dialog_manager.dialog_data.clear()
+    dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+    #await callback.message.answer('Вы, вышли из админки!')
     await dialog_manager.done()
