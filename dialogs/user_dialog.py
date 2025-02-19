@@ -37,6 +37,9 @@ user_dialog = Dialog(
                 id='button_about',
                 on_click=button_about
             ),
+            Url(text=Const('Чат F1 Fantasy by Silly Formula'),
+                url=Const('https://t.me/+fa8OXqqblLxhODQy'),
+                id='chat_tg_group'),
             Button(
                 text=Const('✉️ Обратная связь'),
                 id='feedback',
