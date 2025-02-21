@@ -26,7 +26,7 @@ async def entry_list():
     # Объединяем ячейки в третьем и четвертом столбцах (C и D)
     #ws.merge_cells(start_row=4, start_column=3, end_row=4, end_column=4)
     #ws.merge_cells(start_row=5, start_column=3, end_row=5, end_column=4)
-    ws.cell(row=3, column=3).font = Font(name='Formula1 Display Bold', size=11, bold=True, color='000000')
+    ws.cell(row=3, column=3).font = Font(name='Formula1 Display Bold', size=10, bold=True, color='000000')
     ws['C3'] = f'FORMULA 1 FANTASY SERIES BY SILLY FORMULA'
     ws['C3'].alignment = Alignment(horizontal='center', vertical='center')
     ws.cell(row=4, column=3).font = Font(name='Formula1 Display Bold', size=10, bold=True, color='000000')
