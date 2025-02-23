@@ -238,7 +238,7 @@ async def team_number_font_input(message: Message, widget: ManagedTextInput, dia
     await dialog_manager.switch_to(AdminSG.change_team_number_font_color)
 
 async def team_number_font_color_input(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
-    dialog_manager.dialog_data['team_number_font_color_input'] = text
+    dialog_manager.dialog_data['team_number_font_color_input'] = text.strip('#')
     await dialog_manager.switch_to(AdminSG.change_team_number_font_italic)
 
 async def change_team_number_font_record(callback: CallbackQuery, source, dialog_manager: DialogManager, radio_id, **kwargs) -> None:
@@ -337,7 +337,7 @@ async def team_font_color(callback: CallbackQuery, source, dialog_manager: Dialo
     await dialog_manager.switch_to(AdminSG.change_team_background_color)
 
 async def team_background_color(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
-    await update_team(team_id=int(dialog_manager.dialog_data['team_id']), background_color=text, text_color=dialog_manager.dialog_data['team_font_color'])
+    await update_team(team_id=int(dialog_manager.dialog_data['team_id']), background_color=text.strip('#'), text_color=dialog_manager.dialog_data['team_font_color'])
     await message.answer('Настройки цветов успешно записаны', show_alert=True)
     await dialog_manager.switch_to(AdminSG.edit_team_menu)
 
