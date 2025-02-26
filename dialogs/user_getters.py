@@ -148,24 +148,24 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
             dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
             await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
-async def get_all_teams_predict(**kwargs):
-    return {'teams_for_select': sorted({i.driver_team + '  ' + i.engine_short for i in await select_drivers_async(active=True)})}
+async def get_all_teams_predict(dialog_manager: DialogManager, **kwargs):
+    return {'teams_for_select': sorted({i.driver_team + '  ' + i.engine_short for i in await select_drivers_async(active=True)}), 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡")])}
 
-async def get_all_engines_predict(**kwargs):
-    return {'engines_for_select': sorted({i.driver_engine + '  ' + i.engine_short for i in await select_drivers_async(active=True)})}
+async def get_all_engines_predict(dialog_manager: DialogManager, **kwargs):
+    return {'engines_for_select': sorted({i.driver_engine + '  ' + i.engine_short for i in await select_drivers_async(active=True)}), 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡")])}
 
-async def get_all_drivers_predict(**kwargs):
-    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(active=True)]}
+async def get_all_drivers_predict(dialog_manager: DialogManager, **kwargs):
+    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(active=True)], 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡")])}
 
 async def get_all_drivers_predict_second(dialog_manager: DialogManager, **kwargs):
     return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(active=True) if
-                                                                    i.driver_name not in [*dialog_manager.dialog_data.values()]]}
+                                                                    i.driver_name not in [*dialog_manager.dialog_data.values()]], 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡")])}
 
 async def get_all_drivers_predict_third(dialog_manager: DialogManager, **kwargs):
-    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(start=10, active=True) if i.driver_name not in [*dialog_manager.dialog_data.values()]]}
+    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(start=10, active=True) if i.driver_name not in [*dialog_manager.dialog_data.values()]], 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡")])}
 
 async def get_all_drivers_predict_fourth(dialog_manager: DialogManager, **kwargs):
-    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(start=15, active=True) if i.driver_name not in [*dialog_manager.dialog_data.values()]]}
+    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(start=15, active=True) if i.driver_name not in [*dialog_manager.dialog_data.values()]], 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡")])}
 
 async def predict_ending(dialog_manager: DialogManager, **kwargs):
     name_gp = await get_name_gp(await get_actual_gp_async())
@@ -209,7 +209,7 @@ async def select_second_driver(callback: CallbackQuery, button: Button, dialog_m
     dialog_manager.dialog_data['select4_engine'] = item.split(':')[-1].strip()
     if all(engine == dialog_manager.dialog_data['select1_engine'] for engine in
            [dialog_manager.dialog_data['select2_engine'], dialog_manager.dialog_data['select3_engine'], dialog_manager.dialog_data['select4_engine']]):
-        await callback.message.answer('В вашем выборе 4 одинаковых двигателя!\nВыберите другого гонщика или вернитесь назад, чтобы изменить выбор на прошлых шагах')
+        await callback.message.answer('<b>В вашем выборе 4 одинаковых двигателя!</b>\nВыберите другого гонщика или вернитесь назад, чтобы изменить выбор на прошлых шагах')
         dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         await dialog_manager.switch_to(UserSG.send_predict_second)
     else:
@@ -221,7 +221,7 @@ async def select_third_driver(callback: CallbackQuery, button: Button, dialog_ma
     values = [dialog_manager.dialog_data['select1_engine'], dialog_manager.dialog_data['select2_engine'], dialog_manager.dialog_data['select3_engine'],
               dialog_manager.dialog_data['select4_engine'], dialog_manager.dialog_data['select5_engine']]
     if any(values.count(x) == 4 for x in set(values)):
-        await callback.message.answer('В вашем выборе 4 одинаковых двигателя!\nВыберите другого гонщика или вернитесь назад, чтобы изменить выбор на прошлых шагах')
+        await callback.message.answer('<b>В вашем выборе 4 одинаковых двигателя!</b>\nВыберите другого гонщика или вернитесь назад, чтобы изменить выбор на прошлых шагах')
         dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         await dialog_manager.switch_to(UserSG.send_predict_third)
     else:
@@ -233,7 +233,7 @@ async def select_fourth_driver(callback: CallbackQuery, button: Button, dialog_m
     values = [dialog_manager.dialog_data['select1_engine'], dialog_manager.dialog_data['select2_engine'], dialog_manager.dialog_data['select3_engine'],
               dialog_manager.dialog_data['select4_engine'], dialog_manager.dialog_data['select5_engine'], dialog_manager.dialog_data['select6_engine']]
     if any(values.count(x) == 4 for x in set(values)):
-        await callback.message.answer('В вашем выборе 4 одинаковых двигателя!\nВыберите другого гонщика или вернитесь назад, чтобы изменить выбор на прошлых шагах')
+        await callback.message.answer('<b>В вашем выборе 4 одинаковых двигателя!</b>\nВыберите другого гонщика или вернитесь назад, чтобы изменить выбор на прошлых шагах')
         dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         await dialog_manager.switch_to(UserSG.send_predict_fourth)
     else:

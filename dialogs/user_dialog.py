@@ -104,7 +104,10 @@ user_dialog = Dialog(
         state=UserSG.feedback,
     ),
     Window(
-        Const(text='Выберите <b>команду</b>:'),
+        Format(text='Выберите <b>команду</b>:\n'
+                    'Не забывайте про правило трёх двигателей\n'
+                    'Сейчас у Вас выбраны:\n'
+                    '{engines}'),
         Group(
             Select(
                 Format('{item}'),
@@ -124,7 +127,10 @@ user_dialog = Dialog(
         getter=get_all_teams_predict
     ),
     Window(
-        Const(text='Выберите <b>двигатель</b>:'),
+        Format(text='Выберите <b>двигатель</b>:\n'
+                    'Не забывайте про правило трёх двигателей\n'
+                    'Сейчас у Вас выбраны:\n'
+                    '{engines}'),
         Group(
             Select(
                 Format('{item}'),
@@ -145,7 +151,10 @@ user_dialog = Dialog(
         getter=get_all_engines_predict
     ),
     Window(
-        Const(text='Выберите <b>первого пилота</b>:'),
+        Format(text='Выберите <b>первого пилота</b>:\n'
+                    'Не забывайте про правило трёх двигателей\n'
+                    'Сейчас у Вас выбраны:\n'
+                    '{engines}'),
         Group(
             Select(
                 Format('{item[0]}'),
@@ -166,7 +175,10 @@ user_dialog = Dialog(
         getter=get_all_drivers_predict
     ),
     Window(
-        Const(text='Выберите <b>второго пилота</b>:'),
+        Format(text='Выберите <b>второго пилота</b>:\n'
+                    'Не забывайте про правило трёх двигателей\n'
+                    'Сейчас у Вас выбраны:\n'
+                    '{engines}'),
         Group(
             Select(
                 Format('{item[0]}'),
@@ -187,7 +199,10 @@ user_dialog = Dialog(
         getter=get_all_drivers_predict_second
     ),
     Window(
-        Const(text='Выберите <b>третьего пилота</b>:'),
+        Format(text='Выберите <b>третьего пилота</b>:\n'
+                    'Не забывайте про правило трёх двигателей\n'
+                    'Сейчас у Вас выбраны:\n'
+                    '{engines}'),
         Group(
             Select(
                 Format('{item[0]}'),
@@ -208,7 +223,10 @@ user_dialog = Dialog(
         getter=get_all_drivers_predict_third
     ),
     Window(
-        Const(text='Выберите <b>четвертого пилота</b>:'),
+        Format(text='Выберите <b>четвертого пилота</b>:\n'
+                    'Не забывайте про правило трёх двигателей\n'
+                    'Сейчас у Вас выбраны:\n'
+                    '{engines}'),
         Group(
             Select(
                 Format('{item[0]}'),
