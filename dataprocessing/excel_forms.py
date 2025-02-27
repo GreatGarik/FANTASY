@@ -621,7 +621,7 @@ async def championship_team_full():
     return output
 
 async def process_calculation_command(data):
-    df = pd.DataFrame(list(data.items()), columns=['Ключ', 'Значение'])
+    df = pd.DataFrame(list(data.items()), columns=['Участник', 'Значение'])
     # Сохраняем книгу в BytesIO
     output = BytesIO()
     # Сохранение DataFrame в Excel-файл
