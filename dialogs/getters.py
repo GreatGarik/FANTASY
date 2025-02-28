@@ -15,7 +15,7 @@ from dataprocessing.excel_forms import entry_list, last_stage, process_champions
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 from database.database import get_users_async, check_res, \
     clear_results, get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async, change_user_banned_status, delete_team_from_db, add_scheduled_message
+    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async, change_user_banned_status, delete_team_from_db, add_scheduled_message, get_users_async_no_team
 from .dop_functions import send_message
 from scheduler.scheduler import scheduler, schedule_message
 
@@ -74,6 +74,7 @@ class AdminSG(StatesGroup):
     send_message = State()
     exit_admin = State()
     send_all = State()
+    send_no_team = State()
 
 current_os = platform.system()
 
@@ -127,7 +128,25 @@ async def send_all(message: Message,widget: ManagedTextInput,dialog_manager: Dia
     dialog_manager.dialog_data.clear()
     await dialog_manager.switch_to(AdminSG.send_message)
 
+async def send_no_team(message: Message,widget: ManagedTextInput,dialog_manager: DialogManager,text: str) -> None:
+    bot = dialog_manager.middleware_data.get('bot')
 
+    users = await get_users_async_no_team()
+    # Создаем список задач
+    tasks = []
+    for user in users:
+        tasks.append(send_message(user.id_telegram, text, bot))
+        # Если количество задач достигло 25, ждем их завершения
+        if len(tasks) == 25:
+            await asyncio.gather(*tasks)
+            tasks = []  # Сбрасываем список задач
+            await asyncio.sleep(1)  # Пауза в 1 секунду, чтобы не превышать 25 сообщений в секунду
+        # Отправляем оставшиеся сообщения, если они есть
+    if tasks:
+        await asyncio.gather(*tasks)
+
+    dialog_manager.dialog_data.clear()
+    await dialog_manager.switch_to(AdminSG.send_message)
 
 
 async def found_users(dialog_manager: DialogManager, **kwargs):
@@ -710,6 +729,9 @@ async def button_tables(callback: CallbackQuery, button: Button, dialog_manager:
 
 async def button_send_all(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.send_all)
+
+async def button_send_no_team(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.send_no_team)
 
 
 async def button_stage(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):

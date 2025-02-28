@@ -361,6 +361,13 @@ async def get_users_async(id_telegram=None):
                 return result.scalars().all()
 
 
+async def get_users_async_no_team(id_telegram=None):
+    async with async_session() as session:
+        async with session.begin():
+            result = await session.execute(select(User).where(User.banned == False, User.number.is_(None)))
+            return result.scalars().all()
+
+
 
 # Проверка просчитаны ли уже результаты на заданный GP
 async def check_res(gp):

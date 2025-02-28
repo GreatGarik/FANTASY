@@ -98,6 +98,11 @@ admin_dialog = Dialog(
                 on_click=button_find_user
             ),
             Button(
+                text=Const('Отправить участникам без команды'),
+                id='button_send_no_team',
+                on_click=button_send_no_team
+            ),
+            Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
                 on_click=button_menu)
@@ -122,6 +127,19 @@ admin_dialog = Dialog(
             on_success=send_all,
         ),
         state=AdminSG.send_all,
+    ),
+    Window(
+        Const(text='Введите сообщение для отправки'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_send_message',
+            on_click=cancel_send_message)
+        ,
+        TextInput(
+            id='send_no_team',
+            on_success=send_no_team,
+        ),
+        state=AdminSG.send_no_team,
     ),
 
     Window(
