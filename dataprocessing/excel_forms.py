@@ -435,6 +435,17 @@ async def process_championship_full():
 
             img.anchor = f'E{ws.max_row}'  # Устанавливаем позицию изображения
             ws.add_image(img)
+        else:
+            img_path = os.path.join('logos', 'personal.png')  # Укажите путь к вашему изображению
+        img = Image(img_path)
+        # Указываем процент изменения размера
+        resize_percentage = 46  # % от оригинального размера
+        # Рассчитываем новый размер
+        img.width = int(img.width * (resize_percentage / 100))
+        img.height = int(img.height * (resize_percentage / 100))
+
+        img.anchor = f'E{ws.max_row}'  # Устанавливаем позицию изображения
+        ws.add_image(img)
 
     # Устанавливаем выравнивание по центру для нужных колонок
     center_alignment = Alignment(horizontal='center', vertical='center')
