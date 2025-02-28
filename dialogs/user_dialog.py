@@ -139,7 +139,7 @@ user_dialog = Dialog(
                 items='engines_for_select',
                 on_click=select_engine,
             ),
-            Back(Const('◀️ Назад'), id='back'),
+            Back(Const('◀️ Назад'), id='back', on_click=back_select_engine),
             Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
@@ -163,7 +163,7 @@ user_dialog = Dialog(
                 items='drivers_for_select',
                 on_click=select_first_driver,
             ),
-            Back(Const('◀️ Назад'), id='back'),
+            Back(Const('◀️ Назад'), id='back', on_click=back_select_first),
             Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
@@ -187,7 +187,7 @@ user_dialog = Dialog(
                 items='drivers_for_select',
                 on_click=select_second_driver,
             ),
-            Back(Const('◀️ Назад'), id='back'),
+            Back(Const('◀️ Назад'), id='back', on_click=back_select_second),
             Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
@@ -211,7 +211,7 @@ user_dialog = Dialog(
                 items='drivers_for_select',
                 on_click=select_third_driver,
             ),
-            Back(Const('◀️ Назад'), id='back'),
+            Back(Const('◀️ Назад'), id='back', on_click=back_select_third),
             Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
@@ -235,7 +235,7 @@ user_dialog = Dialog(
                 items='drivers_for_select',
                 on_click=select_fourth_driver,
             ),
-            Back(Const('◀️ Назад'), id='back'),
+            Back(Const('◀️ Назад'), id='back', on_click=back_select_fourth),
             Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',

@@ -200,10 +200,20 @@ async def select_engine(callback: CallbackQuery, button: Button, dialog_manager:
     dialog_manager.dialog_data['select2_engine'] = item.split()[-1].strip()
     await dialog_manager.switch_to(UserSG.send_predict_first)
 
+async def back_select_engine(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    dialog_manager.dialog_data.pop('selected_team', None)
+    dialog_manager.dialog_data.pop('select1_engine', None)
+
 async def select_first_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, item: str):
     dialog_manager.dialog_data['first_driver'] = item.split(':')[0].strip()
     dialog_manager.dialog_data['select3_engine'] = item.split(':')[-1].strip()
     await dialog_manager.switch_to(UserSG.send_predict_second)
+
+
+async def back_select_first(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    dialog_manager.dialog_data.pop('selected_engine', None)
+    dialog_manager.dialog_data.pop('select2_engine', None)
+
 
 async def select_second_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, item: str):
     dialog_manager.dialog_data['select4_engine'] = item.split(':')[-1].strip()
@@ -215,6 +225,12 @@ async def select_second_driver(callback: CallbackQuery, button: Button, dialog_m
     else:
         dialog_manager.dialog_data['second_driver'] = item.split(':')[0].strip()
         await dialog_manager.switch_to(UserSG.send_predict_third)
+
+async def back_select_second(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    dialog_manager.dialog_data.pop('first_driver', None)
+    dialog_manager.dialog_data.pop('select3_engine', None)
+    dialog_manager.dialog_data.pop('select4_engine', None)
+
 
 async def select_third_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, item: str):
     dialog_manager.dialog_data['select5_engine'] = item.split(':')[-1].strip()
@@ -228,6 +244,11 @@ async def select_third_driver(callback: CallbackQuery, button: Button, dialog_ma
         dialog_manager.dialog_data['third_driver'] = item.split(':')[0].strip()
         await dialog_manager.switch_to(UserSG.send_predict_fourth)
 
+async def back_select_third(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    dialog_manager.dialog_data.pop('second_driver', None)
+    dialog_manager.dialog_data.pop('select4_engine', None)
+    dialog_manager.dialog_data.pop('select5_engine', None)
+
 async def select_fourth_driver(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, item: str):
     dialog_manager.dialog_data['select6_engine'] = item.split(':')[-1].strip()
     values = [dialog_manager.dialog_data['select1_engine'], dialog_manager.dialog_data['select2_engine'], dialog_manager.dialog_data['select3_engine'],
@@ -239,6 +260,11 @@ async def select_fourth_driver(callback: CallbackQuery, button: Button, dialog_m
     else:
         dialog_manager.dialog_data['fourth_driver'] = item.split(':')[0].strip()
         await dialog_manager.switch_to(UserSG.send_predict_gap)
+
+async def back_select_fourth(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    dialog_manager.dialog_data.pop('third_driver', None)
+    dialog_manager.dialog_data.pop('select5_engine', None)
+    dialog_manager.dialog_data.pop('select6_engine', None)
 
 async def select_gap(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
     dialog_manager.dialog_data['gap'] = int(text)
