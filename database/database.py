@@ -5,7 +5,7 @@ from aiogram.utils.chat_member import USERS
 from certifi import where
 from datetime import datetime
 from sqlalchemy import create_engine, select, update, case, func, delete, asc, desc
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, selectinload
 from database.models import *
 from config_data.config import Config, load_config
 from sqlalchemy.exc import NoResultFound
@@ -731,6 +731,39 @@ async def get_all_teams() -> List[Tuple[int, str]]:
             result = await session.execute(select(Team.name, Team.id).order_by(Team.name))
             teams = result.all()
             return teams
+
+
+async def get_all_teams_players():
+    async with async_session() as session:
+        async with session.begin():
+            # Выполняем запрос для получения команд с участниками
+            result = await session.execute(
+                select(Team)
+                .options(selectinload(Team.first_user), selectinload(Team.second_user), selectinload(Team.third_user))
+                .order_by(Team.name)  # Сортируем команды по имени
+            )
+
+            teams = result.scalars().all()  # Получаем все команды
+
+            # Формируем список команд с участниками
+            teams_with_members = []
+            for team in teams:
+                members = []
+                if team.first_user:
+                    members.append({'name': team.first_user.name, 'number': team.first_user.number})
+                if team.second_user:
+                    members.append({'name': team.second_user.name, 'number': team.second_user.number})
+                if team.third_user:
+                    members.append({'name': team.third_user.name, 'number': team.third_user.number})
+
+                teams_with_members.append({
+                    'team_name': team.name,
+                    'members': members
+                })
+
+            return teams_with_members
+
+
 
 async def update_team(team_id: int, **kwargs):
     async with async_session() as session:

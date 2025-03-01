@@ -11,7 +11,7 @@ from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
 from asyncpg.pgproto.pgproto import timedelta
 
 from dataprocessing.excel_forms import entry_list, last_stage, process_championship_full, championship_team_full, \
-    process_calculation_command, process_all_predicts
+    process_calculation_command, process_all_predicts, process_all_teams
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 from database.database import get_users_async, check_res, \
     clear_results, get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
@@ -423,6 +423,14 @@ async def button_calculate(callback: CallbackQuery, button: Button, dialog_manag
         output.close()  # Закрываем объект после использования
 
     await dialog_manager.switch_to(AdminSG.stage)
+
+async def button_get_all_teams(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    output = await process_all_teams()
+    await callback.message.answer_document(
+        document=BufferedInputFile(output.read(), filename='team_list.xlsx')
+    )
+    output.close()  # Закрываем объект после использования
+    await dialog_manager.switch_to(AdminSG.team_management)
 
 
 async def loading_f1_results(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):

@@ -613,6 +613,11 @@ admin_dialog = Dialog(
                 on_click=button_add_team)
             ,
             Button(
+                text=Const('Получить список команд'),
+                id='button_get_all_teams',
+                on_click=button_get_all_teams)
+            ,
+            Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
                 on_click=button_menu)

@@ -6,7 +6,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.drawing.image import Image
 from io import BytesIO
-from database.database import get_actual_gp_async, show_result, show_points_all, get_user_team, show_points_team_all, get_teams_fonts_colors, get_name_gp, get_maximus, get_all_users, get_predictions_by_gp
+from database.database import get_actual_gp_async, show_result, show_points_all, get_user_team, show_points_team_all, get_teams_fonts_colors, get_name_gp, get_maximus, get_all_users, get_predictions_by_gp, get_all_teams_players
 
 async def entry_list():
     users_list: List[dict] = await get_all_users()
@@ -654,5 +654,49 @@ async def process_all_predicts():
 
     # Сохранение DataFrame в Excel-файл
     #df.to_excel(output, index=False)
+    output.seek(0)  # Перемещаем указатель в начало
+    return output
+
+
+async def process_all_teams():
+    data = await get_all_teams_players()
+    # Создаем список для хранения данных
+    rows = []
+
+    # Проходим по каждой команде и ее участникам
+    for team in data:
+        team_name = team['team_name']
+        members = team['members']
+
+        # Получаем до трех участников
+        member1_name = members[0]['name'] if len(members) > 0 else ''
+        member1_number = members[0]['number'] if len(members) > 0 else ''
+
+        member2_name = members[1]['name'] if len(members) > 1 else ''
+        member2_number = members[1]['number'] if len(members) > 1 else ''
+
+        member3_name = members[2]['name'] if len(members) > 2 else ''
+        member3_number = members[2]['number'] if len(members) > 2 else ''
+
+        # Добавляем строку с данными
+        rows.append({
+            'Team Name': team_name,
+            'Member 1': member1_name,
+            'Num1': member1_number,
+            'Member 2': member2_name,
+            'Num2': member2_number,
+            'Member 3': member3_name,
+            'Num3': member3_number
+        })
+
+    # Создаем DataFrame из списка строк
+    df = pd.DataFrame(rows)
+
+    # Заменяем None на пустую строку для корректного сохранения в Excel
+    df.fillna('', inplace=True)
+
+    # Сохраняем DataFrame в Excel
+    output = BytesIO()
+    df.to_excel(output, index=False)
     output.seek(0)  # Перемещаем указатель в начало
     return output
