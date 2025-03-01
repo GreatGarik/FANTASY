@@ -72,6 +72,11 @@ admin_dialog = Dialog(
                 on_click=button_show_users)
             ,
             Button(
+                text=Const('Последние зарегистрированные пользователи'),
+                id='button_new_users',
+                on_click=button_new_users)
+            ,
+            Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
                 on_click=button_menu)

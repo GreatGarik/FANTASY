@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from aiogram.utils.chat_member import USERS
 from certifi import where
 from datetime import datetime
-from sqlalchemy import create_engine, select, update, case, func, delete, asc
+from sqlalchemy import create_engine, select, update, case, func, delete, asc, desc
 from sqlalchemy.orm import sessionmaker
 from database.models import *
 from config_data.config import Config, load_config
@@ -361,7 +361,27 @@ async def get_users_async(id_telegram=None):
                 return result.scalars().all()
 
 
-async def get_users_async_no_team(id_telegram=None):
+async def get_new_users_async():
+    async with async_session() as session:
+        async with session.begin():
+            # Создаем запрос для получения всех пользователей,
+            query = (
+                select(User)
+                .order_by(User.id)  # Упорядочиваем по id
+            )
+            result = await session.execute(query)
+            users = result.scalars().all()  # Получаем всех пользователей
+
+            # Если пользователей нет, возвращаем None
+            if not users:
+                return None
+
+            # Возвращаем последние 10 пользователей в виде списка словарей
+            last_10_users = users[-10:]  # Получаем последние 10 пользователей
+            return [{'id': user.id, 'id_telegram': user.id_telegram, 'name': user.name, 'number': user.number if user.number else 'N/A'} for user in last_10_users]
+
+
+async def get_users_async_no_team():
     async with async_session() as session:
         async with session.begin():
             result = await session.execute(select(User).where(User.banned == False, User.number.is_(None)))
