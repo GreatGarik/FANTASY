@@ -418,7 +418,7 @@ async def button_calculate(callback: CallbackQuery, button: Button, dialog_manag
     else:
         output = await process_calculation_command(await calculation_drivers(gp))
         await callback.message.answer_document(
-            document=BufferedInputFile(output.read(), filename='gp_results.xlsx')
+            document=BufferedInputFile(output.read(), filename=f'gp_results_{await get_name_gp(gp)}.xlsx')
         )
         output.close()  # Закрываем объект после использования
 
