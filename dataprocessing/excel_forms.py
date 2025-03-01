@@ -4,6 +4,7 @@ from typing import List
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image
 from io import BytesIO
 from database.database import get_actual_gp_async, show_result, show_points_all, get_user_team, show_points_team_all, get_teams_fonts_colors, get_name_gp, get_maximus, get_all_users, get_predictions_by_gp, get_all_teams_players
@@ -663,7 +664,7 @@ async def process_all_teams():
     # Создаем список для хранения данных
     rows = []
 
-    # Проходим по каждой команде и ее участникам
+    # Проходим по каждой команде и ее участниками
     for team in data:
         team_name = team['team_name']
         members = team['members']
@@ -695,8 +696,27 @@ async def process_all_teams():
     # Заменяем None на пустую строку для корректного сохранения в Excel
     df.fillna('', inplace=True)
 
-    # Сохраняем DataFrame в Excel
+    # Создаем Excel файл с помощью openpyxl
     output = BytesIO()
-    df.to_excel(output, index=False)
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False)
+
+        # Получаем доступ к рабочей книге и листу
+        workbook = writer.book
+        worksheet = writer.sheets['Sheet1']
+
+        # Устанавливаем ширину столбцов по содержимому
+        for column in worksheet.columns:
+            max_length = 0
+            column = [cell for cell in column]
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 2)  # Добавляем немного отступа
+            worksheet.column_dimensions[get_column_letter(column[0].column)].width = adjusted_width
+
     output.seek(0)  # Перемещаем указатель в начало
     return output
