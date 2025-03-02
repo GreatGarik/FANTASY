@@ -81,7 +81,7 @@ async def select_team_engine(pilot):
 async def select_all_teams_engines():
     async with async_session() as session:
         async with session.begin():
-            statement = select(Driver).where(Driver.driver_nextgp == True)
+            statement = select(Driver).where(Driver.driver_nextgp == True).order_by(Driver.driver_position)
             result = await session.execute(statement)
             drivers = result.scalars().all()
 

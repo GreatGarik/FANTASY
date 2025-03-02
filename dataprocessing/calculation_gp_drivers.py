@@ -6,7 +6,7 @@ from database.database import get_predict, add_result, get_result, add_points, g
 async def calculation_drivers(gp):
     deltas = {0: 10, 1: 7, 2: 5, 3: 3, 4: 2, 5: 1}
     predicts_from_db = await get_predict(gp)
-    results_predict_gp = await get_res_gp()
+    results_predict_gp, results_gp_drivers_by_stage = await get_res_gp()
 
     drivers = await select_drivers_async(active=True)
     names = [i.driver_name for i in drivers]
@@ -62,7 +62,7 @@ async def calculation_drivers(gp):
             max_not_best.extend([0] * (4 - len(max_not_best)))
 
         max1_best, max2_best, max3_best = sorted(max_best, reverse=True)
-        print(max_not_best)
+        #print(max_not_best)
         max1_not_best, max2_not_best, max3_not_best, max4_not_best = sorted(max_not_best, reverse=True)
 
         delta_gap = abs(results_predict_gp.get('gap', 4000) - predict.gap)
@@ -100,4 +100,4 @@ async def calculation_drivers(gp):
     # Добавляем максимумы к GP
     await add_maximus(gp, results_predict_gp)
 
-    return results_predict_gp
+    return results_predict_gp, results_gp_drivers_by_stage

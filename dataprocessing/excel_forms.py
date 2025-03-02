@@ -633,11 +633,85 @@ async def championship_team_full():
     return output
 
 async def process_calculation_command(data):
-    df = pd.DataFrame(list(data.items()), columns=['Участник', 'Значение'])
+    # Разделяем данные на два словаря
+    total_data = data[0]
+    detailed_data = data[1]
+
+    # Создаем DataFrame для общего количества
+    total_df = pd.DataFrame(list(total_data.items()), columns=['Участник', 'Total'])
+
+    # Создаем DataFrame для детализированных данных
+    detailed_df = pd.DataFrame.from_dict(detailed_data, orient='index').reset_index()
+    detailed_df.rename(columns={'index': 'Участник'}, inplace=True)
+
+    # Объединяем два DataFrame по столбцу 'Участник'
+    final_df = pd.merge(total_df, detailed_df, on='Участник', how='outer')
+
+    # Определяем порядок строк
+    order = []
+
+    # Добавляем участников, не начинающиеся с 'team' и 'engine'
+    for key in detailed_data.keys():
+        if not key.startswith('team') and not key.startswith('engine'):
+            order.append(key)
+
+    # Добавляем пустую строку
+    order.append('')
+
+    # Добавляем участников, начинающиеся с 'team'
+    for key in detailed_data.keys():
+        if key.startswith('team'):
+            order.append(key)
+
+    # Добавляем пустую строку
+    order.append('')
+
+    # Добавляем участников, начинающиеся с 'engine'
+    for key in detailed_data.keys():
+        if key.startswith('engine'):
+            order.append(key)
+
+    # Добавляем пустую строку
+    order.append('')
+
+    # Добавляем MAX1, MAX2, MAX3
+    order.extend(['MAX1', 'MAX2', 'MAX3'])
+
+    # Создаем новый DataFrame с заданным порядком
+    ordered_df = final_df.set_index('Участник').reindex(order).reset_index()
+
     # Сохраняем книгу в BytesIO
     output = BytesIO()
-    # Сохранение DataFrame в Excel-файл
-    df.to_excel(output, index=False)
+    # Создаем Excel-файл
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        ordered_df.to_excel(writer, index=False, sheet_name='Sheet1')
+
+        # Получаем доступ к рабочей книге и листу
+        workbook = writer.book
+        worksheet = writer.sheets['Sheet1']
+
+        # Делаем заголовки жирными
+        for cell in worksheet["1:1"]:
+            cell.font = cell.font.copy(bold=True)
+
+        # Делаем первый и второй столбцы жирными
+        for row in range(2, len(ordered_df) + 2):  # Начинаем с 2, так как 1 - это заголовок
+            worksheet.cell(row=row, column=1).font = worksheet.cell(row=row, column=1).font.copy(bold=True)
+            worksheet.cell(row=row, column=2).font = worksheet.cell(row=row, column=2).font.copy(bold=True)
+
+        # Устанавливаем ширину столбцов по содержимому
+        for column in worksheet.columns:
+            max_length = 0
+            column = [cell for cell in column]
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            worksheet.column_dimensions[get_column_letter(column[0].column)].width = adjusted_width
+
     output.seek(0)  # Перемещаем указатель в начало
     return output
 

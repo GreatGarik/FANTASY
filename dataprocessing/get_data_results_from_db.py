@@ -15,19 +15,33 @@ async def get_res_gp():
     results_f1 = await get_grandprix_results(await get_actual_gp_async())
     teams_engines_dict = await select_all_teams_engines()
     results_gp = {}
+    results_gp_drivers_by_stage = {} # Очки по частям, гонки, спринт, квалификация, лучший круг
+
+    for key, value in teams_engines_dict.items():
+        #results_gp.setdefault(key, 0)
+        results_gp_drivers_by_stage.setdefault(key, {'sprint': 0, 'quali': 0, 'race': 0, 'bestlap': 0})
+        results_gp_drivers_by_stage.setdefault('team_' + value[0], {'sprint': 0, 'quali': 0, 'race': 0, 'bestlap': 0})
+        results_gp_drivers_by_stage.setdefault('engine_' + value[1], {'sprint': 0, 'quali': 0, 'race': 0, 'bestlap': 0})
+
 
     if results_f1['race_result']:
         for num, line in enumerate(results_f1['race_result'].split('\n'), 1):
             if not line.startswith('gap') and not line.startswith('laps') and not line.startswith('bestlap'):
                 results_gp.setdefault(line.strip(), POINTS_RACE[num])
+                results_gp_drivers_by_stage[line.strip()]['race'] += POINTS_RACE.get(num, 0) # по частям
                 team, engine = teams_engines_dict.get(line.strip())
                 results_gp['team_' + team] = results_gp.get('team_' + team, 0) + POINTS_RACE_TE.get(num, 0)
+                results_gp_drivers_by_stage['team_' + team]['race'] += POINTS_RACE_TE.get(num, 0)  # по частям
                 results_gp['engine_' + engine] = results_gp.get('engine_' + engine, 0) + POINTS_RACE_TE.get(num, 0)
+                results_gp_drivers_by_stage['engine_' + engine]['race'] += POINTS_RACE_TE.get(num, 0)  # по частям
             elif line.startswith('bestlap'):
                 results_gp[line.split(':')[-1].strip()] = results_gp.get(line.split(':')[-1].strip(), 0) + 3
+                results_gp_drivers_by_stage[line.split(':')[-1].strip()]['bestlap'] = 3  # по частям
                 team, engine = teams_engines_dict.get(line.split(':')[-1].strip())
                 results_gp['team_' + team] = results_gp.get('team_' + team, 0) + 2
+                results_gp_drivers_by_stage['team_' + team]['bestlap'] = 2  # по частям
                 results_gp['engine_' + engine] = results_gp.get('engine_' + engine, 0) + 1
+                results_gp_drivers_by_stage['engine_' + engine]['bestlap'] = 1  # по частям
             else:
                 key, value = line.strip().split(':')
                 results_gp.setdefault(key, int(value))
@@ -35,19 +49,25 @@ async def get_res_gp():
     if results_f1['quali_result']:
         for num, line in enumerate(results_f1['quali_result'].split('\n'), 1):
             results_gp[line.strip()] = results_gp.get(line.strip(), 0) + POINTS_QUALI.get(num, 0)
+            results_gp_drivers_by_stage[line.strip()]['quali'] += POINTS_QUALI.get(num, 0)  # по частям
             team, engine = teams_engines_dict.get(line.strip())
             results_gp['team_' + team] = results_gp.get('team_' + team, 0) + POINTS_QUALI_TE.get(num, 0)
+            results_gp_drivers_by_stage['team_' + team]['quali'] += POINTS_QUALI_TE.get(num, 0)  # по частям
             results_gp['engine_' + engine] = results_gp.get('engine_' + engine, 0) + POINTS_QUALI_TE.get(num, 0)
+            results_gp_drivers_by_stage['engine_' + engine]['quali'] += POINTS_QUALI_TE.get(num, 0)  # по частям
 
     if results_f1['sprint_result']:
         for num, line in enumerate(results_f1['sprint_result'].split('\n'), 1):
             results_gp[line.strip()] = results_gp.get(line.strip(), 0) + POINTS_SPRINT.get(num, 0)
+            results_gp_drivers_by_stage[line.strip()]['sprint'] += POINTS_SPRINT.get(num, 0)  # по частям
             team, engine = teams_engines_dict.get(line.strip())
             results_gp['team_' + team] = results_gp.get('team_' + team, 0) + POINTS_SPRINT_TE.get(num, 0)
+            results_gp_drivers_by_stage['team_' + team]['sprint'] += POINTS_SPRINT_TE.get(num, 0)  # по частям
             results_gp['engine_' + engine] = results_gp.get('engine_' + engine, 0) + POINTS_SPRINT_TE.get(num, 0)
+            results_gp_drivers_by_stage['engine_' + engine]['sprint'] += POINTS_SPRINT_TE.get(num, 0)  # по частям
 
-
-    return results_gp
+    #print(results_gp_drivers_by_stage)
+    return results_gp, results_gp_drivers_by_stage
 
 if __name__ == '__main__':
     print(asyncio.run(get_res_gp()))
