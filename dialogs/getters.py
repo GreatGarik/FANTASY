@@ -188,8 +188,9 @@ async def button_unban_user(callback: CallbackQuery, button: Button,
 
 
 async def new_name_user(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str) -> None:
-    await change_user_name_async(int(dialog_manager.dialog_data['user_tg_id']), text)
-    await message.answer(f'Вы изменили имя на {text}')
+    name, lastname = text.split()
+    await change_user_name_async(int(dialog_manager.dialog_data['user_tg_id']), name.capitalize() + ' ' + lastname.upper())
+    await message.answer(f'Вы изменили имя на {name.capitalize() + ' ' + lastname.upper()}')
     dialog_manager.dialog_data.clear()
     await dialog_manager.switch_to(AdminSG.users_menu)
 
