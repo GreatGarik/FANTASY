@@ -11,7 +11,7 @@ async def send_message(user_id: int, text: str, bot: Bot):
         format=u'%(filename)s:%(lineno)d #%(levelname)-8s '
                u'[%(asctime)s] - %(name)s - %(message)s')
     try:
-        await bot.send_message(user_id, text)
+        await bot.send_message(user_id, text, disable_web_page_preview=True)
     except Exception as e:
         logger.warning(f'{e}, {user_id}')
 
