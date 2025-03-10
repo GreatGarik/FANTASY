@@ -388,6 +388,7 @@ async def process_championship_full():
         cell.font = header_font
         cell.fill = header_fill
         cell.border = thin_border
+        cell.alignment = Alignment(horizontal='center', vertical='center')
         # Объединяем ячейки в третьем и четвертом столбцах (C и D)
         ws.merge_cells(start_row=ws.max_row, start_column=4, end_row=ws.max_row, end_column=5)
     teams_fonts: dict = await get_teams_fonts_colors()
@@ -403,7 +404,8 @@ async def process_championship_full():
             if cell.column_letter in ['A', 'B', 'C', 'D', 'E']:
                 cell.font = wight_font  # Устанавливаем белый шрифт
             else:
-                cell.font = Font(name='Formula1 Display Regular', size=11, bold=False, color='FFFFFF')
+                cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='FFFFFF')
+                cell.alignment = Alignment(horizontal='center', vertical='center')
             cell.fill = black_fill  # Устанавливаем черный фон
 
         # Устанавливаем фон для ячейки для команд
@@ -416,12 +418,12 @@ async def process_championship_full():
             font_number = Font(name=team['number_font'], size=14, bold=True, italic=team['number_italic'],
                                color=team['number_color'])
             ws.cell(row=ws.max_row, column=2).font = font_number
-            ws.cell(row=ws.max_row, column=3).font = font
-            ws.cell(row=ws.max_row, column=4).font = font
+            #ws.cell(row=ws.max_row, column=3).font = font
+            #ws.cell(row=ws.max_row, column=4).font = font
             ws.cell(row=ws.max_row, column=2).fill = fill
-            ws.cell(row=ws.max_row, column=3).fill = fill
-            ws.cell(row=ws.max_row, column=4).fill = fill
-            ws.cell(row=ws.max_row, column=5).fill = fill
+            #ws.cell(row=ws.max_row, column=3).fill = fill
+            #ws.cell(row=ws.max_row, column=4).fill = fill
+            #ws.cell(row=ws.max_row, column=5).fill = fill
             # Вставляем изображение в четвертый столбец (колонка Е)
             if team['logo']:
                 img_path = os.path.join('logos', team['logo'])  # Укажите путь к вашему изображению
