@@ -552,6 +552,7 @@ async def championship_team_full():
         cell.font = header_font
         cell.fill = header_fill
         cell.border = thin_border
+        cell.alignment = Alignment(horizontal='center', vertical='center')
         # Объединяем ячейки в третьем и четвертом столбцах (C и D)
         ws.merge_cells(start_row=ws.max_row, start_column=2, end_row=ws.max_row, end_column=3)
     teams_fonts: dict = await get_teams_fonts_colors()
@@ -564,11 +565,11 @@ async def championship_team_full():
         wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
         black_fill = PatternFill(start_color='000001', end_color='000001', fill_type='solid')  # Черный цве
         for cell in ws[ws.max_row]:
-            cell.alignment = Alignment(vertical='center')
+            cell.alignment = Alignment(horizontal='center', vertical='center')
             # if cell.column_letter in ['A', 'B', 'C', 'D', 'E']:
             #    cell.font = wight_font  # Устанавливаем белый шрифт
 
-            cell.font = Font(name='Formula1 Display Regular', size=11, bold=False, color='FFFFFF')
+            cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='FFFFFF')
             cell.fill = black_fill  # Устанавливаем черный фон
 
         # Устанавливаем фон для ячейки для команд
