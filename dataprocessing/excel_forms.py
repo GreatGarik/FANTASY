@@ -572,6 +572,7 @@ async def championship_team_full():
             cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='FFFFFF')
             cell.fill = black_fill  # Устанавливаем черный фон
 
+
         # Устанавливаем фон для ячейки для команд
         if teams_fonts.get(entry['Team'], None):
             team = teams_fonts[entry['Team']]
