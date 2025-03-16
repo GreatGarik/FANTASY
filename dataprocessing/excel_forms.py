@@ -317,15 +317,17 @@ async def last_stage():
     return output
 
 def sort_points(entry):
-    points =  [entry[key] if entry[key] else 0 for key in entry if key not in ['User', 'Team', 'Number', 'CH.PTS']]
+    points =  [entry[key] if entry[key] else 0 for key in entry if key not in ['User', 'Team', 'Number', 'CH.PTS'] and not key.startswith('place')]
+    places = [-entry[key] if entry[key] else -10000000 for key in entry if key.startswith('place')]
     total_points = sum(points)
     sorted_point  = sorted(points, reverse=True)
+    sorted_places = sorted(places, reverse=True)
     # Находим максимальное значение
     max_value = max(points) if points else None
 
     # Находим первый индекс максимального значения
     first_max_index = points.index(max_value) if max_value in points else -1
-    return total_points, sorted_point, -first_max_index
+    return total_points, sorted_point, -first_max_index, sorted_places
 
 async def process_championship_full():
     points_list: List[dict] = await show_points_all(datetime.now().year)
@@ -336,7 +338,7 @@ async def process_championship_full():
 
     for entry in points_list:
         entry['CH.PTS'] = sum(
-            entry[key] for key in entry if key != 'User' and key != 'Team' and key != 'Number' and entry[key])
+            entry[key] for key in entry if key != 'User' and key != 'Team' and key != 'Number' and (not key.startswith('place')) and entry[key])
 
     # Создаем новый Excel файл
     wb = Workbook()
@@ -370,7 +372,7 @@ async def process_championship_full():
     # Заголовки таблицы
     header = ['POS'] + ['№'] + ['Driver'] + ['Team'] + [''] + [key for key in points_list[0] if
                                                                key not in ['User', 'CH.PTS', 'Number', 'Team',
-                                                                           'Image']] + ['CH.PTS']
+                                                                           'Image'] and not key.startswith('place')] + ['CH.PTS']
     ws.append(header)  # Добавляем заголовки в первую строку
     ws.row_dimensions[ws.max_row].height = 17
 
@@ -394,7 +396,7 @@ async def process_championship_full():
     teams_fonts: dict = await get_teams_fonts_colors()
     # Добавляем данные в файл
     for num, entry in enumerate(points_list, 1):
-        row = [num] + [entry['Number']] + [entry['User']] + [entry['Team']] + [''] + [entry[key] for key in header[5:]]
+        row = [num] + [entry['Number']] + [entry['User']] + [entry['Team']] + [''] + [entry[key] for key in header[5:] if not key.startswith('place')]
         ws.append(row)  # Добавляем строку с данными
         ws.row_dimensions[ws.max_row].height = 17
         wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет

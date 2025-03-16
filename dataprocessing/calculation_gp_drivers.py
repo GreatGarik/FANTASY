@@ -1,6 +1,6 @@
 from dataprocessing.get_data_results_from_db import get_res_gp
 from database.database import get_predict, add_result, get_result, add_points, get_team, add_team_points, add_maximus, \
-    select_drivers_async
+    select_drivers_async, show_result, add_points_places
 
 
 async def calculation_drivers(gp):
@@ -99,5 +99,10 @@ async def calculation_drivers(gp):
     results_predict_gp = results_predict_gp | {'MAX1': first_max, 'MAX2': second_max, 'MAX3': third_max}
     # Добавляем максимумы к GP
     await add_maximus(gp, results_predict_gp)
+
+
+    data = await show_result(gp)
+    for index, (user, result, points) in enumerate(data, 1):
+        await add_points_places(user.id, index, gp)
 
     return results_predict_gp, results_gp_drivers_by_stage

@@ -177,6 +177,29 @@ async def add_points(user_id, points, gp=None):
             except Exception as e:
                 print(e)
 
+# Заполнение таблицы с очками по этапам - места
+async def add_points_places(user_id, place, gp=None):
+    async with async_session() as session:
+        async with session.begin():
+            try:
+                # Найти существующую запись по user_id и race_id (gp)
+                point_entry = await session.execute(
+                    select(Point).where(Point.user_id == user_id, Point.race_id == gp)
+                )
+                point_entry = point_entry.scalars().first()
+
+                if point_entry:
+                    # Обновить поле place
+                    point_entry.place = place
+                else:
+                    # Если запись не найдена, создать новую
+                    point_entry = Point(user_id=user_id, race_id=gp, place=place)
+                    session.add(point_entry)
+
+                await session.commit()
+            except Exception as e:
+                await session.rollback()
+                raise e
 
 
 async def add_team_points(team_id, points: list, gp=None):
@@ -252,6 +275,7 @@ async def show_points_all(year):
                 )
                 point = result.scalar_one_or_none()
                 user_entry[gp.gp_name_abr] = point.points if point else None
+                user_entry['place' + gp.gp_name_abr] = point.place if point else None
 
             points_list.append(user_entry)
 

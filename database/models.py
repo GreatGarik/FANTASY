@@ -164,6 +164,7 @@ class Point(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
     race_id: Mapped[int] = mapped_column(ForeignKey('grandprix.id'))
     points: Mapped[int] = mapped_column(Integer)
+    place: Mapped[int] = mapped_column(Integer)
 
     user: Mapped[User] = relationship('User', back_populates='points')
     gp: Mapped[Grandprix] = relationship('Grandprix', back_populates='race')
