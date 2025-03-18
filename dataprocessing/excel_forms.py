@@ -290,6 +290,7 @@ async def last_stage():
         # Устанавливаем выравнивание по центру для нужных колонок
     center_alignment = Alignment(horizontal='left', vertical='center')
 
+
     #for cell in ws['A'] + ws['B'] + ws['D']:
     #    cell.alignment = center_alignment
     for cell in ws['C']:
