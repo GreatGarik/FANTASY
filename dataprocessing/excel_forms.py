@@ -188,13 +188,13 @@ async def last_stage():
     header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')  # Красный цвет
 
     # Создаем черную границу
-    thin_border = Border(left=Side(style='thin', color='000000'),
-                         right=Side(style='thin', color='000000'),
-                         top=Side(style='thin', color='000000'),
-                         bottom=Side(style='thin', color='000000'))
+    thin_border = Border(left=Side(style='thin', color='FFFFFF'),
+                         right=Side(style='thin', color='FFFFFF'),
+                         top=Side(style='thin', color='FFFFFF'))
+                         #bottom=Side(style='thin', color='000000')
 
     for cell in ws[7]:  # Перебираем ячейки заголовка
-        cell.alignment = Alignment(vertical='center')
+        cell.alignment = Alignment(horizontal='center', vertical='center')
         cell.font = header_font
         cell.fill = header_fill
         cell.border = thin_border
@@ -225,10 +225,13 @@ async def last_stage():
             points.points
         ])
         ws.row_dimensions[ws.max_row].height = 17
-        wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
-        black_fill = PatternFill(start_color='000001', end_color='000001', fill_type='solid')  # Черный цве
+        wight_font = Font(name='Formula1 Display Bold', size=11, bold=True, color='000001')  # Белый цвет
+        if index % 2 != 0:
+            black_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')  # Белый цвет
+        else:
+            black_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')  # Белый цвет
         for cell in ws[ws.max_row]:
-            cell.alignment = Alignment(vertical='center')
+            cell.alignment = Alignment(horizontal='center', vertical='center')
             if cell.column_letter in ['A', 'B', 'C', 'D', 'E']:
                 cell.font = wight_font  # Устанавливаем белый шрифт
             else:
@@ -236,9 +239,9 @@ async def last_stage():
                         cell.column_letter == 'H' and cell.value == maximus['max2']) or (
                         cell.column_letter == 'I' and cell.value == maximus['max3']) or (
                         cell.column_letter in ['L', 'M'] and cell.value == 10):
-                    cell.font = Font(name='Formula1 Display Regular', size=11, bold=False, color='ED7D31')
+                    cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='ED7D31')
                 else:
-                    cell.font = Font(name='Formula1 Display Regular', size=11, bold=False, color='FFFFFF')
+                    cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
             cell.fill = black_fill  # Устанавливаем черный фон
 
         # Устанавливаем фон для ячейки для команд
@@ -251,12 +254,12 @@ async def last_stage():
             font_number = Font(name=team['number_font'], size=14, bold=True, italic=team['number_italic'],
                                color=team['number_color'])
             ws.cell(row=ws.max_row, column=2).font = font_number
-            ws.cell(row=ws.max_row, column=3).font = font
-            ws.cell(row=ws.max_row, column=4).font = font
+           # ws.cell(row=ws.max_row, column=3).font = font
+            #ws.cell(row=ws.max_row, column=4).font = font
             ws.cell(row=ws.max_row, column=2).fill = fill
-            ws.cell(row=ws.max_row, column=3).fill = fill
-            ws.cell(row=ws.max_row, column=4).fill = fill
-            ws.cell(row=ws.max_row, column=5).fill = fill
+           # ws.cell(row=ws.max_row, column=3).fill = fill
+            #ws.cell(row=ws.max_row, column=4).fill = fill
+           # ws.cell(row=ws.max_row, column=5).fill = fill
             # Вставляем изображение в четвертый столбец (колонка Е)
             if team['logo']:
                 img_path = os.path.join('logos', team['logo'])  # Укажите путь к вашему изображению
@@ -285,9 +288,13 @@ async def last_stage():
             ws.add_image(img)
 
         # Устанавливаем выравнивание по центру для нужных колонок
-    center_alignment = Alignment(horizontal='center', vertical='center')
+    center_alignment = Alignment(horizontal='left', vertical='center')
 
-    for cell in ws['A'] + ws['B'] + ws['D']:
+    #for cell in ws['A'] + ws['B'] + ws['D']:
+    #    cell.alignment = center_alignment
+    for cell in ws['C']:
+        if cell.row == 7:
+            continue  # Пропускаем 7-й ряд
         cell.alignment = center_alignment
 
     # Устанавливаем ширину столбцов
@@ -296,15 +303,15 @@ async def last_stage():
         ws.column_dimensions[column_letter].width = 7.7
     ws.column_dimensions['C'].width = 35.7  # Третий столбец
     ws.column_dimensions['D'].width = 41.7  # Четвертый столбец
-    ws.column_dimensions['E'].width = 8.7  # Пятый столбец
+    ws.column_dimensions['E'].width = 9.2  # Пятый столбец
     ws.column_dimensions[ws.cell(row=7, column=ws.max_column).column_letter].width = 10.7  # Последний столбец
 
     # Цвета 1, 2, 3 места
-    ws.cell(row=8, column=1).fill = PatternFill(start_color='bf9000', end_color='bf9000',
+    ws.cell(row=8, column=1).fill = PatternFill(start_color='FFC50D', end_color='FFC50D',
                                                 fill_type='solid')
-    ws.cell(row=9, column=1).fill = PatternFill(start_color='7c7c7c', end_color='7c7c7c',
+    ws.cell(row=9, column=1).fill = PatternFill(start_color='A3A3A3', end_color='A3A3A3',
                                                 fill_type='solid')
-    ws.cell(row=10, column=1).fill = PatternFill(start_color='c55a11', end_color='c55a11',
+    ws.cell(row=10, column=1).fill = PatternFill(start_color='BC5610', end_color='BC5610',
                                                  fill_type='solid')
 
     # Скрываем сетку
@@ -350,8 +357,8 @@ async def process_championship_full():
     ws.row_dimensions[4].height = 22.5
 
     # Объединяем ячейки в третьем и четвертом столбцах (C и D)
-    ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=12)
-    ws.merge_cells(start_row=5, start_column=4, end_row=5, end_column=12)
+    ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=22)
+    ws.merge_cells(start_row=5, start_column=4, end_row=5, end_column=22)
     ws.cell(row=4, column=4).font = Font(name='Formula1 Display Bold', size=18, bold=True, color='000000')
     ws['D4'] = f'FORMULA 1 FANTASY SERIES BY SILLY FORMULA'
     ws['D4'].alignment = Alignment(horizontal='center', vertical='center')
@@ -381,10 +388,10 @@ async def process_championship_full():
     header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')  # Красный цвет
 
     # Создаем черную границу
-    thin_border = Border(left=Side(style='thin', color='000000'),
-                         right=Side(style='thin', color='000000'),
-                         top=Side(style='thin', color='000000'),
-                         bottom=Side(style='thin', color='000000'))
+    thin_border = Border(left=Side(style='thin', color='FFFFFF'),
+                         right=Side(style='thin', color='FFFFFF'),
+                         top=Side(style='thin', color='FFFFFF'))
+                         # bottom=Side(style='thin', color='000000'))
 
     for cell in ws[7]:  # Перебираем ячейки заголовка
         cell.font = header_font
@@ -399,14 +406,17 @@ async def process_championship_full():
         row = [num] + [entry['Number']] + [entry['User']] + [entry['Team']] + [''] + [entry[key] for key in header[5:] if not key.startswith('place')]
         ws.append(row)  # Добавляем строку с данными
         ws.row_dimensions[ws.max_row].height = 17
-        wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
-        black_fill = PatternFill(start_color='000001', end_color='000001', fill_type='solid')  # Черный цве
+        wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='000001')  # Черный цвет
+        if num % 2 != 0:
+            black_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')  # Белый цвет
+        else:
+            black_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')  # Белый цвет
         for cell in ws[ws.max_row]:
             cell.alignment = Alignment(vertical='center')
             if cell.column_letter in ['A', 'B', 'C', 'D', 'E']:
                 cell.font = wight_font  # Устанавливаем белый шрифт
             else:
-                cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='FFFFFF')
+                cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
                 cell.alignment = Alignment(horizontal='center', vertical='center')
             cell.fill = black_fill  # Устанавливаем черный фон
 
@@ -464,15 +474,15 @@ async def process_championship_full():
         ws.column_dimensions[column_letter].width = 7.7
     ws.column_dimensions['C'].width = 35.7  # Третий столбец
     ws.column_dimensions['D'].width = 41.7  # Четвертый столбец
-    ws.column_dimensions['E'].width = 8.7  # Пятый столбец
+    ws.column_dimensions['E'].width = 9.2  # Пятый столбец
     ws.column_dimensions[ws.cell(row=7, column=ws.max_column).column_letter].width = 11.3  # Третий столбец
 
     # Цвета 1, 2, 3 места
-    ws.cell(row=8, column=1).fill = PatternFill(start_color='bf9000', end_color='bf9000',
+    ws.cell(row=8, column=1).fill = PatternFill(start_color='FFC50D', end_color='FFC50D',
                                                 fill_type='solid')
-    ws.cell(row=9, column=1).fill = PatternFill(start_color='7c7c7c', end_color='7c7c7c',
+    ws.cell(row=9, column=1).fill = PatternFill(start_color='A3A3A3', end_color='A3A3A3',
                                                 fill_type='solid')
-    ws.cell(row=10, column=1).fill = PatternFill(start_color='c55a11', end_color='c55a11',
+    ws.cell(row=10, column=1).fill = PatternFill(start_color='BC5610', end_color='BC5610',
                                                  fill_type='solid')
 
     # Скрываем сетку
@@ -545,10 +555,10 @@ async def championship_team_full():
     header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')  # Красный цвет
 
     # Создаем черную границу
-    thin_border = Border(left=Side(style='thin', color='000000'),
-                         right=Side(style='thin', color='000000'),
-                         top=Side(style='thin', color='000000'),
-                         bottom=Side(style='thin', color='000000'))
+    thin_border = Border(left=Side(style='thin', color='FFFFFF'),
+                         right=Side(style='thin', color='FFFFFF'),
+                         top=Side(style='thin', color='FFFFFF'))
+                         #bottom=Side(style='thin', color='000000'))
 
     for cell in ws[7]:  # Перебираем ячейки заголовка
         cell.font = header_font
@@ -565,13 +575,16 @@ async def championship_team_full():
         ws.append(row)  # Добавляем строку с данными
         ws.row_dimensions[ws.max_row].height = 17
         wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
-        black_fill = PatternFill(start_color='000001', end_color='000001', fill_type='solid')  # Черный цве
+        if num % 2 != 0:
+            black_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')  # Белый цвет
+        else:
+            black_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')  # Белый цвет
         for cell in ws[ws.max_row]:
             cell.alignment = Alignment(horizontal='center', vertical='center')
             # if cell.column_letter in ['A', 'B', 'C', 'D', 'E']:
             #    cell.font = wight_font  # Устанавливаем белый шрифт
 
-            cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='FFFFFF')
+            cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
             cell.fill = black_fill  # Устанавливаем черный фон
 
 
@@ -618,15 +631,15 @@ async def championship_team_full():
         ws.column_dimensions[column_letter].width = 7.7
     # ws.column_dimensions['C'].width = 35.7  # Третий столбец
     ws.column_dimensions['B'].width = 41.7  # Четвертый столбец
-    ws.column_dimensions['C'].width = 8.7  # Пятый столбец
+    ws.column_dimensions['C'].width = 9.2  # Пятый столбец
     ws.column_dimensions[ws.cell(row=3, column=ws.max_column).column_letter].width = 11.3  # Третий столбец
 
     # Цвета 1, 2, 3 места
-    ws.cell(row=8, column=1).fill = PatternFill(start_color='bf9000', end_color='bf9000',
+    ws.cell(row=8, column=1).fill = PatternFill(start_color='FFC50D', end_color='FFC50D',
                                                 fill_type='solid')
-    ws.cell(row=9, column=1).fill = PatternFill(start_color='7c7c7c', end_color='7c7c7c',
+    ws.cell(row=9, column=1).fill = PatternFill(start_color='A3A3A3', end_color='A3A3A3',
                                                 fill_type='solid')
-    ws.cell(row=10, column=1).fill = PatternFill(start_color='c55a11', end_color='c55a11',
+    ws.cell(row=10, column=1).fill = PatternFill(start_color='BC5610', end_color='BC5610',
                                                  fill_type='solid')
 
     # Скрываем сетку
