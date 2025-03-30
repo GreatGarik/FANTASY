@@ -141,7 +141,7 @@ async def entry_list():
         ws.column_dimensions[column_letter].width = 7.7
     ws.column_dimensions['B'].width = 35.7  # Третий столбец
     ws.column_dimensions['C'].width = 41.7  # Четвертый столбец
-    ws.column_dimensions['D'].width = 9.1  # Пятый столбец
+    ws.column_dimensions['D'].width = 9.0  # Пятый столбец
 
     # Скрываем сетку
     ws.sheet_view.showGridLines = False
