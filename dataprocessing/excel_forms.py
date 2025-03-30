@@ -68,12 +68,16 @@ async def entry_list():
         ws.merge_cells(start_row=ws.max_row, start_column=3, end_row=ws.max_row, end_column=4)
     teams_fonts: dict = await get_teams_fonts_colors()
     # Добавляем данные в файл
-    for entry in users_list:
+    for num, entry in enumerate(users_list):
         row = [entry['Number'] if entry['Number'] else 'N/A'] + [entry['User']] + [entry['Team']] + ['']
         ws.append(row)  # Добавляем строку с данными
         ws.row_dimensions[ws.max_row].height = 17
-        wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
-        black_fill = PatternFill(start_color='000001', end_color='000001', fill_type='solid')  # Черный цве
+        wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='000000')  # Черный цвет
+        #black_fill = PatternFill(start_color='000001', end_color='000001', fill_type='solid')  # Черный цве
+        if num % 2 != 0:
+            black_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')  # Белый цвет
+        else:
+            black_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')  # Белый цвет
         for cell in ws[ws.max_row]:
             cell.alignment = Alignment(vertical='center')
             if cell.column_letter in ['A', 'B', 'C', 'D', 'E']:
@@ -137,7 +141,7 @@ async def entry_list():
         ws.column_dimensions[column_letter].width = 7.7
     ws.column_dimensions['B'].width = 35.7  # Третий столбец
     ws.column_dimensions['C'].width = 41.7  # Четвертый столбец
-    ws.column_dimensions['D'].width = 8.7  # Пятый столбец
+    ws.column_dimensions['D'].width = 9.1  # Пятый столбец
 
     # Скрываем сетку
     ws.sheet_view.showGridLines = False
