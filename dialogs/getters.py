@@ -109,13 +109,13 @@ async def correct_name(message: Message,widget: ManagedTextInput,dialog_manager:
 async def send_all(message: Message,widget: ManagedTextInput,dialog_manager: DialogManager,text: str) -> None:
     bot = dialog_manager.middleware_data.get('bot')
     if dialog_manager.dialog_data.get('user_tg_id'):
-        await send_message(dialog_manager.dialog_data.get('user_tg_id'), text, bot)
+        await send_message(dialog_manager.dialog_data.get('user_tg_id'), message.html_text, bot)
     else:
         users = await get_users_async()
         # Создаем список задач
         tasks = []
         for user in users:
-            tasks.append(send_message(user.id_telegram, text, bot))
+            tasks.append(send_message(user.id_telegram, message.html_text, bot))
             # Если количество задач достигло 25, ждем их завершения
             if len(tasks) == 25:
                 await asyncio.gather(*tasks)
@@ -135,7 +135,7 @@ async def send_no_team(message: Message,widget: ManagedTextInput,dialog_manager:
     # Создаем список задач
     tasks = []
     for user in users:
-        tasks.append(send_message(user.id_telegram, text, bot))
+        tasks.append(send_message(user.id_telegram, message.html_text, bot))
         # Если количество задач достигло 25, ждем их завершения
         if len(tasks) == 25:
             await asyncio.gather(*tasks)
