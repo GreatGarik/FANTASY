@@ -268,10 +268,14 @@ async def back_select_fourth(callback: CallbackQuery, button: Button, dialog_man
 
 async def select_gap(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
     dialog_manager.dialog_data['gap'] = int(text)
+    await message.delete()
+    dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
     await dialog_manager.switch_to(UserSG.send_predict_laps)
 
 async def select_laps(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
     dialog_manager.dialog_data['laps'] = int(text)
+    await message.delete()
+    dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
     await dialog_manager.switch_to(UserSG.send_predict_ending)
 
 async def button_user_confirm_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
