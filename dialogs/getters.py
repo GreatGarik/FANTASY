@@ -659,6 +659,11 @@ def get_day_of_week(day_number, case):
     }
     return days[case][day_number]
 
+def get_preposition(day_name):
+    # Проверяем, начинается ли день недели на "вт" (вторник)
+    if day_name.startswith('вт'):
+        return 'во'
+    return 'в'
 
 
 async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
@@ -700,7 +705,14 @@ async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog
 
 
     bot = dialog_manager.middleware_data.get('bot')
-    text = f'Привет!\nПриём прогнозов на <b> {await get_name_gp(gp_id)} GP</b>\nоткроется в <b> {get_day_of_week(time_start_d.weekday(), "винительный")} {time_start} МСК</b>\nбез штрафа до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty} МСК</b>\nокончание приёма в <b>{get_day_of_week(time_end_d.weekday(), "винительный")} {time_end} МСК</b>'
+    # Формируем текст с правильными предлогами
+    day_open = get_day_of_week(time_start_d.weekday(), "винительный")
+    prep_open = get_preposition(day_open)
+
+    day_end = get_day_of_week(time_end_d.weekday(), "винительный")
+    prep_end = get_preposition(day_end)
+
+    text = f'Привет!\nПриём прогнозов на <b> {await get_name_gp(gp_id)} GP</b>\nоткроется {prep_open} <b>{day_open} {time_start} МСК</b>\nбез штрафа до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty} МСК</b>\nокончание приёма {prep_end} <b>{day_end} {time_end} МСК</b>'
     await add_scheduled_message(0, text, datetime.now() + timedelta(minutes=1))
     scheduler.add_job(schedule_message, 'date', run_date=(datetime.now() + timedelta(minutes=1)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
@@ -709,29 +721,46 @@ async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog
     await add_scheduled_message(0, text, datetime.strptime(time_start, "%Y-%m-%d %H:%M"))
     scheduler.add_job(schedule_message, 'date', run_date=dialog_manager.dialog_data.get('start_datetime'), args=[0, text, bot])
 
-    # Уведомление, что осталось 20 часов до штрафа
-    text = f'⏱️ Осталось 20 часов, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b>\nбез штрафа до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty} МСК</b>\nОкончание приёма прогнозов в <b>{get_day_of_week(time_end_d.weekday(), "винительный")} {time_end} МСК</b>'
-    await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=20))
-    scheduler.add_job(schedule_message, 'date', run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=20)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
+    # Уведомление, что осталось 48 часов до штрафа
+    text = f'⏱️ Осталось 48 часов, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b>\nбез штрафа до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty} МСК</b>\nОкончание приёма прогнозов в <b>{get_day_of_week(time_end_d.weekday(), "винительный")} {time_end} МСК</b>'
+    await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=48))
+    scheduler.add_job(schedule_message, 'date',
+                      run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=48)).strftime(
+                          "%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
+
+    # Уведомление, что осталось 24 часа до штрафа
+    text = f'⏱️ Осталось 24 часа, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b>\nбез штрафа до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty} МСК</b>\nОкончание приёма прогнозов в <b>{get_day_of_week(time_end_d.weekday(), "винительный")} {time_end} МСК</b>'
+    await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=24))
+    scheduler.add_job(schedule_message, 'date', run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
 
-    # Уведомление, что осталось 12 часа до штрафа
-    text = f'⏱️ Осталось 12 часов, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b>\nбез штрафа до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty} МСК</b>\nОкончание приёма прогнозов в <b>{get_day_of_week(time_end_d.weekday(), "винительный")} {time_end} МСК</b>'
-    await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=12))
-    scheduler.add_job(schedule_message, 'date', run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=12)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
+    # Уведомление, что осталось 18 часов до штрафа
+    text = f'⏱️ Осталось 18 часов, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b>\nбез штрафа до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty} МСК</b>\nОкончание приёма прогнозов в <b>{get_day_of_week(time_end_d.weekday(), "винительный")} {time_end} МСК</b>'
+    await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=18))
+    scheduler.add_job(schedule_message, 'date', run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=18)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
 
-    # Уведомление, что осталось 12 часа до штрафа
-    text = f'⏱️ Осталось 7 часов, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b>\nбез штрафа до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty} МСК</b>\nОкончание приёма прогнозов в <b>{get_day_of_week(time_end_d.weekday(), "винительный")} {time_end} МСК</b>'
-    await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=7))
-    scheduler.add_job(schedule_message, 'date', run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=6)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
+    # Уведомление, что осталось 5 часов до штрафа
+    text = f'⏱️ Осталось 5 часов, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b>\nбез штрафа до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty} МСК</b>\nОкончание приёма прогнозов в <b>{get_day_of_week(time_end_d.weekday(), "винительный")} {time_end} МСК</b>'
+    await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=5))
+    scheduler.add_job(schedule_message, 'date', run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=5)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
+    # Уведомление, что осталось 3 часа до штрафа
+    text = f'⚠️Осталось 3 часа, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b>\nбез штрафа до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty}МСК</b>\nОкончание приёма прогнозов в <b>{get_day_of_week(time_end_d.weekday(), "винительный")} {time_end} МСК</b>'
+    await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=3))
+    scheduler.add_job(schedule_message, 'date', run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
     # Уведомление, что осталось 2 часа до штрафа
     text = f'⚠️Осталось 2 часа, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b>\nбез штрафа до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty}МСК</b>\nОкончание приёма прогнозов в <b>{get_day_of_week(time_end_d.weekday(), "винительный")} {time_end} МСК</b>'
     await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=2))
     scheduler.add_job(schedule_message, 'date', run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
+    # Уведомление, что остался 1 час до штрафа
+    text = f'‼️ ️Остался 1 час, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b>\nбез штрафа до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty}МСК</b>\nОкончание приёма прогнозов в <b>{get_day_of_week(time_end_d.weekday(), "винительный")} {time_end} МСК</b>'
+    await add_scheduled_message(0, text, datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=1))
+    scheduler.add_job(schedule_message, 'date',
+                      run_date=(datetime.strptime(time_penalty, "%Y-%m-%d %H:%M") - timedelta(hours=1)).strftime(
+                          "%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
     # Уведомление, что осталось 2 часа до дедлайна
     text = f'‼️ Осталось 2 часа, чтобы подать прогноз на <b> {await get_name_gp(gp_id)} GP</b>\nОкончание приёма прогнозов в <b>{get_day_of_week(time_end_d.weekday(), "винительный")} {time_end} МСК</b>'

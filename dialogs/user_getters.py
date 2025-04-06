@@ -112,6 +112,10 @@ def get_day_of_week(day_number, case):
     }
     return days[case][day_number]
 
+def get_correct_preposition(day_name):
+    """Возвращает 'во' для 'вторник' в винительном падеже, иначе 'в'"""
+    return "во" if day_name == "вторник" else "в"
+
 async def button_send_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     dialog_manager.dialog_data.clear()
     actual_gp: int = await get_actual_gp_async()
@@ -129,8 +133,13 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
     elif datetime.now() < start_time:
+        # Получаем название дня в винительном падеже
+        day_name = get_day_of_week(start_time.weekday(), "винительный")
+        preposition = get_correct_preposition(day_name)
         await callback.message.answer(
-            text=f'В данный момент прогноз на <b>{await get_name_gp(actual_gp)} GP</b> еще не принимается\nПрием прогнозов начнётся в <b>{get_day_of_week(start_time.weekday(), "винительный")} {start_time.strftime("%Y-%m-%d %H:%M")}</b>')
+            text=
+                f"В данный момент прогноз на <b>{await get_name_gp(actual_gp)} GP</b> еще не принимается\n"
+                f"Прием прогнозов начнётся {preposition} <b>{day_name} {start_time.strftime('%Y-%m-%d %H:%M')}</b>")
         dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
