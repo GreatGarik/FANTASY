@@ -265,7 +265,7 @@ user_dialog = Dialog(
         state=UserSG.send_predict_laps
     ),
     Window(
-        Format('Ваш прогноз на <b>{name_gp} GP</b>:\nКоманда: <b>{driver_team}</b>\nДвигатель: <b>{driver_engine}</b>\nПервый пилот: <b>{first_driver}</b>\nВторой пилот: <b>{second_driver}</b>\nТретий пилот: <b>{third_driver}</b>\nЧетвертый пилот: <b>{fourth_driver}</b>\nОтставание от лидера: <b>{gap}</b>\nКоличество круговых: <b>{lapped}</b>'),
+        Format('Подтвердите Ваш прогноз на <b>{name_gp} GP</b>:\nКоманда: <b>{driver_team}</b>\nДвигатель: <b>{driver_engine}</b>\nПервый пилот: <b>{first_driver}</b>\nВторой пилот: <b>{second_driver}</b>\nТретий пилот: <b>{third_driver}</b>\nЧетвертый пилот: <b>{fourth_driver}</b>\nОтставание от лидера: <b>{gap}</b>\nКоличество круговых: <b>{lapped}</b>'),
         Button(
             text=Const('Подтвердить'),
             id='button_confirm_predict',
