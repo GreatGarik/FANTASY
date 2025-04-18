@@ -148,7 +148,7 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
         if datetime.now() < end_time:
             penalty_time = await get_penalty_grandprix_by_id(actual_gp)
             await callback.message.answer(
-                text=f'Окончание приема прогноза на <b>{await get_name_gp(actual_gp)} GP</b> закончится в <b>{get_day_of_week(end_time.weekday(), "винительный")} {end_time.strftime("%Y-%m-%d %H:%M")}</b>\n Без штрафа прогноз можно подать до <b>{get_day_of_week(end_time.weekday(), "родительный")} {penalty_time.strftime("%Y-%m-%d %H:%M")}</b>')
+                text=f'Окончание приема прогноза на <b>{await get_name_gp(actual_gp)} GP</b> закончится в <b>{get_day_of_week(end_time.weekday(), "винительный")} {end_time.strftime("%Y-%m-%d %H:%M")}</b>\n Без штрафа прогноз можно подать до <b>{get_day_of_week(penalty_time.weekday(), "родительный")} {penalty_time.strftime("%Y-%m-%d %H:%M")}</b>')
             dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
             await dialog_manager.switch_to(UserSG.send_predict)
         else:
