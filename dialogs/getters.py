@@ -501,7 +501,7 @@ async def f1_drivers_deactivated_selected(callback: CallbackQuery, widget: Selec
     await dialog_manager.switch_to(AdminSG.f1_drivers_menu)
 
 async def f1_driver_deactivated(**kwargs):
-    return {'f1_drivers_all': await select_drivers_async(active=False)}
+    return {'f1_driver_deactivated': await select_drivers_async(active=False)}
 
 async def f1_drivers_all(**kwargs):
     return {'f1_drivers_all': await select_drivers_async()}
