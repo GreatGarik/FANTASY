@@ -365,11 +365,11 @@ async def process_championship_full():
     ws.merge_cells(start_row=3, start_column=4, end_row=3, end_column=25)
     ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=25)
     ws.cell(row=3, column=4).font = Font(name='Formula1 Display Bold', size=18, bold=True, color='000000')
-    ws['D4'] = f'FORMULA 1 FANTASY SERIES BY SILLY FORMULA'
-    ws['D4'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['D3'] = f'FORMULA 1 FANTASY SERIES BY SILLY FORMULA'
+    ws['D3'].alignment = Alignment(horizontal='center', vertical='center')
     ws.cell(row=4, column=4).font = Font(name='Formula1 Display Bold', size=11, bold=True, color='000000')
-    ws['D5'] = f"DRIVER'S CHAMPIONSHIP"
-    ws['D5'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['D4'] = f"DRIVER'S CHAMPIONSHIP"
+    ws['D4'].alignment = Alignment(horizontal='center', vertical='center')
 
     img_path = os.path.join('logos', 'Shirokoe_logo_bez_fona_silli.png')  # Укажите путь к вашему изображению
     img = Image(img_path)
