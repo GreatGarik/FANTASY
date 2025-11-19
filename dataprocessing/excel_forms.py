@@ -359,15 +359,15 @@ async def process_championship_full():
 
     # Вставляем 5 пустых строк в начале
     ws.insert_rows(1, amount=5)
-    ws.row_dimensions[4].height = 22.5
+    ws.row_dimensions[3].height = 22.5
 
     # Объединяем ячейки в третьем и четвертом столбцах (C и D)
-    ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=22)
-    ws.merge_cells(start_row=5, start_column=4, end_row=5, end_column=22)
-    ws.cell(row=4, column=4).font = Font(name='Formula1 Display Bold', size=18, bold=True, color='000000')
+    ws.merge_cells(start_row=3, start_column=4, end_row=3, end_column=25)
+    ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=25)
+    ws.cell(row=3, column=4).font = Font(name='Formula1 Display Bold', size=18, bold=True, color='000000')
     ws['D4'] = f'FORMULA 1 FANTASY SERIES BY SILLY FORMULA'
     ws['D4'].alignment = Alignment(horizontal='center', vertical='center')
-    ws.cell(row=5, column=4).font = Font(name='Formula1 Display Bold', size=11, bold=True, color='000000')
+    ws.cell(row=4, column=4).font = Font(name='Formula1 Display Bold', size=11, bold=True, color='000000')
     ws['D5'] = f"DRIVER'S CHAMPIONSHIP"
     ws['D5'].alignment = Alignment(horizontal='center', vertical='center')
 
