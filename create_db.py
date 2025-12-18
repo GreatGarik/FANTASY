@@ -3,7 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import Column, Integer, String, ForeignKey
-from championship2025 import gps
+from championship2026 import gps
 from drivers import drivers
 from teams import teams
 from database.models import *
@@ -15,7 +15,7 @@ from sqlalchemy.exc import SQLAlchemyError
 current_os = platform.system()
 #current_os = "Windows"
 
-
+'''
 # Устанавливаем параметры подключения в зависимости от ОС
 if current_os == "Windows":
     # Подключение к SQLite на Windows
@@ -29,6 +29,14 @@ elif current_os == "Linux":
     async_database_url = f"postgresql+asyncpg://{config.tg_bot.db_user}:{config.tg_bot.db_password}@localhost:5432/{config.tg_bot.db_name}"
 else:
     raise Exception("Unsupported operating system")
+    
+'''
+
+# Загружаем конфиг в переменную config
+config: Config = load_config()
+# Подключение к PostgreSQL на Ubuntu
+database_url = f"postgresql://{config.tg_bot.db_user}:{config.tg_bot.db_password}@localhost:5432/{config.tg_bot.db_name}"
+async_database_url = f"postgresql+asyncpg://{config.tg_bot.db_user}:{config.tg_bot.db_password}@localhost:5432/{config.tg_bot.db_name}"
 
 # Создаем движки
 engine = create_engine(database_url, echo=False)
@@ -67,29 +75,32 @@ with Session() as session:
     print(teams_list)
 
 
-'''
+
 try:
     Base.metadata.create_all(engine)
     print("Таблицы успешно созданы.")
 except SQLAlchemyError as e:
     print(f"Ошибка при создании таблиц: {e}")
+'''
 
 # Заполняем пилотов
 with Session() as session:
+    '''
     for team in teams:
         session.add((Team(**team)))
 
 
-    '''
+    
     for driver in drivers:
         new_driver = Driver(driver_name=driver['driver'], driver_position=driver['position'], driver_team=driver['team'],
                             driver_engine=driver['engine'], engine_short=driver['engine_short'], driver_nextgp=driver['nextGP'])
         session.add(new_driver)
+    '''
 
     for item in gps:
         new_gp = Grandprix(gp_name=item['gp'], year=item['year'], nextgp=item['nextgp'], gp_name_abr=item['short'])
         session.add(new_gp)
-    '''
+
 
 
     session.commit()
