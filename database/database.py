@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from aiogram.utils.chat_member import USERS
 from certifi import where
 from datetime import datetime
-from sqlalchemy import create_engine, select, update, case, func, delete, asc, desc
+from sqlalchemy import create_engine, select, update, case, func, delete, asc, desc, and_
 from sqlalchemy.orm import sessionmaker, selectinload
 from database.models import *
 from config_data.config import Config, load_config
@@ -115,6 +115,19 @@ async def add_user_async(user_id, name: str, lastname: str):
                 # Обработка исключений, если необходимо
                 raise e
 
+# Добавление реквеста юзера
+async def add_user_request (user_id: int):
+    async with async_session() as session:
+        async with session.begin():
+            try:
+                request = Request(user_id=user_id)
+                session.add(request)
+                # Коммит будет выполнен автоматически при выходе из блока session.begin()
+            except Exception as e:
+                # Обработка исключений, если необходимо
+                raise e
+
+
 
 # Запись прогноза на гонку
 async def send_predict(tg_id, gp, first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap,
@@ -158,7 +171,7 @@ async def get_predict(gp=None):
                 select(Predict)
                 .join(User, User.id_telegram == Predict.user_id)  # Объединяем по telegram_id
                 .where(Predict.gp == gp)
-                .where(User.banned == False)  # Условие, чтобы не возвращать забаненных пользователей
+                .where(and_(User.banned == False, User.active == True))  # Условие, чтобы не возвращать забаненных пользователей
                 .order_by(asc(Predict.time))
             )
             result = await session.execute(statement)
@@ -246,7 +259,7 @@ async def show_points_all(year):
         grandprix = result.scalars().all()
 
         # Получаем всех пользователей
-        result = await session.execute(select(User).where(User.banned == False))
+        result = await session.execute(select(User).where(and_(User.banned == False, User.active == True)))
         users = result.scalars().all()
 
         points_list = []
@@ -381,7 +394,7 @@ async def get_users_async(id_telegram=None):
                     # Обработка исключений, если необходимо
                     return None
             else:
-                result = await session.execute(select(User).where(User.banned == False))
+                result = await session.execute(select(User).where(and_(User.banned == False, User.active == True)))
                 return result.scalars().all()
 
 
@@ -404,6 +417,23 @@ async def get_new_users_async():
             last_10_users = users[-10:]  # Получаем последние 10 пользователей
             return [{'id': user.id, 'id_telegram': user.id_telegram, 'name': user.name, 'number': user.number if user.number else 'N/A'} for user in last_10_users]
 
+
+async def get_users_from_requests():
+    async with async_session() as session:
+        async with session.begin():
+            stmt = (
+                select(User)
+                .join(Request, Request.user_id == User.id_telegram)
+                .order_by(Request.id)
+            )
+            res = await session.execute(stmt)
+            users = res.scalars().unique().all()  # unique() на случай повторов
+            if not users:
+                return None
+            return [
+                {'id': u.id, 'id_telegram': u.id_telegram, 'name': u.name}
+                for u in users
+            ]
 
 async def get_users_async_no_team():
     async with async_session() as session:
@@ -596,7 +626,7 @@ async def add_maximus(gp, maximus):
 async def get_all_users():
     # Получаем всех пользователей
     async with async_session() as session:
-        result = await session.execute(select(User).where(User.banned == False))
+        result = await session.execute(select(User).where(and_(User.banned == False, User.active == True)))
         users = result.scalars().all()
 
         # Формируем список результатов
@@ -1050,6 +1080,18 @@ async def change_user_banned_status(id_telegram: int, banned: bool):
             await session.execute(stmt)
             await session.commit()
 
+
+async def approving_the_request(id_telegram: int, approve: bool):
+    async with async_session() as session:
+        async with session.begin():
+            # Обновляем поле active у пользователя
+            stmt = update(User).where(User.id_telegram == id_telegram).values(active=approve)
+            await session.execute(stmt)
+
+            # Находим id пользователя и удаляем его заявки по FK Request.user_id
+            del_stmt = delete(Request).where(Request.user_id == id_telegram)
+            await session.execute(del_stmt)
+
 async def is_user_banned(id_telegram: int) -> bool:
     async with async_session() as session:
         async with session.begin():
@@ -1057,6 +1099,23 @@ async def is_user_banned(id_telegram: int) -> bool:
             result = await session.execute(statement)
             user = result.scalars().first()
             return user.banned if user else False
+
+async def is_user_active(id_telegram: int) -> bool:
+    async with async_session() as session:
+        async with session.begin():
+            statement = select(User).where(User.id_telegram == id_telegram)
+            result = await session.execute(statement)
+            user = result.scalars().first()
+            return user.active if user else False
+
+
+async def is_user_in_request(id_telegram: int) -> bool:
+    async with async_session() as session:
+        async with session.begin():
+            statement = select(Request).where(Request.user_id == id_telegram)
+            result = await session.execute(statement)
+            user = result.scalars().first()
+            return True if user else False
 
 
 async def delete_team_from_db(team_id: int):

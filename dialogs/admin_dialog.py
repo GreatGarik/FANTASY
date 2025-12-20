@@ -77,6 +77,11 @@ admin_dialog = Dialog(
                 on_click=button_new_users)
             ,
             Button(
+                text=Const('Заявки на участие в фэнтези'),
+                id='button_new_requests',
+                on_click=button_new_requests)
+            ,
+            Button(
                 text=Const('Вернуться в главное меню'),
                 id='button_menu',
                 on_click=button_menu)
@@ -196,6 +201,26 @@ admin_dialog = Dialog(
         ),
         state=AdminSG.found_user,
         getter=found_users
+    ),
+    Window(
+        Const(text='Выберите пользователя из найденных:'),
+        Group(
+            Select(
+                Format('{item[name]}'),
+                id='user_tg_id',
+                item_id_getter=lambda x: x['id_telegram'],
+                items='users_request',
+                on_click=user_selected_request,
+            ),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+            width=1
+        ),
+        state=AdminSG.users_request,
+        getter=users_request
     ),
     Window(
         Const(text='Выберите этап на который открывается прогноз:'),
@@ -461,6 +486,32 @@ admin_dialog = Dialog(
         state=AdminSG.users_edit_select
     ),
 
+    Window(
+        Format('Какой будет ответ на заявку?'),
+        Column(
+            Button(
+                text=Const('Одобрить заявку'),
+                id='approve_the_request',
+                on_click=approve_the_request
+            ),
+            Button(
+                text=Const('Отклонить заявку'),
+                id='decline_the_request',
+                on_click=button_decline_the_request
+            ),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_menu)
+            ,
+            Button(
+                text=Const('Выйти из админки'),
+                id='button_exit',
+                on_click=button_exit),
+
+        ),
+        state=AdminSG.users_request_answer
+    ),
 
     Window(
         Const('Это меню с таблицами'),

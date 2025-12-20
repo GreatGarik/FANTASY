@@ -15,7 +15,7 @@ from dataprocessing.excel_forms import entry_list, last_stage, process_champions
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 from database.database import get_users_async, check_res, \
     clear_results, get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async, change_user_banned_status, delete_team_from_db, add_scheduled_message, get_users_async_no_team, get_new_users_async
+    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async, change_user_banned_status, delete_team_from_db, add_scheduled_message, get_users_async_no_team, get_new_users_async, get_users_from_requests, approving_the_request
 from .dop_functions import send_message
 from scheduler.scheduler import scheduler, schedule_message
 
@@ -26,7 +26,9 @@ class AdminSG(StatesGroup):
     stage = State()
     input_name = State()
     found_user = State()
+    users_request = State()
     users_edit_select = State()
+    users_request_answer = State()
     new_name_user = State()
     new_number_user = State()
     open_predict = State()
@@ -152,11 +154,19 @@ async def send_no_team(message: Message,widget: ManagedTextInput,dialog_manager:
 async def found_users(dialog_manager: DialogManager, **kwargs):
     return {'found_user': dialog_manager.dialog_data['found_users']}
 
+async def users_request(dialog_manager: DialogManager, **kwargs):
+    return {'users_request': dialog_manager.dialog_data['users_request']}
+
 
 async def user_selected(callback: CallbackQuery, widget: Select,
                         dialog_manager: DialogManager, user_tg_id: str):
     dialog_manager.dialog_data['user_tg_id'] = user_tg_id
     await dialog_manager.switch_to(AdminSG.users_edit_select)
+
+async def user_selected_request(callback: CallbackQuery, widget: Select,
+                        dialog_manager: DialogManager, user_tg_id: str):
+    dialog_manager.dialog_data['user_tg_id'] = user_tg_id
+    await dialog_manager.switch_to(AdminSG.users_request_answer)
 
 
 async def button_change_user_name(callback: CallbackQuery, button: Button,
@@ -184,6 +194,20 @@ async def button_unban_user(callback: CallbackQuery, button: Button,
                                     dialog_manager: DialogManager):
     await change_user_banned_status(int(dialog_manager.dialog_data['user_tg_id']), False)
     await callback.message.answer(f'Вы разбанили пользователя')
+    await dialog_manager.switch_to(AdminSG.users_menu)
+
+async def approve_the_request(callback: CallbackQuery, button: Button,
+                                    dialog_manager: DialogManager):
+    await approving_the_request(int(dialog_manager.dialog_data['user_tg_id']), True)
+    await callback.message.answer(f'Вы одобрили заявку пользователя')
+    await dialog_manager.switch_to(AdminSG.users_menu)
+
+async def button_decline_the_request(callback: CallbackQuery, button: Button,
+                                    dialog_manager: DialogManager):
+    bot = dialog_manager.middleware_data.get('bot')
+    await approving_the_request(int(dialog_manager.dialog_data['user_tg_id']), False)
+    await send_message(int(dialog_manager.dialog_data['user_tg_id']), 'Ваша заявка на участи в Fantasy отклонена (некорректное имя), для изменения имени обратитесь к администрации', bot)
+    await callback.message.answer(f'Вы отклонили заявку пользователя')
     await dialog_manager.switch_to(AdminSG.users_menu)
 
 
@@ -215,6 +239,12 @@ async def button_new_users(callback: CallbackQuery, button: Button, dialog_manag
     if res:
         dialog_manager.dialog_data['found_users'] = res
         await dialog_manager.switch_to(AdminSG.found_user)
+
+async def button_new_requests(callback: CallbackQuery, button: Button, dialog_manager: DialogManager) -> None:
+    res = await get_users_from_requests()
+    if res:
+        dialog_manager.dialog_data['users_request'] = res
+        await dialog_manager.switch_to(AdminSG.users_request)
 
 async def button_edit_team(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.edit_team)

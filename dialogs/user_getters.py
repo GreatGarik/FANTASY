@@ -13,7 +13,7 @@ from .dop_functions import send_message
 from .getters import AdminSG
 from database.database import send_predict, is_prediced, get_name_gp, \
     get_users_async, add_user_async, get_end_grandprix_by_id, get_start_grandprix_by_id, get_penalty_grandprix_by_id, \
-    select_drivers_async, get_actual_gp_async, is_user_banned, get_user_team
+    select_drivers_async, get_actual_gp_async, is_user_banned, get_user_team, is_user_active, is_user_in_request, add_user_request
 
 
 class UserSG(StatesGroup):
@@ -91,13 +91,28 @@ async def user_name(event_from_user: User, all_admins: list, **kwargs):
     if event_from_user.id in all_admins:
         is_admin = True
 
-    if user:
-        return {'user_name': user.name, 'unregistered': False, 'registered': True, 'admins': is_admin}
+    if user and not await is_user_active(event_from_user.id):
+        return {'user_name': user.name, 'unregistered': False, 'registered': True, 'admins': is_admin, 'active': False}
+    elif user and await is_user_active(event_from_user.id):
+        return {'user_name': user.name, 'unregistered': False, 'registered': True, 'admins': is_admin, 'active': True}
     else:
         return {'user_name': 'Незарегистрированный пользователь', 'unregistered': True, 'admins': is_admin}
 
 async def button_registration(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(UserSG.fill_form_name)
+
+async def button_send_request(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    if await is_user_in_request(callback.from_user.id):
+        await callback.answer(text='Вы уже отправили заявку, ожидайте...')
+    else:
+        await add_user_request(callback.from_user.id)
+        user = await get_users_async(callback.from_user.id)
+        text = f'<b>{user.name}</b> отправил заявку на участие.'
+        bot = dialog_manager.middleware_data.get('bot')
+        await send_message(user_id=-1002341617853, text=text, bot=bot)
+        await callback.answer(text='Спасибо. Ваша заявка отправлена')
+        dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+        await dialog_manager.switch_to(UserSG.start)
 
 
 def get_day_of_week(day_number, case):

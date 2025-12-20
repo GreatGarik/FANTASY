@@ -20,8 +20,10 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(60))
     number: Mapped[int] = mapped_column(Integer, unique=True, nullable=True)
     banned: Mapped[bool] = mapped_column(Boolean,nullable=True, default=0)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=True, default=0)
 
     points: Mapped[List['Point']] = relationship('Point', back_populates='user')
+    request: Mapped[int] = relationship('Request', back_populates='user')
     # Связи с командами
     teams_first: Mapped[List['Team']] = relationship('Team', back_populates='first_user', foreign_keys='Team.first')
     teams_second: Mapped[List['Team']] = relationship('Team', back_populates='second_user', foreign_keys='Team.second')
@@ -177,4 +179,10 @@ class ScheduledMessage(Base):
     text: Mapped[str] = mapped_column(String, nullable=False)
     send_time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
 
+class Request(Base):
+    __tablename__ = 'request'
 
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey('users.id_telegram'))
+
+    user: Mapped[User] = relationship('User', back_populates='request')

@@ -30,8 +30,15 @@ user_dialog = Dialog(
             text=Const('🏎️ Отправить прогноз'),
             id='button_send_predict',
             on_click=button_send_predict,
-            when=F["registered"]
+            when=F['registered'] & F['active']
             ),
+            Button(
+                text=Const('Отправить заявку на участие в Fantasy'),
+                id='button_send_active',
+                on_click=button_send_request,
+                when=F['registered'] & ~F['active']
+            ),
+
             Button(
                 text=Const('📜 Информация о фэнтези'),
                 id='button_about',
