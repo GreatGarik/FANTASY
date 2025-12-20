@@ -112,6 +112,7 @@ async def send_all(message: Message,widget: ManagedTextInput,dialog_manager: Dia
     bot = dialog_manager.middleware_data.get('bot')
     if dialog_manager.dialog_data.get('user_tg_id'):
         await send_message(dialog_manager.dialog_data.get('user_tg_id'), message.html_text, bot)
+        await message.answer('Ваше сообщение было отправлено')
     else:
         users = await get_users_async()
         # Создаем список задач
@@ -126,6 +127,7 @@ async def send_all(message: Message,widget: ManagedTextInput,dialog_manager: Dia
             # Отправляем оставшиеся сообщения, если они есть
         if tasks:
             await asyncio.gather(*tasks)
+        await message.answer('Ваше сообщение было отправлено')
 
     dialog_manager.dialog_data.clear()
     await dialog_manager.switch_to(AdminSG.send_message)
@@ -198,7 +200,9 @@ async def button_unban_user(callback: CallbackQuery, button: Button,
 
 async def approve_the_request(callback: CallbackQuery, button: Button,
                                     dialog_manager: DialogManager):
+    bot = dialog_manager.middleware_data.get('bot')
     await approving_the_request(int(dialog_manager.dialog_data['user_tg_id']), True)
+    await send_message(int(dialog_manager.dialog_data['user_tg_id']), 'Ваша заявка на участи в Fantasy одобрена', bot)
     await callback.message.answer(f'Вы одобрили заявку пользователя')
     await dialog_manager.switch_to(AdminSG.users_menu)
 
