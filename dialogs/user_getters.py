@@ -104,6 +104,8 @@ async def button_registration(callback: CallbackQuery, button: Button, dialog_ma
 async def button_send_request(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     if await is_user_in_request(callback.from_user.id):
         await callback.answer(text='Вы уже отправили заявку, ожидайте...')
+    elif await is_user_active(callback.from_user.id):
+        await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
     else:
         await add_user_request(callback.from_user.id)
         user = await get_users_async(callback.from_user.id)
@@ -132,45 +134,48 @@ def get_correct_preposition(day_name):
     return "во" if day_name == "вторник" else "в"
 
 async def button_send_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    dialog_manager.dialog_data.clear()
-    actual_gp: int = await get_actual_gp_async()
-    end_time = await get_end_grandprix_by_id(actual_gp)
-    start_time = await get_start_grandprix_by_id(actual_gp)
-
-    if await is_user_banned(callback.from_user.id):
-        await callback.answer(
-            text=f'Вы забанены в Fantasy, обратитесь к администрации')
+    if not await is_user_active(callback.from_user.id):
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
+    else:
+        dialog_manager.dialog_data.clear()
+        actual_gp: int = await get_actual_gp_async()
+        end_time = await get_end_grandprix_by_id(actual_gp)
+        start_time = await get_start_grandprix_by_id(actual_gp)
 
-    elif await is_prediced(callback.from_user.id, actual_gp):
-        await callback.answer(
-            text=f'Вы уже отправили прогноз на {await get_name_gp(actual_gp)} GP')
-        await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
+        if await is_user_banned(callback.from_user.id):
+            await callback.answer(
+                text=f'Вы забанены в Fantasy, обратитесь к администрации')
+            await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
-    elif datetime.now() < start_time:
-        # Получаем название дня в винительном падеже
-        day_name = get_day_of_week(start_time.weekday(), "винительный")
-        preposition = get_correct_preposition(day_name)
-        await callback.message.answer(
-            text=
-                f"В данный момент прогноз на <b>{await get_name_gp(actual_gp)} GP</b> еще не принимается\n"
-                f"Прием прогнозов начнётся {preposition} <b>{day_name} {start_time.strftime('%Y-%m-%d %H:%M')}</b>")
-        dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
-        await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
+        elif await is_prediced(callback.from_user.id, actual_gp):
+            await callback.answer(
+                text=f'Вы уже отправили прогноз на {await get_name_gp(actual_gp)} GP')
+            await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
-
-    elif datetime.now() > start_time:
-        if datetime.now() < end_time:
-            penalty_time = await get_penalty_grandprix_by_id(actual_gp)
+        elif datetime.now() < start_time:
+            # Получаем название дня в винительном падеже
+            day_name = get_day_of_week(start_time.weekday(), "винительный")
+            preposition = get_correct_preposition(day_name)
             await callback.message.answer(
-                text=f'Окончание приема прогноза на <b>{await get_name_gp(actual_gp)} GP</b> закончится в <b>{get_day_of_week(end_time.weekday(), "винительный")} {end_time.strftime("%Y-%m-%d %H:%M")}</b>\n Без штрафа прогноз можно подать до <b>{get_day_of_week(penalty_time.weekday(), "родительный")} {penalty_time.strftime("%Y-%m-%d %H:%M")}</b>')
-            dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
-            await dialog_manager.switch_to(UserSG.send_predict)
-        else:
-            await callback.message.answer(
-                text=f'В данный момент прогноз на <b>{await get_name_gp(actual_gp)} GP</b> не принимается\nПрием прогнозов закончился в <b>{get_day_of_week(end_time.weekday(), "винительный")} {end_time.strftime("%Y-%m-%d %H:%M")}</b>')
+                text=
+                    f"В данный момент прогноз на <b>{await get_name_gp(actual_gp)} GP</b> еще не принимается\n"
+                    f"Прием прогнозов начнётся {preposition} <b>{day_name} {start_time.strftime('%Y-%m-%d %H:%M')}</b>")
             dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
             await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
+
+
+        elif datetime.now() > start_time:
+            if datetime.now() < end_time:
+                penalty_time = await get_penalty_grandprix_by_id(actual_gp)
+                await callback.message.answer(
+                    text=f'Окончание приема прогноза на <b>{await get_name_gp(actual_gp)} GP</b> закончится в <b>{get_day_of_week(end_time.weekday(), "винительный")} {end_time.strftime("%Y-%m-%d %H:%M")}</b>\n Без штрафа прогноз можно подать до <b>{get_day_of_week(penalty_time.weekday(), "родительный")} {penalty_time.strftime("%Y-%m-%d %H:%M")}</b>')
+                dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+                await dialog_manager.switch_to(UserSG.send_predict)
+            else:
+                await callback.message.answer(
+                    text=f'В данный момент прогноз на <b>{await get_name_gp(actual_gp)} GP</b> не принимается\nПрием прогнозов закончился в <b>{get_day_of_week(end_time.weekday(), "винительный")} {end_time.strftime("%Y-%m-%d %H:%M")}</b>')
+                dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+                await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
 async def get_all_teams_predict(dialog_manager: DialogManager, **kwargs):
     return {'teams_for_select': sorted({i.driver_team + '  ' + i.engine_short for i in await select_drivers_async(active=True)}), 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡")])}
