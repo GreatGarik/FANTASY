@@ -382,7 +382,7 @@ async def show_result(gp=None):
 
 
 # Получение пользователя по его id в телеграме или всех, если id не задан
-async def get_users_async(id_telegram=None):
+async def get_users_async(id_telegram=None, active=True):
     async with async_session() as session:
         async with session.begin():
             if id_telegram:
@@ -394,7 +394,10 @@ async def get_users_async(id_telegram=None):
                     # Обработка исключений, если необходимо
                     return None
             else:
-                result = await session.execute(select(User).where(and_(User.banned == False, User.active == True)))
+                if active:
+                    result = await session.execute(select(User).where(and_(User.banned == False, User.active == True)))
+                else:
+                    result = await session.execute(select(User).where(and_(User.banned == False)))
                 return result.scalars().all()
 
 

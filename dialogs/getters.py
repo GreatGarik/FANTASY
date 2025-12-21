@@ -114,7 +114,7 @@ async def send_all(message: Message,widget: ManagedTextInput,dialog_manager: Dia
         await send_message(dialog_manager.dialog_data.get('user_tg_id'), message.html_text, bot)
         await message.answer('Ваше сообщение было отправлено')
     else:
-        users = await get_users_async()
+        users = await get_users_async(active=False)
         # Создаем список задач
         tasks = []
         for user in users:
