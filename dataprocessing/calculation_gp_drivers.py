@@ -14,7 +14,7 @@ async def calculation_drivers(gp):
     # Получаем максимальные значения для разных срезов
     first_max = max(results_predict_gp.get(name, 0) for name in names)
     second_max = max(results_predict_gp.get(name, 0) for name in names[10:])
-    third_max = max(results_predict_gp.get(name, 0) for name in names[15:])
+    third_max = max(results_predict_gp.get(name, 0) for name in names[16:])
 
     for predict in predicts_from_db:
         counter_best = 0

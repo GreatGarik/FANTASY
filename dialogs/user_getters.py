@@ -152,6 +152,13 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
                 text=f'Вы уже отправили прогноз на {await get_name_gp(actual_gp)} GP')
             await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
+        elif not start_time:
+            await callback.message.answer(
+                text=
+                    f"В данный момент прогнозы еще не принимаются. Ждем начала сезона :)\n")
+            dialog_manager.show_mode = ShowMode.DELETE_AND_SEND
+            await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
+
         elif datetime.now() < start_time:
             # Получаем название дня в винительном падеже
             day_name = get_day_of_week(start_time.weekday(), "винительный")
@@ -178,23 +185,23 @@ async def button_send_predict(callback: CallbackQuery, button: Button, dialog_ma
                 await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())
 
 async def get_all_teams_predict(dialog_manager: DialogManager, **kwargs):
-    return {'teams_for_select': sorted({i.driver_team + '  ' + i.engine_short for i in await select_drivers_async(active=True)}), 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡")])}
+    return {'teams_for_select': sorted({i.driver_team + '  ' + i.engine_short for i in await select_drivers_async(active=True)}), 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡", "🟢")])}
 
 async def get_all_engines_predict(dialog_manager: DialogManager, **kwargs):
-    return {'engines_for_select': sorted({i.driver_engine + '  ' + i.engine_short for i in await select_drivers_async(active=True)}), 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡")])}
+    return {'engines_for_select': sorted({i.driver_engine + '  ' + i.engine_short for i in await select_drivers_async(active=True)}), 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡", "🟢")])}
 
 async def get_all_drivers_predict(dialog_manager: DialogManager, **kwargs):
-    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(active=True)], 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡")])}
+    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(active=True)], 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡", "🟢")])}
 
 async def get_all_drivers_predict_second(dialog_manager: DialogManager, **kwargs):
     return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(active=True) if
-                                                                    i.driver_name not in [*dialog_manager.dialog_data.values()]], 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡")])}
+                                                                    i.driver_name not in [*dialog_manager.dialog_data.values()]], 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡", "🟢")])}
 
 async def get_all_drivers_predict_third(dialog_manager: DialogManager, **kwargs):
-    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(start=10, active=True) if i.driver_name not in [*dialog_manager.dialog_data.values()]], 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡")])}
+    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(start=10, active=True) if i.driver_name not in [*dialog_manager.dialog_data.values()]], 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡", "🟢")])}
 
 async def get_all_drivers_predict_fourth(dialog_manager: DialogManager, **kwargs):
-    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(start=15, active=True) if i.driver_name not in [*dialog_manager.dialog_data.values()]], 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡")])}
+    return {'drivers_for_select': [(i.driver_name + ' (' + i.driver_team + ')' + '  ' + i.engine_short, i.driver_name, i.engine_short) for i in await select_drivers_async(start=16, active=True) if i.driver_name not in [*dialog_manager.dialog_data.values()]], 'engines': ' '.join([i for i in dialog_manager.dialog_data.values() if i in ("🟣", "⚫", "🔴", "🟡", "🟢")])}
 
 async def predict_ending(dialog_manager: DialogManager, **kwargs):
     name_gp = await get_name_gp(await get_actual_gp_async())
