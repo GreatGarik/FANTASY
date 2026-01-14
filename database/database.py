@@ -131,7 +131,7 @@ async def add_user_request (user_id: int):
 
 # Запись прогноза на гонку
 async def send_predict(tg_id, gp, first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap,
-                       lapped, penalty, time):
+                       lapped, penalty, select_duel1, select_duel2, select_duel3, time):
     async with async_session() as session:
         async with session.begin():
             try:
@@ -147,7 +147,10 @@ async def send_predict(tg_id, gp, first_driver, second_driver, third_driver, fou
                     lapped=lapped,
                     gp=gp,
                     penalty=penalty,
-                    time=time
+                    time=time,
+                    select_duel1=select_duel1,
+                    select_duel2=select_duel2,
+                    select_duel3=select_duel3
                 )
                 session.add(new_predict)
                 await session.commit()
@@ -227,11 +230,11 @@ async def add_team_points(team_id, points: list, gp=None):
 
 # Заполнение таблицы результатов GP
 async def add_result(tg_id, first_driver: str, second_driver: str, third_driver: str, fourth_driver: str,
-                     driver_team: str, driver_engine: str, gap: int, lapped: int, counter_best,
+                     driver_team: str, driver_engine: str, gap: int, lapped: int, select_duel1 : int, select_duel2 : int, select_duel3: int, counter_best,
                      max1_best, max2_best, max3_best, max1_not_best, max2_not_best, max3_not_best,
                      max4_not_best, counter_lap_gap, max_lap_gap, penalty, gp=None):
     total = sum(
-        [first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap, lapped]) - (
+        [first_driver, second_driver, third_driver, fourth_driver, driver_team, driver_engine, gap, lapped, select_duel1, select_duel2, select_duel3]) - (
                 penalty if penalty else 0)
 
     async with async_session() as session:
@@ -239,7 +242,8 @@ async def add_result(tg_id, first_driver: str, second_driver: str, third_driver:
             try:
                 result_entry = Result(user_id=tg_id, first_driver=first_driver, second_driver=second_driver,
                                       third_driver=third_driver, fourth_driver=fourth_driver, driver_team=driver_team,
-                                      driver_engine=driver_engine, gap=gap, lapped=lapped, total=total,
+                                      driver_engine=driver_engine, gap=gap, lapped=lapped, select_duel1=select_duel1, select_duel2=select_duel2, select_duel3=select_duel3,
+                                      total=total,
                                       counter_best=counter_best, max1_best=max1_best, max2_best=max2_best,
                                       max3_best=max3_best, max1_not_best=max1_not_best, max2_not_best=max2_not_best,
                                       max3_not_best=max3_not_best, max4_not_best=max4_not_best,
@@ -248,7 +252,7 @@ async def add_result(tg_id, first_driver: str, second_driver: str, third_driver:
                 session.add(result_entry)
                 await session.commit()
             except Exception as e:
-                print(e)
+               print(e)
 
 
 # Возврат списка пользователей и их очков по GP
@@ -341,8 +345,9 @@ async def get_result(gp=None):
                 Result.max2_not_best.desc(),
                 Result.max3_not_best.desc(),
                 Result.max4_not_best.desc(),
+                (Result.select_duel1 + Result.select_duel2 + Result.select_duel3).desc(),
                 Result.counter_lap_gap.desc(),
-                Result.max_lap_gap.desc(),
+                (Result.select_duel1 + Result.select_duel2 + Result.select_duel3 + Result.lapped).desc(),
                 Result.id
             )
 
@@ -367,8 +372,9 @@ async def show_result(gp=None):
             Result.max2_not_best.desc(),
             Result.max3_not_best.desc(),
             Result.max4_not_best.desc(),
+            (Result.select_duel1 + Result.select_duel2 + Result.select_duel3).desc(),
             Result.counter_lap_gap.desc(),
-            Result.max_lap_gap.desc(),
+            (Result.select_duel1 + Result.select_duel2 + Result.select_duel3 + Result.lapped).desc(),
             Result.id
         ).outerjoin(Point)
 
@@ -1055,7 +1061,10 @@ async def get_predictions_by_gp(gp_id: int):
                     "fourth_driver": pred.fourth_driver,
                     "driver_team": pred.driver_team,
                     "driver_engine": pred.driver_engine,
-                    "gap": pred.gap,
+                    "select_duel1": pred.select_duel1,
+                    "select_duel2": pred.select_duel2,
+                    "select_duel3": pred.select_duel3,
+                    #"gap": pred.gap,
                     "lapped": pred.lapped,
                     "penalty": pred.penalty,
                     "time": pred.time,
@@ -1155,3 +1164,33 @@ async def add_scheduled_message(chat_id: int, text: str, send_time: datetime):
             message = ScheduledMessage(chat_id=chat_id, text=text, send_time=send_time)
             session.add(message)
             await session.commit()
+
+async def add_duel(participant1: str, participant2: str, num: int, gp: int):
+    async with async_session() as session:
+        async with session.begin():
+            new_duel = Duel(participant1=participant1, participant2=participant2, num=num, gp=gp)
+            session.add(new_duel)
+            await session.commit()
+
+async def delete_duels_by_gp(gp_value: int):
+    async with async_session() as session:               # async_session — ваша фабрика сессий
+        async with session.begin():
+            stmt = delete(Duel).where(Duel.gp == gp_value)
+            await session.execute(stmt)
+            await session.commit()
+
+async def get_duel_pair(num_value: Optional[int] = None, gp_value: int = None) -> List[List[str]] | List[str]:
+    async with async_session() as session:
+        async with session.begin():
+            if num_value is None:
+                stmt = select(Duel.participant1, Duel.participant2).where(Duel.gp == gp_value)
+                result = await session.execute(stmt)
+                return [[row.participant1, row.participant2] for row in result.fetchall()]
+            else:
+                stmt = select(Duel.participant1, Duel.participant2).where(
+                    Duel.num == num_value,
+                    Duel.gp == gp_value
+                )
+                result = await session.execute(stmt)
+                row = result.first()
+                return [row.participant1, row.participant2]

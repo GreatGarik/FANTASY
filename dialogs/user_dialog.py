@@ -112,7 +112,7 @@ user_dialog = Dialog(
     ),
     Window(
         Format(text='Выберите <b>команду</b>:\n'
-                    'Не забывайте про правило трёх двигателей\n'
+                    'Не забывайте про правило двух двигателей\n'
                     'Сейчас у Вас выбраны:\n'
                     '{engines}'),
         Group(
@@ -135,7 +135,7 @@ user_dialog = Dialog(
     ),
     Window(
         Format(text='Выберите <b>двигатель</b>:\n'
-                    'Не забывайте про правило трёх двигателей\n'
+                    'Не забывайте про правило двух двигателей\n'
                     'Сейчас у Вас выбраны:\n'
                     '{engines}'),
         Group(
@@ -159,7 +159,7 @@ user_dialog = Dialog(
     ),
     Window(
         Format(text='Выберите <b>первого пилота</b>:\n'
-                    'Не забывайте про правило трёх двигателей\n'
+                    'Не забывайте про правило двух двигателей\n'
                     'Сейчас у Вас выбраны:\n'
                     '{engines}'),
         Group(
@@ -183,7 +183,7 @@ user_dialog = Dialog(
     ),
     Window(
         Format(text='Выберите <b>второго пилота</b>:\n'
-                    'Не забывайте про правило трёх двигателей\n'
+                    'Не забывайте про правило двух двигателей\n'
                     'Сейчас у Вас выбраны:\n'
                     '{engines}'),
         Group(
@@ -207,7 +207,7 @@ user_dialog = Dialog(
     ),
     Window(
         Format(text='Выберите <b>третьего пилота</b>:\n'
-                    'Не забывайте про правило трёх двигателей\n'
+                    'Не забывайте про правило двух двигателей\n'
                     'Сейчас у Вас выбраны:\n'
                     '{engines}'),
         Group(
@@ -231,7 +231,7 @@ user_dialog = Dialog(
     ),
     Window(
         Format(text='Выберите <b>четвертого пилота</b>:\n'
-                    'Не забывайте про правило трёх двигателей\n'
+                    'Не забывайте про правило двух двигателей\n'
                     'Сейчас у Вас выбраны:\n'
                     '{engines}'),
         Group(
@@ -254,6 +254,75 @@ user_dialog = Dialog(
         getter=get_all_drivers_predict_fourth
     ),
     Window(
+        Format(text='Выберите победителя\n'
+                    '<b>первой дуэли</b>:\n'
+                    ),
+        Group(
+            Select(
+                Format('{item}'),
+                id='select_duel1',
+                item_id_getter=lambda x: x,
+                items='duelists_1',
+                on_click=select_duel1,
+            ),
+            Back(Const('◀️ Назад'), id='back', on_click=back_duel1),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_user_menu)
+            ,
+            width=1
+        ),
+        state=UserSG.select_duel1,
+        getter=get_duel1
+    ),
+    Window(
+        Format(text='Выберите победителя\n'
+                    '<b>второй дуэли</b>:\n'
+               ),
+        Group(
+            Select(
+                Format('{item}'),
+                id='select_duel2',
+                item_id_getter=lambda x: x,
+                items='duelists_2',
+                on_click=select_duel2,
+            ),
+            Back(Const('◀️ Назад'), id='back', on_click=back_duel2),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_user_menu)
+            ,
+            width=1
+        ),
+        state=UserSG.select_duel2,
+        getter=get_duel2
+    ),
+    Window(
+        Format(text='Выберите победителя\n'
+                    '<b>третьей дуэли</b>:\n'
+               ),
+        Group(
+            Select(
+                Format('{item}'),
+                id='select_duel3',
+                item_id_getter=lambda x: x,
+                items='duelists_3',
+                on_click=select_duel3,
+            ),
+            Back(Const('◀️ Назад'), id='back', on_click=back_duel3),
+            Button(
+                text=Const('Вернуться в главное меню'),
+                id='button_menu',
+                on_click=button_user_menu)
+            ,
+            width=1
+        ),
+        state=UserSG.select_duel3,
+        getter=get_duel3
+    ),
+    Window(
         Const(text='<b>Введите отставание от лидера в секундах (целое число)</b>:'),
         TextInput(
             id='loading_f1_result_sprint',
@@ -272,7 +341,7 @@ user_dialog = Dialog(
         state=UserSG.send_predict_laps
     ),
     Window(
-        Format('Подтвердите Ваш прогноз на <b>{name_gp} GP</b>:\nКоманда: <b>{driver_team}</b>\nДвигатель: <b>{driver_engine}</b>\nПервый пилот: <b>{first_driver}</b>\nВторой пилот: <b>{second_driver}</b>\nТретий пилот: <b>{third_driver}</b>\nЧетвертый пилот: <b>{fourth_driver}</b>\nОтставание от лидера: <b>{gap}</b>\nКоличество круговых: <b>{lapped}</b>'),
+        Format('Подтвердите Ваш прогноз на <b>{name_gp} GP</b>:\nКоманда: <b>{driver_team}</b>\nДвигатель: <b>{driver_engine}</b>\nПервый пилот: <b>{first_driver}</b>\nВторой пилот: <b>{second_driver}</b>\nТретий пилот: <b>{third_driver}</b>\nЧетвертый пилот: <b>{fourth_driver}</b>\n1 дуэль: <b>{select_duel1}</b>\n2 дуэль: <b>{select_duel2}</b>\n3 дуэль: <b>{select_duel3}</b>\nКоличество круговых: <b>{lapped}</b>'),
         Button(
             text=Const('Подтвердить'),
             id='button_confirm_predict',

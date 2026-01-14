@@ -1,12 +1,11 @@
 import operator
 from aiogram_dialog.widgets.text import Const, Format
-from aiogram_dialog.widgets.kbd import Radio, Back
 from aiogram import Router, F
 from aiogram.enums import ContentType, ParseMode
 from aiogram.filters import Command, CommandStart, StateFilter, BaseFilter
 from .getters import *
 from aiogram_dialog import Dialog, DialogManager, StartMode, Window, setup_dialogs, ShowMode
-from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar, Radio, Back, Url
+from aiogram_dialog.widgets.kbd import Button, Cancel, Row, Column, Group, Select, Calendar, Radio, Back, Url, Multiselect
 
 
 class IsAdmin(BaseFilter):
@@ -255,6 +254,96 @@ admin_dialog = Dialog(
             on_success=update_drivers_standing,
         ),
         state=AdminSG.update_drivers_standing,
+    ),
+    Window(
+        Const(text='Выберите участников первой дуэли или воспользуйтесь кнопкой рандом:'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_open_predict',
+            on_click=cancel_open_predict)
+        ,
+        Column(
+            Multiselect(
+                checked_text=Format('[✔️] {item[0]}'),
+                unchecked_text=Format('[  ] {item[0]}'),
+                id='duel1',
+                item_id_getter=operator.itemgetter(1),
+                max_selected=2,
+                items="duelists",
+            ),
+        ),
+        Button(
+            text=Const('Подтвердите выбор'),
+            id='confirm_duel1',
+            on_click=confirm_duel1),
+        Button(
+            text=Const('Рандом'),
+            id='random_duel1',
+            on_click=random_duel1)
+        ,
+        state=AdminSG.duel1,
+        getter=get_duelists1
+
+    ),
+    Window(
+        Const(text='Выберите участников второй дуэли или воспользуйтесь кнопкой рандом:'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_open_predict',
+            on_click=cancel_open_predict)
+        ,
+        Column(
+            Multiselect(
+                checked_text=Format('[✔️] {item[0]}'),
+                unchecked_text=Format('[  ] {item[0]}'),
+                id='duel2',
+                item_id_getter=operator.itemgetter(1),
+                max_selected=2,
+                items="duelists",
+            ),
+        ),
+        Button(
+            text=Const('Подтвердите выбор'),
+            id='confirm_duel2',
+            on_click=confirm_duel2),
+        Button(
+            text=Const('Рандом'),
+            id='random_duel2',
+            on_click=random_duel2)
+        ,
+        state=AdminSG.duel2,
+        getter=get_duelists2
+
+    ),
+    Window(
+        Const(text='Выберите участников третьей дуэли или воспользуйтесь кнопкой рандом:'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_open_predict',
+            on_click=cancel_open_predict)
+        ,
+        Column(
+            Multiselect(
+                checked_text=Format('[✔️] {item[0]}'),
+                unchecked_text=Format('[  ] {item[0]}'),
+                id='duel3',
+                item_id_getter=operator.itemgetter(1),
+                max_selected=2,
+                items="duelists",
+            ),
+        ),
+        Button(
+            text=Const('Подтвердите выбор'),
+            id='confirm_duel3',
+            on_click=confirm_duel3),
+        Button(
+            text=Const('Рандом'),
+            id='random_duel3',
+            on_click=random_duel3)
+        ,
+        state=AdminSG.duel3,
+        getter=get_duelists3
+
     ),
     Window(
         Const('Начать прием прогнозов сразу или выбрать дату и время начала?'),

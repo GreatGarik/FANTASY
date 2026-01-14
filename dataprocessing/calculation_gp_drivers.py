@@ -6,7 +6,7 @@ from database.database import get_predict, add_result, get_result, add_points, g
 async def calculation_drivers(gp):
     deltas = {0: 10, 1: 7, 2: 5, 3: 3, 4: 2, 5: 1}
     predicts_from_db = await get_predict(gp)
-    results_predict_gp, results_gp_drivers_by_stage = await get_res_gp()
+    results_predict_gp, results_gp_drivers_by_stage, winners_duels = await get_res_gp()
 
     drivers = await select_drivers_async(active=True)
     names = [i.driver_name for i in drivers]
@@ -68,13 +68,18 @@ async def calculation_drivers(gp):
         delta_gap = abs(results_predict_gp.get('gap', 4000) - predict.gap)
         delta_laps = abs(results_predict_gp.get('laps', 4000) - predict.lapped)
         max_lap_gap = max(deltas.get(delta_gap, 0), deltas.get(delta_laps, 0))
+
         await add_result(predict.user_id, results_predict_gp.get(predict.first_driver, 0),
                          results_predict_gp.get(predict.second_driver, 0),
                          results_predict_gp.get(predict.third_driver, 0),
                          results_predict_gp.get(predict.fourth_driver, 0),
                          results_predict_gp.get('team_' + predict.driver_team, 0),
                          results_predict_gp.get('engine_' + predict.driver_engine, 0),
-                         deltas.get(delta_gap, 0), deltas.get(delta_laps, 0), counter_best, max1_best, max2_best,
+                         deltas.get(delta_gap, 0), deltas.get(delta_laps, 0),
+                         winners_duels.get(predict.select_duel1, 0),
+                         winners_duels.get(predict.select_duel2, 0),
+                         winners_duels.get(predict.select_duel3, 0),
+                         counter_best, max1_best, max2_best,
                          max3_best,
                          max1_not_best, max2_not_best, max3_not_best, max4_not_best, counter_lap_gap, max_lap_gap,
                          predict.penalty, gp)

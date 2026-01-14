@@ -1,4 +1,5 @@
 from datetime import datetime, date, time
+import random
 import locale
 import platform
 import asyncio
@@ -15,7 +16,7 @@ from dataprocessing.excel_forms import entry_list, last_stage, process_champions
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 from database.database import get_users_async, check_res, \
     clear_results, get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async, change_user_banned_status, delete_team_from_db, add_scheduled_message, get_users_async_no_team, get_new_users_async, get_users_from_requests, approving_the_request
+    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async, change_user_banned_status, delete_team_from_db, add_scheduled_message, get_users_async_no_team, get_new_users_async, get_users_from_requests, approving_the_request, add_duel, delete_duels_by_gp, get_duel_pair
 from .dop_functions import send_message
 from scheduler.scheduler import scheduler, schedule_message
 
@@ -77,6 +78,9 @@ class AdminSG(StatesGroup):
     exit_admin = State()
     send_all = State()
     send_no_team = State()
+    duel1 = State()
+    duel2 = State()
+    duel3 = State()
 
 current_os = platform.system()
 
@@ -573,10 +577,63 @@ async def changing_driver(callback: CallbackQuery, button: Button, dialog_manage
 async def all_stages(**kwargs):
     return {'grandprix_list': await get_grandprix_list(datetime.now().year)}
 
+async def get_duelists1(dialog_manager: DialogManager, **kwargs):
+    duelists = [i.driver_name for i in await select_drivers_async(active=True)][1:5]
+    duelists_pairs = [(name, name) for name in duelists]
+    return {'duelists': duelists_pairs}
+
+async def confirm_duel1(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    widget = dialog_manager.find('duel1')
+    pair = widget.get_checked()
+    await add_duel(pair[0], pair[1], 1,dialog_manager.dialog_data.get('predict_gp_selected'))
+    await dialog_manager.switch_to(AdminSG.duel2)
+
+async def random_duel1(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    duelists1 = [i.driver_name for i in await select_drivers_async(active=True)][1:5]
+    pair = random.sample(duelists1, 2)
+    await add_duel(pair[0], pair[1], 1,dialog_manager.dialog_data.get('predict_gp_selected'))
+    await dialog_manager.switch_to(AdminSG.duel2)
+
+
+async def get_duelists2(dialog_manager: DialogManager, **kwargs):
+    duelists = [i.driver_name for i in await select_drivers_async(active=True)][8:12]
+    duelists_pairs = [(name, name) for name in duelists]
+    return {'duelists': duelists_pairs}
+
+async def confirm_duel2(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    widget = dialog_manager.find('duel2')
+    pair = widget.get_checked()
+    await add_duel(pair[0], pair[1], 2,dialog_manager.dialog_data.get('predict_gp_selected'))
+    await dialog_manager.switch_to(AdminSG.duel3)
+
+async def random_duel2(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    duelists1 = [i.driver_name for i in await select_drivers_async(active=True)][8:12]
+    pair = random.sample(duelists1, 2)
+    await add_duel(pair[0], pair[1], 2,dialog_manager.dialog_data.get('predict_gp_selected'))
+    await dialog_manager.switch_to(AdminSG.duel3)
+
+async def get_duelists3(dialog_manager: DialogManager, **kwargs):
+    duelists = [i.driver_name for i in await select_drivers_async(active=True)][15:19]
+    duelists_pairs = [(name, name) for name in duelists]
+    return {'duelists': duelists_pairs}
+
+async def confirm_duel3(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    widget = dialog_manager.find('duel3')
+    pair = widget.get_checked()
+    await add_duel(pair[0], pair[1], 3,dialog_manager.dialog_data.get('predict_gp_selected'))
+    await dialog_manager.switch_to(AdminSG.datetime_start)
+
+async def random_duel3(callback: CallbackQuery, button: Button, dialog_manager: DialogManager, **kwargs):
+    duelists1 = [i.driver_name for i in await select_drivers_async(active=True)][15:19]
+    pair = random.sample(duelists1, 2)
+    await add_duel(pair[0], pair[1], 3,dialog_manager.dialog_data.get('predict_gp_selected'))
+    await dialog_manager.switch_to(AdminSG.datetime_start)
 
 async def predict_gp_selected(callback: CallbackQuery, widget: Select,
                               dialog_manager: DialogManager, item_id: str):
+    dialog_manager.dialog_data.clear()
     dialog_manager.dialog_data['predict_gp_selected'] = int(item_id)
+    await delete_duels_by_gp(int(item_id))
     await dialog_manager.switch_to(AdminSG.update_drivers_standing)
 
 
@@ -587,10 +644,12 @@ async def update_drivers_standing(
         text: str) -> None:
     answer = await update_driver_positions(text)
     if answer == 'OK':
-        await dialog_manager.switch_to(AdminSG.datetime_start)
+        await dialog_manager.switch_to(AdminSG.duel1)
     else:
         await  message.answer(answer)
         await dialog_manager.switch_to(AdminSG.start)
+
+
 
 
 async def button_start_time_now(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
@@ -746,12 +805,17 @@ async def button_confirm_predict(callback: CallbackQuery, button: Button, dialog
     day_end = get_day_of_week(time_end_d.weekday(), "винительный")
     prep_end = get_preposition(day_end)
 
-    text = f'Привет!\nПриём прогнозов на <b> {await get_name_gp(gp_id)} GP</b>\nоткроется {prep_open} <b>{day_open} {time_start} МСК</b>\nбез штрафа до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty} МСК</b>\nокончание приёма {prep_end} <b>{day_end} {time_end} МСК</b>'
+
+    all_duels = await get_duel_pair(gp_value=gp_id)
+    duel1 = f'<b>{all_duels[0][0]}</b> vs <b>{all_duels[0][1]}</b>'
+    duel2 = f'<b>{all_duels[1][0]}</b> vs <b>{all_duels[1][1]}</b>'
+    duel3 = f'<b>{all_duels[2][0]}</b> vs <b>{all_duels[2][1]}</b>'
+    text = f'Привет!\nПриём прогнозов на <b> {await get_name_gp(gp_id)} GP</b>\nоткроется {prep_open} <b>{day_open} {time_start} МСК</b>\nбез штрафа до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty} МСК</b>\nокончание приёма {prep_end} <b>{day_end} {time_end} МСК</b>\n<b>Дуэли:</b>\n{duel1}\n{duel2}\n{duel3}'
     await add_scheduled_message(0, text, datetime.now() + timedelta(minutes=1))
     scheduler.add_job(schedule_message, 'date', run_date=(datetime.now() + timedelta(minutes=1)).strftime("%Y-%m-%d %H:%M:%S"), args=[0, text, bot])
 
     # Уведомление о начале принятия прогноза
-    text = f'❗ Приём прогнозов на <b> {await get_name_gp(gp_id)} GP</b> открылся!\nБез штрафа можно подать до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty} МСК</b>\nОкончание приёма прогнозов в <b>{get_day_of_week(time_end_d.weekday(), "винительный")} {time_end} МСК</b>'
+    text = f'❗ Приём прогнозов на <b> {await get_name_gp(gp_id)} GP</b> открылся!\nБез штрафа можно подать до <b>{get_day_of_week(time_penalty_d.weekday(), "родительный")} {time_penalty} МСК</b>\nОкончание приёма прогнозов в <b>{get_day_of_week(time_end_d.weekday(), "винительный")} {time_end} МСК</b>\n<b>Дуэли:</b>\n{duel1}\n{duel2}\n{duel3}'
     await add_scheduled_message(0, text, datetime.strptime(time_start, "%Y-%m-%d %H:%M"))
     scheduler.add_job(schedule_message, 'date', run_date=dialog_manager.dialog_data.get('start_datetime'), args=[0, text, bot])
 

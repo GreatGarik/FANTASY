@@ -59,6 +59,9 @@ class Result(Base):
     driver_engine: Mapped[int] = mapped_column(Integer)
     gap: Mapped[int] = mapped_column(Integer)
     lapped: Mapped[int] = mapped_column(Integer)
+    select_duel1: Mapped[int] = mapped_column(Integer)
+    select_duel2: Mapped[int] = mapped_column(Integer)
+    select_duel3: Mapped[int] = mapped_column(Integer)
     total: Mapped[int] = mapped_column(Integer)
     counter_best: Mapped[int] = mapped_column(Integer)
     max1_best: Mapped[int] = mapped_column(Integer)
@@ -92,6 +95,10 @@ class Predict(Base):
     penalty: Mapped[int] = mapped_column(Integer, nullable=True)
     gp: Mapped[int] = mapped_column(Integer)
     time: Mapped[DateTime] = mapped_column(DateTime, nullable=True)
+    select_duel1: Mapped[str] = mapped_column(String)
+    select_duel2: Mapped[str] = mapped_column(String)
+    select_duel3: Mapped[str] = mapped_column(String)
+
 
 
 
@@ -170,6 +177,17 @@ class Point(Base):
 
     user: Mapped[User] = relationship('User', back_populates='points')
     gp: Mapped[Grandprix] = relationship('Grandprix', back_populates='race')
+
+
+# Определяем модель Дуэлей
+class Duel(Base):
+    __tablename__ = 'duel'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    participant1: Mapped[str] = mapped_column(String, nullable=False)
+    participant2: Mapped[str] = mapped_column(String, nullable=False)
+    num: Mapped[int] = mapped_column(Integer)
+    gp: Mapped[int] = mapped_column(Integer)
 
 class ScheduledMessage(Base):
     __tablename__ = 'scheduled_messages'

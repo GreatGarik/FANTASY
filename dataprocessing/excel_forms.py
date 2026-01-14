@@ -183,7 +183,7 @@ async def last_stage():
     ws.add_image(img)
 
     # Записываем заголовки
-    headers = ['POS', '№', 'DRIVER', 'TEAM', None, 'DR1', 'DR2', 'DR3', 'DR4', 'TM', 'ENG', 'DIFF', 'LAP', 'PEN', 'PTS',
+    headers = ['POS', '№', 'DRIVER', 'TEAM', None, 'DR1', 'DR2', 'DR3', 'DR4', 'TM', 'ENG', 'DL1', 'DL2', 'DL3', 'LAP', 'PEN', 'PTS',
                'CH.PTS']
     ws.append(headers)
 
@@ -222,7 +222,9 @@ async def last_stage():
             result.fourth_driver,
             result.driver_team,
             result.driver_engine,
-            result.gap,
+            result.select_duel1,
+            result.select_duel2,
+            result.select_duel3,
             result.lapped,
             result.penalty,
             result.total,
