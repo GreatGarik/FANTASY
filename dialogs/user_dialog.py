@@ -33,6 +33,13 @@ user_dialog = Dialog(
             when=F['registered'] & F['active']
             ),
             Button(
+                text=Const('Изменить имя'),
+                id='button_change_name',
+                on_click=button_registration,
+                when=F['registered'] & F['can_change_name'] & ~F['is_user_in_request']
+            ),
+
+            Button(
                 text=Const('Отправить заявку на участие в Fantasy'),
                 id='button_send_active',
                 on_click=button_send_request,

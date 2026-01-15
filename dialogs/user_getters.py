@@ -13,7 +13,7 @@ from .dop_functions import send_message
 from .getters import AdminSG
 from database.database import send_predict, is_prediced, get_name_gp, \
     get_users_async, add_user_async, get_end_grandprix_by_id, get_start_grandprix_by_id, get_penalty_grandprix_by_id, \
-    select_drivers_async, get_actual_gp_async, is_user_banned, get_user_team, is_user_active, is_user_in_request, add_user_request, get_duel_pair
+    select_drivers_async, get_actual_gp_async, is_user_banned, get_user_team, is_user_active, is_user_in_request, add_user_request, get_duel_pair, can_change_name
 
 
 class UserSG(StatesGroup):
@@ -94,10 +94,8 @@ async def user_name(event_from_user: User, all_admins: list, **kwargs):
     if event_from_user.id in all_admins:
         is_admin = True
 
-    if user and not await is_user_active(event_from_user.id):
-        return {'user_name': user.name, 'unregistered': False, 'registered': True, 'admins': is_admin, 'active': False}
-    elif user and await is_user_active(event_from_user.id):
-        return {'user_name': user.name, 'unregistered': False, 'registered': True, 'admins': is_admin, 'active': True}
+    if user:
+        return {'user_name': user.name, 'unregistered': False, 'registered': True, 'admins': is_admin, 'active': user.active, 'can_change_name': user.can_change_name, is_user_in_request: await is_user_in_request(event_from_user.id)}
     else:
         return {'user_name': 'Незарегистрированный пользователь', 'unregistered': True, 'admins': is_admin}
 
@@ -105,6 +103,7 @@ async def button_registration(callback: CallbackQuery, button: Button, dialog_ma
     await dialog_manager.switch_to(UserSG.fill_form_name)
 
 async def button_send_request(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await can_change_name(callback.from_user.id, False)
     if await is_user_in_request(callback.from_user.id):
         await callback.answer(text='Вы уже отправили заявку, ожидайте...')
     elif await is_user_active(callback.from_user.id):

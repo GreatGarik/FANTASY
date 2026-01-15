@@ -105,15 +105,36 @@ async def get_actual_gp_async():
 
 # Добавление юзера
 async def add_user_async(user_id, name: str, lastname: str):
+    """
+    Добавляет пользователя, если его нет.
+    Если пользователь с таким id_telegram уже существует - обновляет только имя.
+    """
     async with async_session() as session:
         async with session.begin():
-            try:
-                user = User(name=name + ' ' + lastname, id_telegram=user_id)
-                session.add(user)
-                # Коммит будет выполнен автоматически при выходе из блока session.begin()
-            except Exception as e:
-                # Обработка исключений, если необходимо
-                raise e
+            full_name = f"{name} {lastname}"
+
+            # Ищем пользователя по telegram id
+            query = select(User).where(User.id_telegram == user_id)
+            result = await session.execute(query)
+            existing_user = result.scalar_one_or_none()
+
+            if existing_user:
+                # Обновляем только имя существующего пользователя
+                existing_user.name = full_name
+            else:
+                # Создаем нового пользователя со значениями по умолчанию
+                new_user = User(
+                    id_telegram=user_id,
+                    name=full_name,
+                    number=None,
+                    banned=False,
+                    active=False,
+                    can_change_name=False
+                )
+                session.add(new_user)
+
+
+
 
 # Добавление реквеста юзера
 async def add_user_request (user_id: int):
@@ -1103,6 +1124,13 @@ async def approving_the_request(id_telegram: int, approve: bool):
             # Находим id пользователя и удаляем его заявки по FK Request.user_id
             del_stmt = delete(Request).where(Request.user_id == id_telegram)
             await session.execute(del_stmt)
+
+async def can_change_name(id_telegram: int, can_change: bool):
+    async with async_session() as session:
+        async with session.begin():
+            # Обновляем поле active у пользователя
+            stmt = update(User).where(User.id_telegram == id_telegram).values(can_change_name=can_change)
+            await session.execute(stmt)
 
 async def is_user_banned(id_telegram: int) -> bool:
     async with async_session() as session:

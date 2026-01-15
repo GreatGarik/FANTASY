@@ -21,6 +21,7 @@ class User(Base):
     number: Mapped[int] = mapped_column(Integer, unique=True, nullable=True)
     banned: Mapped[bool] = mapped_column(Boolean,nullable=True, default=0)
     active: Mapped[bool] = mapped_column(Boolean, nullable=True, default=0)
+    can_change_name: Mapped[bool] = mapped_column(Boolean, nullable=True, default=0)
 
     points: Mapped[List['Point']] = relationship('Point', back_populates='user')
     request: Mapped[int] = relationship('Request', back_populates='user')
