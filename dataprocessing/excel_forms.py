@@ -862,7 +862,7 @@ async def export_places_summary_by_year(year):
         items.sort(key=lambda x: x[1], reverse=True)
         out = []
         for uid, cnt in items:
-            out.append({'Number': user_number.get(uid, ''), 'Name': user_name.get(uid, ''), col_name: cnt})
+            out.append({'№': user_number.get(uid, ''), 'Driver': user_name.get(uid, ''), col_name: cnt})
         return out
 
     sheets = {
@@ -879,9 +879,9 @@ async def export_places_summary_by_year(year):
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         for sheet_name, (key, col_name) in sheets.items():
-            df = pd.DataFrame(build_rows(key, col_name), columns=['Number', 'Name', col_name])
+            df = pd.DataFrame(build_rows(key, col_name), columns=['№', 'Driver', col_name])
             if df.empty:
-                df = pd.DataFrame(columns=['Number', 'Name', col_name])
+                df = pd.DataFrame(columns=['№', 'Driver', col_name])
             df.to_excel(writer, sheet_name=sheet_name, index=False)
 
         for sheet_name in writer.sheets:
