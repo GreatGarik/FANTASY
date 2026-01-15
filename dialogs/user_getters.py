@@ -66,7 +66,7 @@ async def fill_form_name(message: Message, widget: ManagedTextInput, dialog_mana
     name, lastname = text.split()
     await add_user_async(message.from_user.id, name.capitalize(), lastname.upper())
     await message.answer(
-        text='Спасибо за регистрацию, теперь Вы можете делать прогнозы.')
+        text='Спасибо за регистрацию, теперь Вы можете подать заявку на участие в Fantasy.')
     await dialog_manager.switch_to(UserSG.start)
 
 async def feedback(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
