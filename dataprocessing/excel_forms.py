@@ -2,12 +2,13 @@ from datetime import datetime
 import os
 from typing import List
 import pandas as pd
+from collections import Counter, defaultdict
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image
 from io import BytesIO
-from database.database import get_actual_gp_async, show_result, show_points_all, get_user_team, show_points_team_all, get_teams_fonts_colors, get_name_gp, get_maximus, get_all_users, get_predictions_by_gp, get_all_teams_players
+from database.database import get_actual_gp_async, show_result, show_points_all, get_user_team, show_points_team_all, get_teams_fonts_colors, get_name_gp, get_maximus, get_all_users, get_predictions_by_gp, get_all_teams_players, get_user_places_by_year
 
 async def entry_list():
     users_list: List[dict] = await get_all_users()
@@ -819,4 +820,84 @@ async def process_all_teams():
             worksheet.column_dimensions[get_column_letter(column[0].column)].width = adjusted_width
 
     output.seek(0)  # Перемещаем указатель в начало
+    return output
+
+
+async def export_places_summary_by_year(year):
+    rows = await get_user_places_by_year(year)
+
+    counts = defaultdict(lambda: {
+        'first': 0, 'podium': 0, 'top5': 0, 'top10': 0,
+        'top20': 0, 'top30': 0, 'top40': 0, 'top50': 0
+    })
+    user_number = {}
+    user_name = {}
+
+    for user, place in rows:
+        if getattr(user, 'id', None) is None:
+            continue
+        uid = user.id
+        user_number[uid] = '' if getattr(user, 'number', None) is None else user.number
+        user_name[uid] = getattr(user, 'name', '') or ''
+
+        if place == 1:
+            counts[uid]['first'] += 1
+        if 1 <= place <= 3:
+            counts[uid]['podium'] += 1
+        if 1 <= place <= 5:
+            counts[uid]['top5'] += 1
+        if 1 <= place <= 10:
+            counts[uid]['top10'] += 1
+        if 1 <= place <= 20:
+            counts[uid]['top20'] += 1
+        if 1 <= place <= 30:
+            counts[uid]['top30'] += 1
+        if 1 <= place <= 40:
+            counts[uid]['top40'] += 1
+        if 1 <= place <= 50:
+            counts[uid]['top50'] += 1
+
+    def build_rows(key, col_name):
+        items = [(uid, data[key]) for uid, data in counts.items() if data[key] > 0]
+        items.sort(key=lambda x: x[1], reverse=True)
+        out = []
+        for uid, cnt in items:
+            out.append({'Number': user_number.get(uid, ''), 'Name': user_name.get(uid, ''), col_name: cnt})
+        return out
+
+    sheets = {
+        'FirstPlaces': ('first', 'WINS'),
+        'PODIUMS': ('podium', 'PODIUMS'),
+        'Top-5': ('top5', 'Top-5'),
+        'Top-10': ('top10', 'Top-10'),
+        'Top-20': ('top20', 'Top-20'),
+        'Top-30': ('top30', 'Top-30'),
+        'Top-40': ('top40', 'Top-40'),
+        'Top-50': ('top50', 'Top-50'),
+    }
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        for sheet_name, (key, col_name) in sheets.items():
+            df = pd.DataFrame(build_rows(key, col_name), columns=['Number', 'Name', col_name])
+            if df.empty:
+                df = pd.DataFrame(columns=['Number', 'Name', col_name])
+            df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+        for sheet_name in writer.sheets:
+            worksheet = writer.sheets[sheet_name]
+            for column in worksheet.columns:
+                max_length = 0
+                column_cells = [cell for cell in column]
+                for cell in column_cells:
+                    try:
+                        val = '' if cell.value is None else str(cell.value)
+                        if len(val) > max_length:
+                            max_length = len(val)
+                    except:
+                        pass
+                adjusted_width = (max_length + 2)
+                worksheet.column_dimensions[get_column_letter(column_cells[0].column)].width = adjusted_width
+
+    output.seek(0)
     return output

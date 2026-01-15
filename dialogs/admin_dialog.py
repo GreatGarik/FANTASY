@@ -52,6 +52,11 @@ admin_dialog = Dialog(
             on_click=button_send_message
         ),
         Button(
+            text=Const('Статистика'),
+            id='button_statistics',
+            on_click=button_statistics
+        ),
+        Button(
             text=Const('Выйти из админки'),
             id='button_exit',
             on_click=button_exit),
@@ -1179,6 +1184,20 @@ Window(
         ),
         state=AdminSG.f1_driver_change_team_teams,
         getter=f1_teams_active
+    ),
+    Window(
+        Const('Меню статистики'),
+        Column(Button(
+            text=Const('Сколько каких мест у пилотов'),
+            id='statistic_users',
+            on_click=statistic_users
+        ),
+        Button(
+            text=Const('Вернуться в главное меню'),
+            id='button_menu',
+            on_click=button_menu)
+        ),
+        state=AdminSG.statistics
     ),
 )
 '''

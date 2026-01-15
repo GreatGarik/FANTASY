@@ -1222,3 +1222,18 @@ async def get_duel_pair(num_value: Optional[int] = None, gp_value: int = None) -
                 result = await session.execute(stmt)
                 row = result.first()
                 return [row.participant1, row.participant2]
+
+
+
+async def get_user_places_by_year(year):
+    async with async_session() as session:
+        async with session.begin():
+            stmt = (
+                select(User, Point.place)
+                .join(Point, Point.user_id == User.id)
+                .join(Grandprix, Grandprix.id == Point.race_id)
+                .where(Grandprix.year == year)
+            )
+            result = await session.execute(stmt)
+            rows = result.all()
+            return [(row[0], row[1]) for row in rows]
