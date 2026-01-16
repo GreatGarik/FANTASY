@@ -1193,6 +1193,11 @@ Window(
             on_click=statistic_users
         ),
         Button(
+            text=Const('Сколько раз выбирали гонщиков, моторы, команды'),
+            id='statistic_select',
+            on_click=statistic_select
+        ),
+        Button(
             text=Const('Вернуться в главное меню'),
             id='button_menu',
             on_click=button_menu)

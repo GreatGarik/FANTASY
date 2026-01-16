@@ -1257,3 +1257,58 @@ async def get_user_places_by_year(year):
             result = await session.execute(stmt)
             rows = result.all()
             return [(row[0], row[1], row[2] if row[2] else 'PERSONAL ENTRY') for row in rows]
+
+
+async def counts_selects(year: int | None = None):
+    async with async_session() as session:
+        async with session.begin():
+            # Список уникальных значений из drivers
+            drivers = [r.driver_name for r in (await session.execute(select(Driver.driver_name).distinct())).fetchall()]
+            teams = [r.driver_team for r in (await session.execute(select(Driver.driver_team).distinct())).fetchall()]
+            engines = [r.driver_engine for r in (await session.execute(select(Driver.driver_engine).distinct())).fetchall()]
+
+            # Подготовка year фильтра (Predict.gp IN (SELECT id FROM grandprix WHERE year = :year))
+            if year is not None:
+                gp_subq = select(Grandprix.id).where(Grandprix.year == year)
+            else:
+                gp_subq = None
+
+            drivers_counts = []
+            for name in drivers:
+                if name is None:
+                    continue
+                where_clause = (
+                    (Predict.first_driver == name) |
+                    (Predict.second_driver == name) |
+                    (Predict.third_driver == name) |
+                    (Predict.fourth_driver == name)
+                )
+                if gp_subq is not None:
+                    where_clause = and_(where_clause, Predict.gp.in_(gp_subq))
+                cnt_q = select(func.count()).select_from(Predict).where(where_clause)
+                cnt = (await session.execute(cnt_q)).scalar_one()
+                drivers_counts.append((name, int(cnt)))
+
+            teams_counts = []
+            for team in teams:
+                if team is None:
+                    continue
+                where_clause = (Predict.driver_team == team)
+                if gp_subq is not None:
+                    where_clause = and_(where_clause, Predict.gp.in_(gp_subq))
+                cnt_q = select(func.count()).select_from(Predict).where(where_clause)
+                cnt = (await session.execute(cnt_q)).scalar_one()
+                teams_counts.append((team, int(cnt)))
+
+            engines_counts = []
+            for eng in engines:
+                if eng is None:
+                    continue
+                where_clause = (Predict.driver_engine == eng)
+                if gp_subq is not None:
+                    where_clause = and_(where_clause, Predict.gp.in_(gp_subq))
+                cnt_q = select(func.count()).select_from(Predict).where(where_clause)
+                cnt = (await session.execute(cnt_q)).scalar_one()
+                engines_counts.append((eng, int(cnt)))
+
+    return {"drivers": drivers_counts, "teams": teams_counts, "engines": engines_counts}

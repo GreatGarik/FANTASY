@@ -12,7 +12,7 @@ from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
 from asyncpg.pgproto.pgproto import timedelta
 
 from dataprocessing.excel_forms import entry_list, last_stage, process_championship_full, championship_team_full, \
-    process_calculation_command, process_all_predicts, process_all_teams, export_places_summary_by_year
+    process_calculation_command, process_all_predicts, process_all_teams, export_places_summary_by_year, export_counts_to_excel
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 from database.database import get_users_async, check_res, \
     clear_results, get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
@@ -478,6 +478,14 @@ async def statistic_users(callback: CallbackQuery, button: Button, dialog_manage
     output = await export_places_summary_by_year(2025)
     await callback.message.answer_document(
         document=BufferedInputFile(output.read(), filename='statistic_users.xlsx')
+    )
+    output.close()  # Закрываем объект после использования
+    await dialog_manager.switch_to(AdminSG.statistics)
+
+async def statistic_select(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    output = await export_counts_to_excel(2025)
+    await callback.message.answer_document(
+        document=BufferedInputFile(output.read(), filename='statistic_select.xlsx')
     )
     output.close()  # Закрываем объект после использования
     await dialog_manager.switch_to(AdminSG.statistics)

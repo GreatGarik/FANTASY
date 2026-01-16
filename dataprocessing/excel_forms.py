@@ -8,7 +8,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image
 from io import BytesIO
-from database.database import get_actual_gp_async, show_result, show_points_all, get_user_team, show_points_team_all, get_teams_fonts_colors, get_name_gp, get_maximus, get_all_users, get_predictions_by_gp, get_all_teams_players, get_user_places_by_year
+from database.database import get_actual_gp_async, show_result, show_points_all, get_user_team, show_points_team_all, get_teams_fonts_colors, get_name_gp, get_maximus, get_all_users, get_predictions_by_gp, get_all_teams_players, get_user_places_by_year, counts_selects
 
 async def entry_list():
     users_list: List[dict] = await get_all_users()
@@ -976,6 +976,42 @@ async def export_places_summary_by_year(year):
             worksheet.column_dimensions['D'].width = 9.0   # Logo
             worksheet.column_dimensions['E'].width = 9.0   # Count (First/Podium/Top-5...)
         # end for sheets
+
+    output.seek(0)
+    return output
+
+
+async def export_counts_to_excel(year: int = None):
+    counts = await counts_selects(year)  # {"drivers": [...], "teams": [...], "engines": [...]}
+
+    rows = []
+    for name, cnt in counts["drivers"]:
+        rows.append({"Type": "Driver", "Name": name, "Count": cnt})
+    for name, cnt in counts["teams"]:
+        rows.append({"Type": "Team", "Name": name, "Count": cnt})
+    for name, cnt in counts["engines"]:
+        rows.append({"Type": "Engine", "Name": name, "Count": cnt})
+
+    df = pd.DataFrame(rows, columns=["Type", "Name", "Count"])
+    df.fillna("", inplace=True)
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="Sheet1")
+        workbook = writer.book
+        worksheet = writer.sheets["Sheet1"]
+
+        # Подгоняем ширину столбцов
+        for column_cells in worksheet.columns:
+            max_length = 0
+            for cell in column_cells:
+                try:
+                    if cell.value and len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except Exception:
+                    pass
+            adjusted_width = max_length + 2
+            worksheet.column_dimensions[get_column_letter(column_cells[0].column)].width = adjusted_width
 
     output.seek(0)
     return output
