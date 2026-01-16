@@ -217,7 +217,7 @@ async def button_decline_the_request(callback: CallbackQuery, button: Button,
     bot = dialog_manager.middleware_data.get('bot')
     await can_change_name(int(dialog_manager.dialog_data['user_tg_id']), True)
     await approving_the_request(int(dialog_manager.dialog_data['user_tg_id']), False)
-    await send_message(int(dialog_manager.dialog_data['user_tg_id']), 'Ваша заявка на участи в Fantasy отклонена (некорректное имя), для изменения имени обратитесь к администрации', bot)
+    await send_message(int(dialog_manager.dialog_data['user_tg_id']), 'Ваша заявка на участи в Fantasy отклонена (некорректное имя), измените имя на корректное и повторно отправьте заявку.\nОбновите меню командой /start', bot)
     await callback.message.answer(f'Вы отклонили заявку пользователя')
     await dialog_manager.switch_to(AdminSG.users_menu)
 
