@@ -832,13 +832,15 @@ async def export_places_summary_by_year(year):
     })
     user_number = {}
     user_name = {}
+    user_team = {}  # uid -> team name (or '')
 
-    for user, place in rows:
+    for user, place, team_name in rows:
         if getattr(user, 'id', None) is None:
             continue
         uid = user.id
-        user_number[uid] = '' if getattr(user, 'number', None) is None else user.number
+        user_number[uid] = 'N/A' if getattr(user, 'number', None) is None else user.number
         user_name[uid] = getattr(user, 'name', '') or ''
+        user_team[uid] = team_name or ''
 
         if place == 1:
             counts[uid]['first'] += 1
@@ -862,11 +864,17 @@ async def export_places_summary_by_year(year):
         items.sort(key=lambda x: x[1], reverse=True)
         out = []
         for uid, cnt in items:
-            out.append({'№': user_number.get(uid, ''), 'Driver': user_name.get(uid, ''), col_name: cnt})
+            out.append({
+                '№': user_number.get(uid, ''),
+                'Name': user_name.get(uid, ''),
+                'Team': user_team.get(uid, ''),
+                '': '',  # пустая колонка-буфер после Team
+                col_name: cnt
+            })
         return out
 
     sheets = {
-        'FirstPlaces': ('first', 'WINS'),
+        'WINS': ('first', 'WINS'),
         'PODIUMS': ('podium', 'PODIUMS'),
         'Top-5': ('top5', 'Top-5'),
         'Top-10': ('top10', 'Top-10'),
@@ -876,28 +884,98 @@ async def export_places_summary_by_year(year):
         'Top-50': ('top50', 'Top-50'),
     }
 
+    teams_fonts = await get_teams_fonts_colors()  # team_name -> {background_color, text_color, number_font, number_italic, number_color, logo}
+
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         for sheet_name, (key, col_name) in sheets.items():
-            df = pd.DataFrame(build_rows(key, col_name), columns=['№', 'Driver', col_name])
+            df = pd.DataFrame(build_rows(key, col_name), columns=['№', 'Name', 'Team', '', col_name])
             if df.empty:
-                df = pd.DataFrame(columns=['№', 'Driver', col_name])
+                df = pd.DataFrame(columns=['№', 'Name', 'Team', '', col_name])
             df.to_excel(writer, sheet_name=sheet_name, index=False)
 
-        for sheet_name in writer.sheets:
             worksheet = writer.sheets[sheet_name]
+
+            # Заголовок
+            header_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')
+            header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+            thin_border = Border(left=Side(style='thin', color='FFFFFF'),
+                                 right=Side(style='thin', color='FFFFFF'),
+                                 top=Side(style='thin', color='FFFFFF'))
+            for cell in next(worksheet.iter_rows(min_row=1, max_row=1)):
+                cell.alignment = Alignment(horizontal='center', vertical='center')
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.border = thin_border
+
+            # Единая высота строк для данных
+            data_row_height = 17  # поставьте нужную высоту
+            for row_idx in range(2, worksheet.max_row + 1):
+                worksheet.row_dimensions[row_idx].height = data_row_height
+
+            # Оформление строк: чередование и применение стиля команды, вставка логотипа в колонку D (4)
+            for row_idx in range(2, worksheet.max_row + 1):
+                if (row_idx - 2) % 2 == 0:
+                    row_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+                else:
+                    row_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
+
+                for col_idx in range(1, worksheet.max_column + 1):
+                    cell = worksheet.cell(row=row_idx, column=col_idx)
+                    cell.alignment = Alignment(horizontal='center', vertical='center')
+                    if col_idx in (1, 2, 3):
+                        cell.font = Font(name='Formula1 Display Bold', size=11, bold=True, color='000001')
+                    else:
+                        cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
+                    cell.fill = row_fill
+
+                team_name = worksheet.cell(row=row_idx, column=3).value or ''
+                team_style = teams_fonts.get(team_name)
+                if team_style:
+                    fill = PatternFill(start_color=team_style['background_color'], end_color=team_style['background_color'], fill_type='solid')
+                    text_font = Font(name='Formula1 Display Bold', size=11, bold=False, color=team_style['text_color'])
+                    number_font = Font(name=team_style.get('number_font', 'Formula1 Display Bold'),
+                                       size=14,
+                                       bold=True,
+                                       italic=bool(team_style.get('number_italic', False)),
+                                       color=team_style.get('number_color', '000000'))
+                    worksheet.cell(row=row_idx, column=1).font = number_font
+                    worksheet.cell(row=row_idx, column=1).fill = fill
+                    worksheet.cell(row=row_idx, column=2).font = text_font
+                    worksheet.cell(row=row_idx, column=2).fill = fill
+                    worksheet.cell(row=row_idx, column=3).font = text_font
+                    worksheet.cell(row=row_idx, column=3).fill = fill
+
+                    # вставка логотипа в колонку D (4)
+                    logo_name = team_style.get('logo') or 'personal.png'
+                    img_path = os.path.join('logos', logo_name)
+                    if os.path.exists(img_path):
+                        img = Image(img_path)
+                        resize_percentage = 46  # % от оригинального размера
+                        img.width = int(img.width * (resize_percentage / 100))
+                        img.height = int(img.height * (resize_percentage / 100))
+                        img.anchor = f'D{row_idx}'
+                        worksheet.add_image(img)
+                else:
+                    # дефолтный логотип
+                    img_path = os.path.join('logos', 'personal.png')
+                    if os.path.exists(img_path):
+                        img = Image(img_path)
+                        resize_percentage = 46  # % от оригинального размера
+                        img.width = int(img.width * (resize_percentage / 100))
+                        img.height = int(img.height * (resize_percentage / 100))
+                        img.anchor = f'D{row_idx}'
+                        worksheet.add_image(img)
+
+            # Ширины колонок — сохраняем прежние значения, с учётом сдвига (пустой столбец D для логотипа, счётчик в E)
             for column in worksheet.columns:
-                max_length = 0
-                column_cells = [cell for cell in column]
-                for cell in column_cells:
-                    try:
-                        val = '' if cell.value is None else str(cell.value)
-                        if len(val) > max_length:
-                            max_length = len(val)
-                    except:
-                        pass
-                adjusted_width = (max_length + 2)
-                worksheet.column_dimensions[get_column_letter(column_cells[0].column)].width = adjusted_width
+                column_letter = column[0].column_letter  # Получаем букву столбца
+                worksheet.column_dimensions[column_letter].width = 7.7
+            worksheet.column_dimensions['B'].width = 35.7  # Name
+            worksheet.column_dimensions['C'].width = 41.7  # Team
+            worksheet.column_dimensions['D'].width = 9.0   # Logo
+            worksheet.column_dimensions['E'].width = 9.0   # Count (First/Podium/Top-5...)
+        # end for sheets
 
     output.seek(0)
     return output

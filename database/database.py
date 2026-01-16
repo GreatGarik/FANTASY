@@ -4,8 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from aiogram.utils.chat_member import USERS
 from certifi import where
 from datetime import datetime
-from sqlalchemy import create_engine, select, update, case, func, delete, asc, desc, and_
-from sqlalchemy.orm import sessionmaker, selectinload
+from sqlalchemy import create_engine, select, update, case, func, delete, asc, desc, and_, literal
+from sqlalchemy.orm import sessionmaker, selectinload, aliased
 from database.models import *
 from config_data.config import Config, load_config
 from sqlalchemy.exc import NoResultFound
@@ -1236,12 +1236,24 @@ async def get_duel_pair(num_value: Optional[int] = None, gp_value: int = None) -
 async def get_user_places_by_year(year):
     async with async_session() as session:
         async with session.begin():
+            TeamFirst = aliased(Team)
+            TeamSecond = aliased(Team)
+            TeamThird = aliased(Team)
+
             stmt = (
-                select(User, Point.place)
+                select(
+                    User,
+                    Point.place,
+                    func.coalesce(TeamFirst.name, TeamSecond.name, TeamThird.name, literal('')).label('team_name')
+                )
                 .join(Point, Point.user_id == User.id)
                 .join(Grandprix, Grandprix.id == Point.race_id)
+                .outerjoin(TeamFirst, TeamFirst.first == User.id)
+                .outerjoin(TeamSecond, TeamSecond.second == User.id)
+                .outerjoin(TeamThird, TeamThird.third == User.id)
                 .where(Grandprix.year == year)
             )
+
             result = await session.execute(stmt)
             rows = result.all()
-            return [(row[0], row[1]) for row in rows]
+            return [(row[0], row[1], row[2] if row[2] else 'PERSONAL ENTRY') for row in rows]
