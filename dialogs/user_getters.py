@@ -13,7 +13,7 @@ from .dop_functions import send_message
 from .getters import AdminSG
 from database.database import send_predict, is_prediced, get_name_gp, \
     get_users_async, add_user_async, get_end_grandprix_by_id, get_start_grandprix_by_id, get_penalty_grandprix_by_id, \
-    select_drivers_async, get_actual_gp_async, is_user_banned, get_user_team, is_user_active, is_user_in_request, add_user_request, get_duel_pair, can_change_name
+    select_drivers_async, get_actual_gp_async, is_user_banned, get_user_team, is_user_active, is_user_in_request, add_user_request, get_duel_pair, can_change_name, is_can_change_name
 
 
 class UserSG(StatesGroup):
@@ -65,6 +65,7 @@ async def cancel_feedback(callback: CallbackQuery, button: Button, dialog_manage
 async def fill_form_name(message: Message, widget: ManagedTextInput, dialog_manager: DialogManager, text: str):
     name, lastname = text.split()
     await add_user_async(message.from_user.id, name.capitalize(), lastname.upper())
+    await can_change_name(message.from_user.id, False)
     await message.answer(
         text='Спасибо за регистрацию, теперь Вы можете подать заявку на участие в Fantasy.')
     await dialog_manager.switch_to(UserSG.start)
@@ -103,8 +104,9 @@ async def button_registration(callback: CallbackQuery, button: Button, dialog_ma
     await dialog_manager.switch_to(UserSG.fill_form_name)
 
 async def button_send_request(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    await can_change_name(callback.from_user.id, False)
-    if await is_user_in_request(callback.from_user.id):
+    if await is_can_change_name(callback.from_user.id):
+        await callback.answer(text='Перед повторной отправкой заявки измените имя')
+    elif await is_user_in_request(callback.from_user.id):
         await callback.answer(text='Вы уже отправили заявку, ожидайте...')
     elif await is_user_active(callback.from_user.id):
         await dialog_manager.switch_to(UserSG.start, dialog_manager.dialog_data.clear())

@@ -1149,6 +1149,14 @@ async def is_user_active(id_telegram: int) -> bool:
             return user.active if user else False
 
 
+async def is_can_change_name(id_telegram: int) -> bool:
+    async with async_session() as session:
+        async with session.begin():
+            statement = select(User).where(User.id_telegram == id_telegram)
+            result = await session.execute(statement)
+            user = result.scalars().first()
+            return user.can_change_name if user else False
+
 async def is_user_in_request(id_telegram: int) -> bool:
     async with async_session() as session:
         async with session.begin():
