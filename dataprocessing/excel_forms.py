@@ -344,6 +344,187 @@ def sort_points(entry):
     first_max_index = points.index(max_value) if max_value in points else -1
     return total_points, sorted_point, -first_max_index, sorted_places
 
+async def process_championship_by_segment(year):
+    points_list: List[dict] = await show_points_all(year)
+
+    # sort original list as before
+    points_list.sort(key=sort_points, reverse=True)
+
+    # Найдём список этапов по ключам (исключая placeXXX и метаданные)
+    def extract_stage_keys(example_entry):
+        keys = []
+        for k in example_entry.keys():
+            if k in ('User', 'Team', 'Number', 'Image'):
+                continue
+            if k.startswith('place'):
+                continue
+            keys.append(k)
+        # Попробуем определить числовой номер этапа по первой цифре в коде (например AUS->1 и т.д.)
+        # Но в вашем случае у вас 24 этапа с уникальными кодами; мы пронумеруем в порядке появления в словаре
+        return keys
+
+    if not points_list:
+        return BytesIO()  # пустой результат, если нет данных
+
+    all_stage_keys = extract_stage_keys(points_list[0])
+
+    # Сопоставление stage code -> stage index (1..N) в порядке appearance
+    stage_index = {k: i+1 for i, k in enumerate(all_stage_keys)}
+
+    # Списки сегментов (по индексам этапов)
+    segments = [
+        ("Seg 1-12", 1, 12),
+        ("Seg 13-24", 13, 24),
+        ("Seg 1-8", 1, 8),
+        ("Seg 9-16", 9, 16),
+        ("Seg 17-24", 17, 24),
+    ]
+
+    # helper: вернуть ключи из all_stage_keys, номера в указанном диапазоне (inclusive)
+    def keys_in_range(start, end):
+        return [k for k in all_stage_keys if start <= stage_index[k] <= end]
+
+    wb = Workbook()
+    teams_fonts = await get_teams_fonts_colors()
+
+    # Стили
+    header_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')
+    header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+    thin_border = Border(left=Side(style='thin', color='FFFFFF'),
+                         right=Side(style='thin', color='FFFFFF'),
+                         top=Side(style='thin', color='FFFFFF'))
+    data_row_height = 17
+
+    first = True
+    for seg_name, start, end in segments:
+        stage_keys = keys_in_range(start, end)
+        if not stage_keys:
+            continue  # нет этапов в этом диапазоне
+
+        # создаём/переиспользуем лист
+        if first:
+            ws = wb.active
+            ws.title = seg_name
+            first = False
+        else:
+            ws = wb.create_sheet(title=seg_name)
+
+        # Заголовок и лого (как в вашем оригинале)
+        ws.insert_rows(1, amount=5)
+        ws.row_dimensions[3].height = 22.5
+        last_header_col = 5 + len(stage_keys)  # D=4, E=5 ... плюс этапы
+        ws.merge_cells(start_row=3, start_column=4, end_row=3, end_column=last_header_col)
+        ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=last_header_col)
+        ws.cell(row=3, column=4).font = Font(name='Formula1 Display Bold', size=18, bold=True, color='000000')
+        ws['D3'] = 'FORMULA 1 FANTASY SERIES BY SILLY FORMULA'
+        ws['D3'].alignment = Alignment(horizontal='center', vertical='center')
+        ws.cell(row=4, column=4).font = Font(name='Formula1 Display Bold', size=11, bold=True, color='000000')
+        ws['D4'] = f"DRIVER'S CHAMPIONSHIP — {seg_name}"
+        ws['D4'].alignment = Alignment(horizontal='center', vertical='center')
+
+        img_path = os.path.join('logos', 'Shirokoe_logo_bez_fona_silli.png')
+        if os.path.exists(img_path):
+            img = Image(img_path)
+            resize_percentage = 7
+            img.width = int(img.width * (resize_percentage / 100))
+            img.height = int(img.height * (resize_percentage / 100))
+            img.anchor = 'C1'
+            ws.add_image(img)
+
+        # Заголовки таблицы
+        header = ['POS', '№', 'Driver', 'Team', ''] + stage_keys + ['CH.PTS']
+        ws.append(header)
+        ws.row_dimensions[ws.max_row].height = 17
+
+        for cell in ws[ws.max_row]:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+        ws.merge_cells(start_row=ws.max_row, start_column=4, end_row=ws.max_row, end_column=5)
+
+        # Заполняем строки: для каждого участника считаем CH.PTS только по stage_keys
+        for pos, entry in enumerate(points_list, 1):
+            ch_pts_seg = 0
+            row_values = []
+            for k in stage_keys:
+                v = entry.get(k)
+                # допускаем None -> 0
+                try:
+                    val = 0 if v is None else int(v)
+                except Exception:
+                    # если значения не целые, пробуем привести к float, иначе 0
+                    try:
+                        val = 0 if v is None else int(float(v))
+                    except Exception:
+                        val = 0
+                row_values.append(val)
+                ch_pts_seg += val
+
+            row = [pos, entry.get('Number', ''), entry.get('User', ''), entry.get('Team', ''), ''] + row_values + [ch_pts_seg]
+            ws.append(row)
+            ws.row_dimensions[ws.max_row].height = data_row_height
+
+            # стили строк
+            row_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid') if pos % 2 != 0 else PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
+            for cell in ws[ws.max_row]:
+                cell.alignment = Alignment(vertical='center')
+                if cell.column_letter in ('A', 'B', 'C', 'D', 'E'):
+                    cell.font = Font(name='Formula1 Display Bold', size=11, bold=False, color='000001')
+                else:
+                    cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
+                    cell.alignment = Alignment(horizontal='center', vertical='center')
+                cell.fill = row_fill
+
+            # team styling + logo
+            team_name = entry.get('Team')
+            if teams_fonts.get(team_name):
+                team = teams_fonts[team_name]
+                fill = PatternFill(start_color=team['background_color'], end_color=team['background_color'], fill_type='solid')
+                font_number = Font(name=team.get('number_font', 'Formula1 Display Bold'), size=14, bold=True, italic=team.get('number_italic', False), color=team.get('number_color', '000000'))
+                ws.cell(row=ws.max_row, column=2).font = font_number
+                ws.cell(row=ws.max_row, column=2).fill = fill
+                logo_name = team.get('logo') or 'personal.png'
+                img_path = os.path.join('logos', logo_name)
+            else:
+                img_path = os.path.join('logos', 'personal.png')
+
+            if os.path.exists(img_path):
+                img = Image(img_path)
+                rp = 46
+                img.width = int(img.width * (rp / 100))
+                img.height = int(img.height * (rp / 100))
+                img.anchor = f'E{ws.max_row}'
+                ws.add_image(img)
+
+        # Выравнивание и ширина колонок
+        center_alignment = Alignment(horizontal='center', vertical='center')
+        for cell in ws['A'] + ws['B'] + ws['D']:
+            cell.alignment = center_alignment
+
+        for column in ws.columns:
+            column_letter = column[0].column_letter
+            ws.column_dimensions[column_letter].width = 7.7
+        ws.column_dimensions['C'].width = 35.7
+        ws.column_dimensions['D'].width = 41.7
+        ws.column_dimensions['E'].width = 9.2
+        # ширины для этапов и итоговой колонки
+        for idx in range(6, ws.max_column + 1):
+            ws.column_dimensions[ws.cell(row=ws.max_row, column=idx).column_letter].width = 11.3
+
+        # Маркируем 1/2/3 позиции цветом (если хватает строк)
+        if ws.max_row >= 10:
+            ws.cell(row=8, column=1).fill = PatternFill(start_color='FFC50D', end_color='FFC50D', fill_type='solid')
+            ws.cell(row=9, column=1).fill = PatternFill(start_color='A3A3A3', end_color='A3A3A3', fill_type='solid')
+            ws.cell(row=10, column=1).fill = PatternFill(start_color='BC5610', end_color='BC5610', fill_type='solid')
+
+        ws.sheet_view.showGridLines = False
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output
+
 async def process_championship_full():
     points_list: List[dict] = await show_points_all(datetime.now().year)
 
@@ -823,6 +1004,7 @@ async def process_all_teams():
     return output
 
 
+
 async def export_places_summary_by_year(year):
     rows = await get_user_places_by_year(year)
 
@@ -888,6 +1070,14 @@ async def export_places_summary_by_year(year):
 
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        # Общие стили, используемые в листах
+        header_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')
+        header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+        thin_border = Border(left=Side(style='thin', color='FFFFFF'),
+                             right=Side(style='thin', color='FFFFFF'),
+                             top=Side(style='thin', color='FFFFFF'))
+        data_row_height = 17  # высота строк данных
+
         for sheet_name, (key, col_name) in sheets.items():
             df = pd.DataFrame(build_rows(key, col_name), columns=['№', 'Name', 'Team', '', col_name])
             if df.empty:
@@ -897,11 +1087,6 @@ async def export_places_summary_by_year(year):
             worksheet = writer.sheets[sheet_name]
 
             # Заголовок
-            header_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')
-            header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
-            thin_border = Border(left=Side(style='thin', color='FFFFFF'),
-                                 right=Side(style='thin', color='FFFFFF'),
-                                 top=Side(style='thin', color='FFFFFF'))
             for cell in next(worksheet.iter_rows(min_row=1, max_row=1)):
                 cell.alignment = Alignment(horizontal='center', vertical='center')
                 cell.font = header_font
@@ -909,7 +1094,6 @@ async def export_places_summary_by_year(year):
                 cell.border = thin_border
 
             # Единая высота строк для данных
-            data_row_height = 17  # поставьте нужную высоту
             for row_idx in range(2, worksheet.max_row + 1):
                 worksheet.row_dimensions[row_idx].height = data_row_height
 
@@ -967,29 +1151,155 @@ async def export_places_summary_by_year(year):
                         img.anchor = f'D{row_idx}'
                         worksheet.add_image(img)
 
-            # Ширины колонок — сохраняем прежние значения, с учётом сдвига (пустой столбец D для логотипа, счётчик в E)
+            # Ширины колонок
             for column in worksheet.columns:
-                column_letter = column[0].column_letter  # Получаем букву столбца
+                column_letter = column[0].column_letter
                 worksheet.column_dimensions[column_letter].width = 7.7
             worksheet.column_dimensions['B'].width = 35.7  # Name
             worksheet.column_dimensions['C'].width = 41.7  # Team
             worksheet.column_dimensions['D'].width = 9.0   # Logo
             worksheet.column_dimensions['E'].width = 9.0   # Count (First/Podium/Top-5...)
-        # end for sheets
+
+        # --- Дополнительный лист: проценты попаданий в Top-50 ---
+        totals = defaultdict(int)
+        for user, place, team_name in rows:
+            if getattr(user, 'id', None) is None:
+                continue
+            totals[user.id] += 1
+
+        perc_rows = []
+        for uid, total in totals.items():
+            top50 = counts.get(uid, {}).get('top50', 0)
+            pct = (top50 / total * 100) if total > 0 else 0
+            perc_rows.append({
+                '№': user_number.get(uid, ''),
+                'Name': user_name.get(uid, ''),
+                'Team': user_team.get(uid, ''),
+                '': '',
+                'Total': total,
+                'Top-50': top50,
+                'Top-50 %': round(pct, 2)
+            })
+
+        # сортируем по проценту (по убыванию), затем по total
+        perc_rows.sort(key=lambda x: (x['Top-50 %'], x['Total']), reverse=True)
+
+        df_perc = pd.DataFrame(perc_rows, columns=['№', 'Name', 'Team', '', 'Total', 'Top-50', 'Top-50 %'])
+        if df_perc.empty:
+            df_perc = pd.DataFrame(columns=['№', 'Name', 'Team', '', 'Total', 'Top-50', 'Top-50 %'])
+        df_perc.to_excel(writer, sheet_name='PERCENTS', index=False)
+
+        worksheet = writer.sheets['PERCENTS']
+
+        # Заголовок для PERCENTS
+        for cell in next(worksheet.iter_rows(min_row=1, max_row=1)):
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.border = thin_border
+
+        for row_idx in range(2, worksheet.max_row + 1):
+            worksheet.row_dimensions[row_idx].height = data_row_height
+
+        for row_idx in range(2, worksheet.max_row + 1):
+            if (row_idx - 2) % 2 == 0:
+                row_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+            else:
+                row_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
+            for col_idx in range(1, worksheet.max_column + 1):
+                cell = worksheet.cell(row=row_idx, column=col_idx)
+                cell.alignment = Alignment(horizontal='center', vertical='center')
+                if col_idx in (1, 2, 3):
+                    cell.font = Font(name='Formula1 Display Bold', size=11, bold=True, color='000001')
+                else:
+                    cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
+                cell.fill = row_fill
+
+            team_name = worksheet.cell(row=row_idx, column=3).value or ''
+            team_style = teams_fonts.get(team_name)
+            if team_style:
+                fill = PatternFill(start_color=team_style['background_color'], end_color=team_style['background_color'], fill_type='solid')
+                text_font = Font(name='Formula1 Display Bold', size=11, bold=False, color=team_style['text_color'])
+                number_font = Font(name=team_style.get('number_font', 'Formula1 Display Bold'),
+                                   size=14,
+                                   bold=True,
+                                   italic=bool(team_style.get('number_italic', False)),
+                                   color=team_style.get('number_color', '000000'))
+                worksheet.cell(row=row_idx, column=1).font = number_font
+                worksheet.cell(row=row_idx, column=1).fill = fill
+                worksheet.cell(row=row_idx, column=2).font = text_font
+                worksheet.cell(row=row_idx, column=2).fill = fill
+                worksheet.cell(row=row_idx, column=3).font = text_font
+                worksheet.cell(row=row_idx, column=3).fill = fill
+
+                logo_name = team_style.get('logo') or 'personal.png'
+                img_path = os.path.join('logos', logo_name)
+                if os.path.exists(img_path):
+                    img = Image(img_path)
+                    resize_percentage = 46
+                    img.width = int(img.width * (resize_percentage / 100))
+                    img.height = int(img.height * (resize_percentage / 100))
+                    img.anchor = f'D{row_idx}'
+                    worksheet.add_image(img)
+            else:
+                img_path = os.path.join('logos', 'personal.png')
+                if os.path.exists(img_path):
+                    img = Image(img_path)
+                    resize_percentage = 46
+                    img.width = int(img.width * (resize_percentage / 100))
+                    img.height = int(img.height * (resize_percentage / 100))
+                    img.anchor = f'D{row_idx}'
+                    worksheet.add_image(img)
+
+        # ширины колонок для листа PERCENTS
+        for column in worksheet.columns:
+            column_letter = column[0].column_letter
+            worksheet.column_dimensions[column_letter].width = 7.7
+        worksheet.column_dimensions['B'].width = 35.7
+        worksheet.column_dimensions['C'].width = 41.7
+        worksheet.column_dimensions['D'].width = 9.0
+        # E = Total, F = Top-50, G = Top-50 %
+        worksheet.column_dimensions['E'].width = 9.0
+        worksheet.column_dimensions['F'].width = 9.0
+        worksheet.column_dimensions['G'].width = 12.0
 
     output.seek(0)
     return output
 
-
 async def export_counts_to_excel(year: int = None):
-    counts = await counts_selects(year)  # {"drivers": [...], "teams": [...], "engines": [...]}
+    counts = await counts_selects(year)  # {"total_predicts": int, "drivers": [...], "teams": [...], "engines": [...]}
 
     rows = []
-    for name, cnt in counts["drivers"]:
+    # Сводка
+    total = counts.get("total_predicts", 0)
+    rows.append({"Type": "Summary", "Name": "Total predicts", "Count": total})
+
+    # Сортируем группы по убыванию и добавляем в нужном порядке
+    drivers_sorted = sorted(counts.get("drivers", []), key=lambda x: x[1], reverse=True)
+    teams_sorted = sorted(counts.get("teams", []), key=lambda x: x[1], reverse=True)
+    engines_sorted = sorted(counts.get("engines", []), key=lambda x: x[1], reverse=True)
+
+    # Добавляем пустую строку перед группами для читаемости (опционально)
+    rows.append({"Type": "", "Name": "", "Count": ""})
+
+    # Drivers
+    rows.append({"Type": "Drivers", "Name": "", "Count": ""})
+    for name, cnt in drivers_sorted:
         rows.append({"Type": "Driver", "Name": name, "Count": cnt})
-    for name, cnt in counts["teams"]:
+
+    # пустая строка между группами
+    rows.append({"Type": "", "Name": "", "Count": ""})
+
+    # Teams
+    rows.append({"Type": "Teams", "Name": "", "Count": ""})
+    for name, cnt in teams_sorted:
         rows.append({"Type": "Team", "Name": name, "Count": cnt})
-    for name, cnt in counts["engines"]:
+
+    rows.append({"Type": "", "Name": "", "Count": ""})
+
+    # Engines
+    rows.append({"Type": "Engines", "Name": "", "Count": ""})
+    for name, cnt in engines_sorted:
         rows.append({"Type": "Engine", "Name": name, "Count": cnt})
 
     df = pd.DataFrame(rows, columns=["Type", "Name", "Count"])
@@ -998,7 +1308,6 @@ async def export_counts_to_excel(year: int = None):
     output = BytesIO()
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Sheet1")
-        workbook = writer.book
         worksheet = writer.sheets["Sheet1"]
 
         # Подгоняем ширину столбцов
@@ -1006,8 +1315,9 @@ async def export_counts_to_excel(year: int = None):
             max_length = 0
             for cell in column_cells:
                 try:
-                    if cell.value and len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
+                    v = cell.value
+                    if v is not None and len(str(v)) > max_length:
+                        max_length = len(str(v))
                 except Exception:
                     pass
             adjusted_width = max_length + 2

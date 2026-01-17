@@ -1198,6 +1198,11 @@ Window(
             on_click=statistic_select
         ),
         Button(
+            text=Const('Очки по отрезкам'),
+            id='statistic_points_by_segment',
+            on_click=statistic_points_by_segment
+        ),
+        Button(
             text=Const('Вернуться в главное меню'),
             id='button_menu',
             on_click=button_menu)

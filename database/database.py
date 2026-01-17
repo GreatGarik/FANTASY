@@ -1259,7 +1259,7 @@ async def get_user_places_by_year(year):
             return [(row[0], row[1], row[2] if row[2] else 'PERSONAL ENTRY') for row in rows]
 
 
-async def counts_selects(year: int | None = None):
+async def counts_selects(year: Optional[int] = None):
     async with async_session() as session:
         async with session.begin():
             # Список уникальных значений из drivers
@@ -1272,6 +1272,13 @@ async def counts_selects(year: int | None = None):
                 gp_subq = select(Grandprix.id).where(Grandprix.year == year)
             else:
                 gp_subq = None
+
+            # Общее число прогнозов (с учётом фильтра по году)
+            if gp_subq is not None:
+                total_q = select(func.count()).select_from(Predict).where(Predict.gp.in_(gp_subq))
+            else:
+                total_q = select(func.count()).select_from(Predict)
+            total_predicts = int((await session.execute(total_q)).scalar_one())
 
             drivers_counts = []
             for name in drivers:
@@ -1311,4 +1318,9 @@ async def counts_selects(year: int | None = None):
                 cnt = (await session.execute(cnt_q)).scalar_one()
                 engines_counts.append((eng, int(cnt)))
 
-    return {"drivers": drivers_counts, "teams": teams_counts, "engines": engines_counts}
+    return {
+        "total_predicts": total_predicts,
+        "drivers": drivers_counts,
+        "teams": teams_counts,
+        "engines": engines_counts
+    }
