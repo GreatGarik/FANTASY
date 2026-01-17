@@ -347,10 +347,13 @@ def sort_points(entry):
 async def process_championship_by_segment(year):
     points_list: List[dict] = await show_points_all(year)
 
-    # sort original list as before
+    # исходная сортировка (внешняя общая) — сохраняем порядок для стабилизации
     points_list.sort(key=sort_points, reverse=True)
 
-    # Найдём список этапов по ключам (исключая placeXXX и метаданные)
+    if not points_list:
+        return BytesIO()
+
+    # извлекаем все этапы из ключей словаря в порядке появления
     def extract_stage_keys(example_entry):
         keys = []
         for k in example_entry.keys():
@@ -359,19 +362,13 @@ async def process_championship_by_segment(year):
             if k.startswith('place'):
                 continue
             keys.append(k)
-        # Попробуем определить числовой номер этапа по первой цифре в коде (например AUS->1 и т.д.)
-        # Но в вашем случае у вас 24 этапа с уникальными кодами; мы пронумеруем в порядке появления в словаре
         return keys
 
-    if not points_list:
-        return BytesIO()  # пустой результат, если нет данных
-
     all_stage_keys = extract_stage_keys(points_list[0])
-
-    # Сопоставление stage code -> stage index (1..N) в порядке appearance
+    # сопоставляем индекс этапа (1..N) в порядке появления
     stage_index = {k: i+1 for i, k in enumerate(all_stage_keys)}
 
-    # Списки сегментов (по индексам этапов)
+    # сегменты по индексам этапов
     segments = [
         ("Seg 1-12", 1, 12),
         ("Seg 13-24", 13, 24),
@@ -380,14 +377,13 @@ async def process_championship_by_segment(year):
         ("Seg 17-24", 17, 24),
     ]
 
-    # helper: вернуть ключи из all_stage_keys, номера в указанном диапазоне (inclusive)
     def keys_in_range(start, end):
         return [k for k in all_stage_keys if start <= stage_index[k] <= end]
 
     wb = Workbook()
     teams_fonts = await get_teams_fonts_colors()
 
-    # Стили
+    # Общие стили
     header_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')
     header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
     thin_border = Border(left=Side(style='thin', color='FFFFFF'),
@@ -395,24 +391,24 @@ async def process_championship_by_segment(year):
                          top=Side(style='thin', color='FFFFFF'))
     data_row_height = 17
 
-    first = True
+    first_sheet = True
     for seg_name, start, end in segments:
         stage_keys = keys_in_range(start, end)
         if not stage_keys:
-            continue  # нет этапов в этом диапазоне
+            continue
 
-        # создаём/переиспользуем лист
-        if first:
+        # создаём лист
+        if first_sheet:
             ws = wb.active
             ws.title = seg_name
-            first = False
+            first_sheet = False
         else:
             ws = wb.create_sheet(title=seg_name)
 
-        # Заголовок и лого (как в вашем оригинале)
+        # Заголовки и лого
         ws.insert_rows(1, amount=5)
         ws.row_dimensions[3].height = 22.5
-        last_header_col = 5 + len(stage_keys)  # D=4, E=5 ... плюс этапы
+        last_header_col = 5 + len(stage_keys)
         ws.merge_cells(start_row=3, start_column=4, end_row=3, end_column=last_header_col)
         ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=last_header_col)
         ws.cell(row=3, column=4).font = Font(name='Formula1 Display Bold', size=18, bold=True, color='000000')
@@ -431,11 +427,10 @@ async def process_championship_by_segment(year):
             img.anchor = 'C1'
             ws.add_image(img)
 
-        # Заголовки таблицы
+        # Формируем заголовок таблицы
         header = ['POS', '№', 'Driver', 'Team', ''] + stage_keys + ['CH.PTS']
         ws.append(header)
         ws.row_dimensions[ws.max_row].height = 17
-
         for cell in ws[ws.max_row]:
             cell.font = header_font
             cell.fill = header_fill
@@ -443,29 +438,40 @@ async def process_championship_by_segment(year):
             cell.alignment = Alignment(horizontal='center', vertical='center')
         ws.merge_cells(start_row=ws.max_row, start_column=4, end_row=ws.max_row, end_column=5)
 
-        # Заполняем строки: для каждого участника считаем CH.PTS только по stage_keys
-        for pos, entry in enumerate(points_list, 1):
+        # Подготовка строк: рассчитываем ch_pts_seg и собираем список, затем сортируем по убыванию
+        rows_for_seg = []
+        for entry in points_list:
             ch_pts_seg = 0
-            row_values = []
+            values = []
             for k in stage_keys:
                 v = entry.get(k)
-                # допускаем None -> 0
-                try:
-                    val = 0 if v is None else int(v)
-                except Exception:
-                    # если значения не целые, пробуем привести к float, иначе 0
+                if v is None:
+                    val = 0
+                else:
                     try:
-                        val = 0 if v is None else int(float(v))
+                        val = int(v)
                     except Exception:
-                        val = 0
-                row_values.append(val)
+                        try:
+                            val = int(float(v))
+                        except Exception:
+                            val = 0
+                values.append(val)
                 ch_pts_seg += val
+            rows_for_seg.append({'entry': entry, 'values': values, 'ch_pts_seg': ch_pts_seg})
 
-            row = [pos, entry.get('Number', ''), entry.get('User', ''), entry.get('Team', ''), ''] + row_values + [ch_pts_seg]
+        # сортируем по убыванию очков сегмента; для равенства сохраняется исходный порядок points_list
+        rows_for_seg.sort(key=lambda x: x['ch_pts_seg'], reverse=True)
+
+        # Запись в лист
+        for pos, item in enumerate(rows_for_seg, 1):
+            entry = item['entry']
+            values = item['values']
+            ch_pts_seg = item['ch_pts_seg']
+            row = [pos, entry.get('Number', ''), entry.get('User', ''), entry.get('Team', ''), ''] + values + [ch_pts_seg]
             ws.append(row)
             ws.row_dimensions[ws.max_row].height = data_row_height
 
-            # стили строк
+            # Стили строк
             row_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid') if pos % 2 != 0 else PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
             for cell in ws[ws.max_row]:
                 cell.alignment = Alignment(vertical='center')
@@ -497,7 +503,7 @@ async def process_championship_by_segment(year):
                 img.anchor = f'E{ws.max_row}'
                 ws.add_image(img)
 
-        # Выравнивание и ширина колонок
+        # Выравнивания и ширины колонок
         center_alignment = Alignment(horizontal='center', vertical='center')
         for cell in ws['A'] + ws['B'] + ws['D']:
             cell.alignment = center_alignment
@@ -508,11 +514,9 @@ async def process_championship_by_segment(year):
         ws.column_dimensions['C'].width = 35.7
         ws.column_dimensions['D'].width = 41.7
         ws.column_dimensions['E'].width = 9.2
-        # ширины для этапов и итоговой колонки
         for idx in range(6, ws.max_column + 1):
             ws.column_dimensions[ws.cell(row=ws.max_row, column=idx).column_letter].width = 11.3
 
-        # Маркируем 1/2/3 позиции цветом (если хватает строк)
         if ws.max_row >= 10:
             ws.cell(row=8, column=1).fill = PatternFill(start_color='FFC50D', end_color='FFC50D', fill_type='solid')
             ws.cell(row=9, column=1).fill = PatternFill(start_color='A3A3A3', end_color='A3A3A3', fill_type='solid')
