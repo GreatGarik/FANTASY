@@ -1198,9 +1198,14 @@ Window(
             on_click=statistic_select
         ),
         Button(
-            text=Const('Очки по отрезкам'),
+            text=Const('Очки участников по отрезкам'),
             id='statistic_points_by_segment',
             on_click=statistic_points_by_segment
+        ),
+        Button(
+            text=Const('Статистика команд'),
+            id='statistic_team',
+            on_click=statistic_team
         ),
         Button(
             text=Const('Вернуться в главное меню'),
