@@ -8,7 +8,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image
 from io import BytesIO
-from database.database import get_actual_gp_async, show_result, show_points_all, get_user_team, show_points_team_all, get_teams_fonts_colors, get_name_gp, get_maximus, get_all_users, get_predictions_by_gp, get_all_teams_players, get_user_places_by_year, counts_selects
+from database.database import get_actual_gp_async, show_result, show_points_all, get_user_team, show_points_team_all, get_teams_fonts_colors, get_name_gp, get_maximus, get_all_users, get_predictions_by_gp, get_all_teams_players, get_user_places_by_year, counts_selects, get_team_places_by_name
 
 async def entry_list():
     users_list: List[dict] = await get_all_users()
@@ -700,6 +700,7 @@ def sort_points_team(entry):
 
 async def statistic_team_excel():
     points_list: List[dict] = await show_points_team_all(2025)
+    places_list: dict = await get_team_places_by_name(2025)
     teams_fonts: dict = await get_teams_fonts_colors()
 
     wb = Workbook()
@@ -734,6 +735,14 @@ async def statistic_team_excel():
     # сортировка для основного листа
     points_list.sort(key=lambda x: x.get('MAX Stage', 0), reverse=True)
 
+    # стилевые объекты
+    header_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')
+    header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+    thin_border = Border(left=Side(style='thin', color='FFFFFF'),
+                         right=Side(style='thin', color='FFFFFF'),
+                         top=Side(style='thin', color='FFFFFF'))
+    center_alignment = Alignment(horizontal='center', vertical='center')
+
     # --- основной лист ---
     ws = wb.active
     ws.title = "Championship Teams Points"
@@ -742,16 +751,11 @@ async def statistic_team_excel():
     ws.append(header)
     ws.row_dimensions[ws.max_row].height = 17
 
-    header_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')
-    header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
-    thin_border = Border(left=Side(style='thin', color='FFFFFF'),
-                         right=Side(style='thin', color='FFFFFF'),
-                         top=Side(style='thin', color='FFFFFF'))
     for cell in ws[ws.max_row]:
         cell.font = header_font
         cell.fill = header_fill
         cell.border = thin_border
-        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.alignment = center_alignment
 
     # заполняем строки основного листа
     for entry in points_list:
@@ -775,7 +779,7 @@ async def statistic_team_excel():
             row_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
 
         for cell in ws[row_idx]:
-            cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.alignment = center_alignment
             cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
             cell.fill = row_fill
 
@@ -800,7 +804,6 @@ async def statistic_team_excel():
                 ws.add_image(img)
 
     # выравнивание и ширины колонок — как в первой версии
-    center_alignment = Alignment(horizontal='center', vertical='center')
     for cell in ws['A'] + ws['B'] + ws['C']:
         cell.alignment = center_alignment
 
@@ -823,7 +826,7 @@ async def statistic_team_excel():
         cell.font = header_font
         cell.fill = header_fill
         cell.border = thin_border
-        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.alignment = center_alignment
 
     # сортируем по Average по убыванию для второго листа
     avg_sorted = sorted(points_list, key=lambda x: x.get('Average', 0), reverse=True)
@@ -841,7 +844,7 @@ async def statistic_team_excel():
             row_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
 
         for cell in ws2[row_idx]:
-            cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.alignment = center_alignment
             cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
             cell.fill = row_fill
 
@@ -876,12 +879,127 @@ async def statistic_team_excel():
         cell.alignment = center_alignment
     ws2.sheet_view.showGridLines = False
 
+    # --- лист Teams summary ---
+    ws3 = wb.create_sheet("Teams summary")
+
+    # заголовок колонок
+    top_columns = [f"Top-{i}" for i in range(5, 51, 5)]
+    cols = ["Team", ""] + ["WINS", "Podiums"] + top_columns + ["All"]
+    ws3.append(cols)
+    ws3.row_dimensions[ws3.max_row].height = 17
+    for cell in ws3[ws3.max_row]:
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.border = thin_border
+        cell.alignment = center_alignment
+
+    # список всех команд из places_list (ключи кроме PERSONAL ENTRIES), сохраняем порядок
+    team_names = [k for k in places_list.keys() if k != 'PERSONAL ENTRIES']
+
+    # вставляем все команды по отдельности
+    for team in team_names:
+        places = places_list.get(team) or []
+        # вычисления
+        wins = sum(1 for p in places if p == 1)
+        podiums = sum(1 for p in places if p in (1, 2, 3))
+        top_counts = [sum(1 for p in places if 1 <= p <= i) for i in range(5, 51, 5)]
+        total = len(places)
+        row = [team, ""] + [wins, podiums] + top_counts + [total]
+        ws3.append(row)
+        ws3.row_dimensions[ws3.max_row].height = 17
+        row_idx = ws3.max_row
+
+        # чередование заливки строк (как в других листах)
+        if (row_idx - 1) % 2 == 1:
+            row_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+        else:
+            row_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
+
+        for cell in ws3[row_idx]:
+            cell.alignment = center_alignment
+            cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
+            cell.fill = row_fill
+
+        # стиль команды и лого (как в других листах)
+        if teams_fonts.get(team):
+            team_style = teams_fonts[team]
+            font = Font(name='Formula1 Display Bold', size=11, bold=False, color=team_style.get('text_color', '000000'))
+            fill = PatternFill(start_color=team_style.get('background_color', 'FFFFFF'),
+                               end_color=team_style.get('background_color', 'FFFFFF'),
+                               fill_type='solid')
+            ws3.cell(row=row_idx, column=1).font = font
+            ws3.cell(row=row_idx, column=1).fill = fill
+            logo_name = team_style.get('logo') or 'personal.png'
+            img_path = os.path.join('logos', logo_name)
+            if os.path.exists(img_path):
+                img = Image(img_path)
+                img.width = int(img.width * 0.46)
+                img.height = int(img.height * 0.46)
+                img.anchor = f'B{row_idx}'
+                ws3.add_image(img)
+
+    # строка "ALL TEAMS" — сумма по колонкам для всех команд
+    start_row = 2
+    end_row = start_row + len(team_names) - 1
+    all_row = ["ALL TEAMS", ""]
+    # формулы сумм для WINS, Podiums, Top-5..Top-50, All
+    # колонки: A=1, B=2, WINS=C(3), Podiums=D(4), Top-5=E(5) ...
+    total_num_top = len(top_columns)
+    for offset in range(0, 2 + total_num_top + 1):  # includes WINS, Podiums, all Top-*, All
+        col_idx = 3 + offset  # starting from column C
+        col_letter = ws3.cell(row=1, column=col_idx).column_letter
+        all_row.append(f"=SUM({col_letter}{start_row}:{col_letter}{end_row})")
+
+    ws3.append(all_row)
+    ws3.row_dimensions[ws3.max_row].height = 17
+    row_idx = ws3.max_row
+    # чередование заливки
+    if (row_idx - 1) % 2 == 1:
+        row_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+    else:
+        row_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
+
+    for cell in ws3[row_idx]:
+        cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
+        cell.fill = row_fill
+        cell.alignment = center_alignment
+
+    # строка "PERSONAL ENTRIES" — сумм по PERSONAL ENTRIES как отдельная команда
+    personal = places_list.get('PERSONAL ENTRIES') or []
+    wins = sum(1 for p in personal if p == 1)
+    podiums = sum(1 for p in personal if p in (1, 2, 3))
+    top_counts = [sum(1 for p in personal if 1 <= p <= i) for i in range(5, 51, 5)]
+    total = len(personal)
+    personal_row = ["PERSONAL ENTRIES", ""] + [wins, podiums] + top_counts + [total]
+
+    ws3.append(personal_row)
+    ws3.row_dimensions[ws3.max_row].height = 17
+    row_idx = ws3.max_row
+    # чередование заливки
+    if (row_idx - 1) % 2 == 1:
+        row_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+    else:
+        row_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
+
+    for cell in ws3[row_idx]:
+        cell.alignment = center_alignment
+        cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
+        cell.fill = row_fill
+
+
+    # колонки и выравнивание для ws3
+    for column in ws3.columns:
+        column_letter = column[0].column_letter
+        ws3.column_dimensions[column_letter].width = 11
+    ws3.column_dimensions['A'].width = 41.7
+    ws3.column_dimensions['B'].width = 9.2
+    for cell in ws3['A'] + ws3['B']:
+        cell.alignment = center_alignment
+    ws3.sheet_view.showGridLines = False
+
     wb.save(output)
     output.seek(0)
     return output
-
-
-
 
 async def championship_team_full():
     points_list: List[dict] = await show_points_team_all(datetime.now().year)

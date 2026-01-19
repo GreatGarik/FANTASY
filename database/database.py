@@ -1,10 +1,11 @@
 import platform
+from collections import defaultdict
 from typing import Dict, Any, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from aiogram.utils.chat_member import USERS
 from certifi import where
 from datetime import datetime
-from sqlalchemy import create_engine, select, update, case, func, delete, asc, desc, and_, literal
+from sqlalchemy import create_engine, select, update, case, func, delete, asc, desc, and_, literal, or_, outerjoin
 from sqlalchemy.orm import sessionmaker, selectinload, aliased
 from database.models import *
 from config_data.config import Config, load_config
@@ -208,10 +209,19 @@ async def add_points(user_id, points, gp=None):
     async with async_session() as session:
         async with session.begin():
             try:
-                point_entry = Point(user_id=user_id, race_id=gp, points=points)
+                team_res = await session.execute(
+                    select(Team).where(
+                        or_(Team.first == user_id, Team.second == user_id, Team.third == user_id)
+                    ).limit(1)
+                )
+                team = team_res.scalars().first()
+                team_id = team.id if team else None
+
+                point_entry = Point(user_id=user_id, race_id=gp, points=points, actual_team=team_id)
                 session.add(point_entry)
                 await session.commit()
             except Exception as e:
+                await session.rollback()
                 print(e)
 
 # Заполнение таблицы с очками по этапам - места
@@ -225,15 +235,10 @@ async def add_points_places(user_id, place, gp=None):
                 )
                 point_entry = point_entry.scalars().first()
 
-                if point_entry:
-                    # Обновить поле place
-                    point_entry.place = place
-                else:
-                    # Если запись не найдена, создать новую
-                    point_entry = Point(user_id=user_id, race_id=gp, place=place)
-                    session.add(point_entry)
 
+                point_entry.place = place
                 await session.commit()
+
             except Exception as e:
                 await session.rollback()
                 raise e
@@ -1324,3 +1329,33 @@ async def counts_selects(year: Optional[int] = None):
         "teams": teams_counts,
         "engines": engines_counts
     }
+
+async def get_team_places_by_name(year: int) -> Dict[str, List[int]]:
+    """
+    Асинхронно возвращает словарь {team_name: [place, ...]} только для Grandprix.year == year.
+    Points с actual_team == None попадают в ключ "PERSONAL ENTRIES".
+    """
+    async with async_session() as session:
+        async with session.begin():
+            team_alias = Team
+            gp_alias = Grandprix
+
+            stmt = (
+                select(Point.place, team_alias.name)
+                .select_from(
+                    outerjoin(
+                        outerjoin(Point, team_alias, team_alias.id == Point.actual_team),
+                        gp_alias,
+                        gp_alias.id == Point.race_id
+                    )
+                )
+                .where(gp_alias.year == year)
+            )
+
+            result = defaultdict(list)
+            rows = (await session.execute(stmt)).all()
+            for place, team_name in rows:
+                key = team_name if team_name is not None else "PERSONAL ENTRIES"
+                result[key].append(place)
+
+            return dict(result)
