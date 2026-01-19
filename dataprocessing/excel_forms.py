@@ -700,16 +700,20 @@ def sort_points_team(entry):
 
 async def statistic_team_excel():
     points_list: List[dict] = await show_points_team_all(2025)
+    teams_fonts: dict = await get_teams_fonts_colors()
+
+    wb = Workbook()
+    output = BytesIO()
 
     if not points_list:
-        wb = Workbook()
-        output = BytesIO()
         wb.save(output)
         output.seek(0)
         return output
 
+    # определяем ключи этапов
     stage_keys = [k for k in points_list[0].keys() if k not in ('Team', 'all_res', 'pos')]
 
+    # вычисляем поля для основного листа
     for entry in points_list:
         stage_values = []
         for k in stage_keys:
@@ -722,13 +726,18 @@ async def statistic_team_excel():
         entry['>=100'] = sum(1 for v in stage_values if v >= 100)
         entry['>=50'] = sum(1 for v in stage_values if v >= 50)
 
+        # вычисляем Average по all_res — сумма / количество элементов (если all_res пуст, 0)
+        all_res = entry.get('all_res') or []
+        count = len(all_res)
+        entry['Average'] = sum(all_res) / count if count else 0
+
+    # сортировка для основного листа
     points_list.sort(key=lambda x: x.get('MAX Stage', 0), reverse=True)
 
-    wb = Workbook()
+    # --- основной лист ---
     ws = wb.active
     ws.title = "Championship Teams Points"
 
-    # Заголовки: Team, (логотип), MAX Stage, >=200, >=150, >=100, >=50
     header = ['Team', '', 'MAX Stage', '>=200', '>=150', '>=100', '>=50']
     ws.append(header)
     ws.row_dimensions[ws.max_row].height = 17
@@ -744,12 +753,11 @@ async def statistic_team_excel():
         cell.border = thin_border
         cell.alignment = Alignment(horizontal='center', vertical='center')
 
-    teams_fonts: dict = await get_teams_fonts_colors()
-
+    # заполняем строки основного листа
     for entry in points_list:
         row = [
             entry.get('Team', ''),
-            '',  # placeholder for logo in column B
+            '',
             entry.get('MAX Stage', 0),
             entry.get('>=200', 0),
             entry.get('>=150', 0),
@@ -758,9 +766,9 @@ async def statistic_team_excel():
         ]
         ws.append(row)
         ws.row_dimensions[ws.max_row].height = 17
-
         row_idx = ws.max_row
-        # Чередование заливки строк
+
+        # чередование заливки строк
         if (row_idx - 1) % 2 == 1:
             row_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
         else:
@@ -771,7 +779,7 @@ async def statistic_team_excel():
             cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
             cell.fill = row_fill
 
-        # Применяем стиль команды к колонке Team и вставляем лого в колонку B
+        # стиль команды и лого
         team_name = entry.get('Team', '')
         if teams_fonts.get(team_name):
             team = teams_fonts[team_name]
@@ -786,13 +794,12 @@ async def statistic_team_excel():
             img_path = os.path.join('logos', logo_name)
             if os.path.exists(img_path):
                 img = Image(img_path)
-                # масштабирование как в первой версии (0.46)
                 img.width = int(img.width * 0.46)
                 img.height = int(img.height * 0.46)
                 img.anchor = f'B{row_idx}'
                 ws.add_image(img)
 
-    # Выравнивание и ширины колонок — вернуть как в первой версии
+    # выравнивание и ширины колонок — как в первой версии
     center_alignment = Alignment(horizontal='center', vertical='center')
     for cell in ws['A'] + ws['B'] + ws['C']:
         cell.alignment = center_alignment
@@ -800,15 +807,75 @@ async def statistic_team_excel():
     for column in ws.columns:
         column_letter = column[0].column_letter
         ws.column_dimensions[column_letter].width = 7.7
-    ws.column_dimensions['A'].width = 41.7  # Team
-    ws.column_dimensions['B'].width = 9.2   # Logo
-    ws.column_dimensions['C'].width = 11.3  # MAX Stage
+    ws.column_dimensions['A'].width = 41.7
+    ws.column_dimensions['B'].width = 9.2
+    ws.column_dimensions['C'].width = 11.3
     ws.column_dimensions['G'].width = 11.3
-
-
     ws.sheet_view.showGridLines = False
 
-    output = BytesIO()
+    # --- лист Average per race (с колонкой Position справа) ---
+    ws2 = wb.create_sheet("Average per race")
+    header2 = ['Team', '', 'Average per race', 'POS APR']
+    ws2.append(header2)
+    ws2.row_dimensions[ws2.max_row].height = 17
+
+    for cell in ws2[ws2.max_row]:
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.border = thin_border
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    # сортируем по Average по убыванию для второго листа
+    avg_sorted = sorted(points_list, key=lambda x: x.get('Average', 0), reverse=True)
+
+    for idx, entry in enumerate(avg_sorted, start=1):
+        avg_value = entry.get('Average', 0)
+        row = [entry.get('Team', ''), '', round(avg_value, 2), idx]
+        ws2.append(row)
+        ws2.row_dimensions[ws2.max_row].height = 17
+        row_idx = ws2.max_row
+
+        if (row_idx - 1) % 2 == 1:
+            row_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+        else:
+            row_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
+
+        for cell in ws2[row_idx]:
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
+            cell.fill = row_fill
+
+        team_name = entry.get('Team', '')
+        if teams_fonts.get(team_name):
+            team = teams_fonts[team_name]
+            font = Font(name='Formula1 Display Bold', size=11, bold=False, color=team.get('text_color', '000000'))
+            fill = PatternFill(start_color=team.get('background_color', 'FFFFFF'),
+                               end_color=team.get('background_color', 'FFFFFF'),
+                               fill_type='solid')
+            ws2.cell(row=row_idx, column=1).font = font
+            ws2.cell(row=row_idx, column=1).fill = fill
+
+            logo_name = team.get('logo') or 'personal.png'
+            img_path = os.path.join('logos', logo_name)
+            if os.path.exists(img_path):
+                img = Image(img_path)
+                img.width = int(img.width * 0.46)
+                img.height = int(img.height * 0.46)
+                img.anchor = f'B{row_idx}'
+                ws2.add_image(img)
+
+    # колонки и выравнивание для второго листа (включая новую колонку Position)
+    for column in ws2.columns:
+        column_letter = column[0].column_letter
+        ws2.column_dimensions[column_letter].width = 7.7
+    ws2.column_dimensions['A'].width = 41.7
+    ws2.column_dimensions['B'].width = 9.2
+    ws2.column_dimensions['C'].width = 18
+    ws2.column_dimensions['D'].width = 11.3
+    for cell in ws2['A'] + ws2['B'] + ws2['C'] + ws2['D']:
+        cell.alignment = center_alignment
+    ws2.sheet_view.showGridLines = False
+
     wb.save(output)
     output.seek(0)
     return output
