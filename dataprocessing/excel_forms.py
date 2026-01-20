@@ -1841,7 +1841,11 @@ async def statistic_team_position_excel():
     # Заголовки таблицы — без колонки суммарных очков
     header = ['POS', 'Team', ''] + gp_keys
     ws.append(header)
-    ws.row_dimensions[ws.max_row].height = 17
+
+    # Используем вычисленную строку заголовка и количество столбцов
+    row_idx_header = ws.max_row
+    ws.row_dimensions[row_idx_header].height = 17
+    last_col = ws.max_column
 
     header_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')
     header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
@@ -1849,12 +1853,16 @@ async def statistic_team_position_excel():
                          right=Side(style='thin', color='FFFFFF'),
                          top=Side(style='thin', color='FFFFFF'))
 
-    for cell in ws[7]:
+    # Применяем стили по явному диапазону столбцов
+    for col in range(1, last_col + 1):
+        cell = ws.cell(row=row_idx_header, column=col)
         cell.font = header_font
         cell.fill = header_fill
         cell.border = thin_border
         cell.alignment = Alignment(horizontal='center', vertical='center')
-        ws.merge_cells(start_row=ws.max_row, start_column=2, end_row=ws.max_row, end_column=3)
+
+    # Корректное объединение колонок для заголовка (B..C)
+    ws.merge_cells(start_row=row_idx_header, start_column=2, end_row=row_idx_header, end_column=3)
 
     teams_fonts: dict = await get_teams_fonts_colors()
 
@@ -1904,12 +1912,13 @@ async def statistic_team_position_excel():
     for cell in ws['A'] + ws['B'] + ws['C']:
         cell.alignment = center_alignment
 
+    # Устанавливаем ширины колонок, используя корректную строку заголовка/последний столбец
     for column in ws.columns:
         column_letter = column[0].column_letter
         ws.column_dimensions[column_letter].width = 7.7
     ws.column_dimensions['B'].width = 41.7
     ws.column_dimensions['C'].width = 9.2
-    ws.column_dimensions[ws.cell(row=3, column=ws.max_column).column_letter].width = 11.3
+    ws.column_dimensions[ws.cell(row=row_idx_header, column=last_col).column_letter].width = 11.3
 
     ws.cell(row=8, column=1).fill = PatternFill(start_color='FFC50D', end_color='FFC50D', fill_type='solid')
     ws.cell(row=9, column=1).fill = PatternFill(start_color='A3A3A3', end_color='A3A3A3', fill_type='solid')
