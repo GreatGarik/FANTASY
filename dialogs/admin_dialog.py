@@ -1188,7 +1188,7 @@ Window(
     Window(
         Const('Меню статистики'),
         Column(Button(
-            text=Const('Сколько каких мест у пилотов'),
+            text=Const('Сколько каких мест у участников'),
             id='statistic_users',
             on_click=statistic_users
         ),
@@ -1207,6 +1207,16 @@ Window(
             id='statistic_team',
             on_click=statistic_team
         ),
+        Button(
+            text=Const('Позиции команд по этапам'),
+            id='statistic_team_position',
+            on_click=statistic_team_position
+        ),
+            Button(
+                text=Const('Позиции пользователей по этапам'),
+                id='statistic_user_position',
+                on_click=statistic_user_position
+            ),
         Button(
             text=Const('Вернуться в главное меню'),
             id='button_menu',

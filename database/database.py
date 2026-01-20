@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from aiogram.utils.chat_member import USERS
 from certifi import where
 from datetime import datetime
-from sqlalchemy import create_engine, select, update, case, func, delete, asc, desc, and_, literal, or_, outerjoin
+from sqlalchemy import create_engine, select, update, case, func, delete, asc, desc, and_, literal, or_, outerjoin, insert
 from sqlalchemy.orm import sessionmaker, selectinload, aliased
 from database.models import *
 from config_data.config import Config, load_config
@@ -612,6 +612,11 @@ async def clear_results(gp):
             await session.execute(delete(TeamPoint).where(TeamPoint.race_id == gp))
 
             await session.execute(delete(Point).where(Point.race_id == gp))
+
+            await session.execute(delete(Places).where(Places.race_id == gp))
+
+            await session.execute(delete(TeamPlaces).where(TeamPlaces.race_id == gp))
+
 
             # Сбрасываем значения max1, max2 и max3 для определенного гран-при
             await session.execute(
@@ -1359,3 +1364,130 @@ async def get_team_places_by_name(year: int) -> Dict[str, List[int]]:
                 result[key].append(place)
 
             return dict(result)
+
+
+async def add_places_after_gp(points_list: list[dict], gp: int):
+    async with async_session() as session:
+        async with session.begin():
+            # Проверка: есть ли хоть одна запись с таким gp (race_id)
+            exists_stmt = select(Places.id).where(Places.race_id == gp).limit(1)
+            exists_res = await session.execute(exists_stmt)
+            if exists_res.scalar_one_or_none() is not None:
+                # Если есть запись — ничего не писать
+                return
+
+            # Собираем словари для вставки
+            rows = []
+            for place_val, person in enumerate(points_list, start=1):
+                name = person.get('User')
+
+                # ищем user.id через экземпляр сессии
+                stmt = select(User.id).where(User.name == name)
+                res = await session.execute(stmt)
+                user_id = res.scalar_one_or_none()
+                if user_id is None:
+                    continue
+
+                rows.append({
+                    "user_id": int(user_id),
+                    "race_id": gp,
+                    "place": int(place_val),
+                })
+
+            if rows:
+                await session.execute(insert(Places), rows)
+
+
+async def add_places_after_gp_teams(points_list: list[dict], gp: int):
+    async with async_session() as session:
+        async with session.begin():
+            # Проверка: есть ли хоть одна запись с таким gp (race_id)
+            exists_stmt = select(TeamPlaces.id).where(TeamPlaces.race_id == gp).limit(1)
+            exists_res = await session.execute(exists_stmt)
+            if exists_res.scalar_one_or_none() is not None:
+                # Если есть запись — ничего не писать
+                return
+
+            # Собираем словари для вставки
+            rows = []
+            for place_val, person in enumerate(points_list, start=1):
+                team = person.get('Team')
+
+                # ищем team.id через экземпляр сессии
+                stmt = select(Team.id).where(Team.name == team)
+                res = await session.execute(stmt)
+                team_id = res.scalar_one_or_none()
+                if team_id is None:
+                    continue
+
+                rows.append({
+                    "team_id": int(team_id),
+                    "race_id": gp,
+                    "place": int(place_val),
+                })
+
+            if rows:
+                await session.execute(insert(TeamPlaces), rows)
+
+async def show_places_all(year):
+    async with async_session() as session:
+        result = await session.execute(select(Grandprix).where(Grandprix.year == year).order_by(Grandprix.id))
+        grandprix = result.scalars().all()
+
+        result = await session.execute(select(User).where(and_(User.banned == False, User.active == True)))
+        users = result.scalars().all()
+
+        places_list = []
+        for user in users:
+            user_entry = {'User': user.name}
+            user_entry['Number'] = user.number
+
+            result = await session.execute(
+                select(Team).where(
+                    (Team.first == user.id) |
+                    (Team.second == user.id) |
+                    (Team.third == user.id)
+                )
+            )
+            team = result.scalar_one_or_none()
+            user_entry['Team'] = team.name if team else 'PERSONAL ENTRY'
+
+            for gp in grandprix:
+                result = await session.execute(
+                    select(Point).where(Point.user_id == user.id, Point.race_id == gp.id)
+                )
+                point = result.scalar_one_or_none()
+                # Сохраняем место вместо очков
+                user_entry[gp.gp_name_abr] = point.place if point else None
+                user_entry['place' + gp.gp_name_abr] = point.place if point else None
+
+            places_list.append(user_entry)
+
+        return places_list
+
+# Возврат списка команд и их мест по GP
+async def show_places_team_all(year):
+    async with async_session() as session:
+        result = await session.execute(select(Grandprix).where(Grandprix.year == year).order_by(Grandprix.id))
+        grandprix = result.scalars().all()
+
+        result = await session.execute(select(Team))
+        teams = result.scalars().all()
+
+        places_list = []
+        for team in teams:
+            team_entry = {'Team': team.name}
+            all_res = []
+            for gp in grandprix:
+                # Находим запись места для команды в данном GP
+                result = await session.execute(
+                    select(TeamPlaces).where(TeamPlaces.team_id == team.id, TeamPlaces.race_id == gp.id)
+                )
+                tp = result.scalar_one_or_none()
+                team_entry[gp.gp_name_abr] = tp.place if tp else None
+                if tp and tp.place is not None:
+                    all_res.append(tp.place)
+            team_entry['all_res'] = all_res
+            places_list.append(team_entry)
+
+        return places_list

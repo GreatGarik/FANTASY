@@ -180,6 +180,23 @@ class Point(Base):
     user: Mapped[User] = relationship('User', back_populates='points')
     gp: Mapped[Grandprix] = relationship('Grandprix', back_populates='race')
 
+class Places(Base):
+    __tablename__ = 'places'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer)
+    race_id: Mapped[int] = mapped_column(Integer)
+    place: Mapped[int] = mapped_column(Integer)
+
+class TeamPlaces(Base):
+    __tablename__ = 'team_places'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    team_id: Mapped[int] = mapped_column(Integer)
+    race_id: Mapped[int] = mapped_column(Integer)
+    place: Mapped[int] = mapped_column(Integer)
+
+
 
 # Определяем модель Дуэлей
 class Duel(Base):

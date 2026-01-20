@@ -12,7 +12,7 @@ from aiogram.types import Message, User, CallbackQuery, BufferedInputFile
 from asyncpg.pgproto.pgproto import timedelta
 
 from dataprocessing.excel_forms import entry_list, last_stage, process_championship_full, championship_team_full, \
-    process_calculation_command, process_all_predicts, process_all_teams, export_places_summary_by_year, export_counts_to_excel, process_championship_by_segment, statistic_team_excel
+    process_calculation_command, process_all_predicts, process_all_teams, export_places_summary_by_year, export_counts_to_excel, process_championship_by_segment, statistic_team_excel, statistic_team_position_excel, statistic_user_position_excel
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 from database.database import get_users_async, check_res, \
     clear_results, get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
@@ -502,6 +502,22 @@ async def statistic_team(callback: CallbackQuery, button: Button, dialog_manager
     output = await statistic_team_excel()
     await callback.message.answer_document(
         document=BufferedInputFile(output.read(), filename='statistic_team.xlsx')
+    )
+    output.close()  # Закрываем объект после использования
+    await dialog_manager.switch_to(AdminSG.statistics)
+
+async def statistic_team_position(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    output = await statistic_team_position_excel()
+    await callback.message.answer_document(
+        document=BufferedInputFile(output.read(), filename='statistic_team_position.xlsx')
+    )
+    output.close()  # Закрываем объект после использования
+    await dialog_manager.switch_to(AdminSG.statistics)
+
+async def statistic_user_position(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    output = await statistic_user_position_excel()
+    await callback.message.answer_document(
+        document=BufferedInputFile(output.read(), filename='statistic_user_position.xlsx')
     )
     output.close()  # Закрываем объект после использования
     await dialog_manager.switch_to(AdminSG.statistics)
