@@ -2,6 +2,15 @@ from dataprocessing.get_data_results_from_db import get_res_gp
 from database.database import get_predict, add_result, get_result, add_points, get_team, add_team_points, add_maximus, \
     select_drivers_async, show_result, add_points_places
 
+def rank_teams(teams_points: dict[int, list[int]]) -> list[tuple[int, list[int], int]]:
+    # Сортируем по (sum, список) по убыванию — сначала больше total, при равных total — лексикографически больше список
+    sorted_items = sorted(
+        teams_points.items(),
+        key=lambda item: (sum(item[1]), item[1]),
+        reverse=True
+    )
+    return [(team_id, points_list, place) for place, (team_id, points_list) in enumerate(sorted_items, start=1)]
+
 
 async def calculation_drivers(gp):
     deltas = {0: 10, 1: 7, 2: 5, 3: 3, 4: 2, 5: 1}
@@ -98,8 +107,8 @@ async def calculation_drivers(gp):
             # teams_points[team.id] = teams_points.get(team.id, 0) + POINST_GP.get(index, 0)
             teams_points.setdefault(team.id, []).append(POINST_GP.get(index, 0))
 
-    for key, value in teams_points.items():
-        await add_team_points(team_id=key, points=value, gp=gp)
+    for team_id, points_list, place in rank_teams(teams_points):
+        await add_team_points(team_id=team_id, points=points_list, place=place, gp=gp)
 
     results_predict_gp = results_predict_gp | {'MAX1': first_max, 'MAX2': second_max, 'MAX3': third_max}
     # Добавляем максимумы к GP

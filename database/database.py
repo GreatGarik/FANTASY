@@ -244,11 +244,11 @@ async def add_points_places(user_id, place, gp=None):
                 raise e
 
 
-async def add_team_points(team_id, points: list, gp=None):
+async def add_team_points(team_id, points: list, place, gp=None):
     async with async_session() as session:
         async with session.begin():
             try:
-                session.add(TeamPoint(team_id=team_id, race_id=gp, points=sum(points), results=points))
+                session.add(TeamPoint(team_id=team_id, race_id=gp, points=sum(points), results=points, place=place))
                 await session.commit()
             except Exception as e:
                 print(e)
@@ -1491,3 +1491,171 @@ async def show_places_team_all(year):
             places_list.append(team_entry)
 
         return places_list
+
+async def count_top3_finishes_by_team(year: int) -> List[Dict[str, Any]]:
+    """
+    Возвращает список dict:
+      {'team_id': int, 'Team': str, 'wins': int, 'seconds': int, 'thirds': int, 'total': int}
+    для всех команд, у которых есть записи в team_points за указанный year.
+    """
+    async with async_session() as session:
+        # получить этапы за год
+        gps_stmt = select(Grandprix.id).where(Grandprix.year == year)
+        gps_res = await session.execute(gps_stmt)
+        gp_ids = [row[0] for row in gps_res.all()]
+        if not gp_ids:
+            return []
+
+        # получить team_points для этих этапов
+        tp_stmt = select(TeamPoint.team_id, TeamPoint.place).where(TeamPoint.race_id.in_(gp_ids))
+        tp_res = await session.execute(tp_stmt)
+        rows = tp_res.all()  # список кортежей (team_id, place)
+
+        if not rows:
+            return []
+
+        counts: Dict[int, Dict[str, int]] = defaultdict(lambda: {'wins': 0, 'seconds': 0, 'thirds': 0, 'total': 0})
+        for team_id, place in rows:
+            if place is None:
+                continue
+            counts[team_id]['total'] += 1
+            if place == 1:
+                counts[team_id]['wins'] += 1
+            elif place == 2:
+                counts[team_id]['seconds'] += 1
+            elif place == 3:
+                counts[team_id]['thirds'] += 1
+
+        # получить имена команд
+        team_ids = list(counts.keys())
+        team_stmt = select(Team.id, Team.name).where(Team.id.in_(team_ids))
+        team_res = await session.execute(team_stmt)
+        team_map = {tid: name for tid, name in team_res.all()}
+
+        # собрать результат
+        result: List[Dict[str, Any]] = []
+        for tid, vals in counts.items():
+            result.append({
+                'team_id': tid,
+                'Team': team_map.get(tid, str(tid)),
+                'wins': vals['wins'],
+                'seconds': vals['seconds'],
+                'thirds': vals['thirds'],
+                'total': vals['total'],
+            })
+
+        return result
+
+
+async def show_places_team_from_team_points(year: int) -> List[Dict]:
+    """
+    Возвращает список dict-ов вида:
+    {
+        'Team': team_name,
+        'gp_<abbr_or_id>': place_or_none,
+        ...
+    }
+    где ключи этапов в том же порядке, что и gp_keys в основной функции (abbreviation если доступно).
+    """
+    async with async_session() as session:
+        gp_q = await session.execute(select(Grandprix).where(Grandprix.year == year).order_by(Grandprix.id))
+        gps = gp_q.scalars().all()
+
+        gp_keys = []
+        gp_id_to_key = {}
+        for gp in gps:
+            key = gp.gp_name_abr or f'gp_{gp.id}'
+            gp_keys.append(key)
+            gp_id_to_key[gp.id] = key
+
+        # Получаем все команды
+        teams_q = await session.execute(select(Team).order_by(Team.name))
+        teams = teams_q.scalars().all()
+
+        result = []
+        for team in teams:
+            row = {'Team': team.name}
+            for k in gp_keys:
+                row[k] = None
+
+            tp_q = await session.execute(
+                select(TeamPoint).where(TeamPoint.team_id == team.id, TeamPoint.race_id.in_(list(gp_id_to_key.keys())))
+            )
+            tps = tp_q.scalars().all()
+            for tp in tps:
+                key = gp_id_to_key.get(tp.race_id)
+                if key:
+                    row[key] = tp.place
+            result.append(row)
+    return result
+
+
+async def get_places_from_points(year: int) -> List[dict]:
+    """
+    Получает места пользователей из таблицы points за указанный год
+
+    Returns:
+        List[dict] - список словарей в формате:
+        {
+            'User': имя пользователя,
+            'Team': название команды,
+            'Number': номер пользователя,
+            'GP_abbreviation': место_в_гонке,
+            # ... для всех гонок года
+        }
+    """
+    async with async_session() as session:
+        # Получаем все гонки за указанный год, сортируем по id (самый надежный)
+        gp_query = (
+            select(Grandprix)
+            .where(Grandprix.year == year)
+            .order_by(asc(Grandprix.id))  # Сортируем по id
+        )
+        gp_result = await session.execute(gp_query)
+        grand_prixes = gp_result.scalars().all()
+
+        if not grand_prixes:
+            return []
+
+        # Получаем всех пользователей
+        users_query = (
+            select(User)
+            .options(selectinload(User.points))
+        )
+        users_result = await session.execute(users_query)
+        users = users_result.scalars().all()
+
+        # Создаем мапу gp_id -> аббревиатура для ключей
+        # Используем gp_name_abr (3-буквенная аббревиатура)
+        gp_map = {gp.id: gp.gp_name_abr for gp in grand_prixes}
+
+        # Собираем результат
+        result = []
+
+        for user in users:
+            # Базовые данные пользователя
+            # Проверяем, какие поля есть в модели User
+            user_name = getattr(user, 'name', getattr(user, 'username', ''))
+            user_team = getattr(user, 'team', '')
+            user_number = getattr(user, 'number', '')
+
+            user_data = {
+                'User': user_name,
+                'Team': user_team,
+                'Number': user_number,
+            }
+
+            # Добавляем поля для каждой гонки
+            for gp in grand_prixes:
+                user_data[gp.gp_name_abr] = None  # По умолчанию пусто
+
+            # Заполняем места из таблицы points
+            for point in user.points:
+                if point.race_id in gp_map:
+                    gp_key = gp_map[point.race_id]
+                    # Сохраняем место (place) из модели Point
+                    user_data[gp_key] = point.place
+
+            result.append(user_data)
+
+        return result
