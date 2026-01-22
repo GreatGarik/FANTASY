@@ -1590,72 +1590,41 @@ async def show_places_team_from_team_points(year: int) -> List[Dict]:
     return result
 
 
-async def get_places_from_points(year: int) -> List[dict]:
-    """
-    Получает места пользователей из таблицы points за указанный год
-
-    Returns:
-        List[dict] - список словарей в формате:
-        {
-            'User': имя пользователя,
-            'Team': название команды,
-            'Number': номер пользователя,
-            'GP_abbreviation': место_в_гонке,
-            # ... для всех гонок года
-        }
-    """
+async def show_places_all_from_places(year: int) -> List[dict]:
     async with async_session() as session:
-        # Получаем все гонки за указанный год, сортируем по id (самый надежный)
-        gp_query = (
-            select(Grandprix)
-            .where(Grandprix.year == year)
-            .order_by(asc(Grandprix.id))  # Сортируем по id
+        result = await session.execute(
+            select(Grandprix).where(Grandprix.year == year).order_by(Grandprix.id)
         )
-        gp_result = await session.execute(gp_query)
-        grand_prixes = gp_result.scalars().all()
+        grandprix = result.scalars().all()
 
-        if not grand_prixes:
-            return []
-
-        # Получаем всех пользователей
-        users_query = (
-            select(User)
-            .options(selectinload(User.points))
+        result = await session.execute(
+            select(User).where(and_(User.banned == False, User.active == True))
         )
-        users_result = await session.execute(users_query)
-        users = users_result.scalars().all()
+        users = result.scalars().all()
 
-        # Создаем мапу gp_id -> аббревиатура для ключей
-        # Используем gp_name_abr (3-буквенная аббревиатура)
-        gp_map = {gp.id: gp.gp_name_abr for gp in grand_prixes}
-
-        # Собираем результат
-        result = []
-
+        places_list: List[dict] = []
         for user in users:
-            # Базовые данные пользователя
-            # Проверяем, какие поля есть в модели User
-            user_name = getattr(user, 'name', getattr(user, 'username', ''))
-            user_team = getattr(user, 'team', '')
-            user_number = getattr(user, 'number', '')
+            user_entry = {"User": user.name, "Number": user.number}
 
-            user_data = {
-                'User': user_name,
-                'Team': user_team,
-                'Number': user_number,
-            }
+            result = await session.execute(
+                select(Team).where(
+                    (Team.first == user.id)
+                    | (Team.second == user.id)
+                    | (Team.third == user.id)
+                )
+            )
+            team = result.scalar_one_or_none()
+            user_entry["Team"] = team.name if team else "PERSONAL ENTRY"
 
-            # Добавляем поля для каждой гонки
-            for gp in grand_prixes:
-                user_data[gp.gp_name_abr] = None  # По умолчанию пусто
+            for gp in grandprix:
+                result = await session.execute(
+                    select(Places).where(Places.user_id == user.id, Places.race_id == gp.id)
+                )
+                place_row = result.scalar_one_or_none()
+                place_value = place_row.place if place_row else None
+                user_entry[gp.gp_name_abr] = place_value
+                user_entry[f"place{gp.gp_name_abr}"] = place_value
 
-            # Заполняем места из таблицы points
-            for point in user.points:
-                if point.race_id in gp_map:
-                    gp_key = gp_map[point.race_id]
-                    # Сохраняем место (place) из модели Point
-                    user_data[gp_key] = point.place
+            places_list.append(user_entry)
 
-            result.append(user_data)
-
-        return result
+        return places_list

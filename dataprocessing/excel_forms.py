@@ -8,7 +8,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image
 from io import BytesIO
-from database.database import get_actual_gp_async, show_result, show_points_all, get_user_team, show_points_team_all, get_teams_fonts_colors, get_name_gp, get_maximus, get_all_users, get_predictions_by_gp, get_all_teams_players, get_user_places_by_year, counts_selects, get_team_places_by_name, add_places_after_gp, add_places_after_gp_teams, show_places_all, show_places_team_all, count_top3_finishes_by_team, show_places_team_from_team_points
+from database.database import get_actual_gp_async, show_result, show_points_all, get_user_team, show_points_team_all, get_teams_fonts_colors, get_name_gp, get_maximus, get_all_users, get_predictions_by_gp, get_all_teams_players, get_user_places_by_year, counts_selects, get_team_places_by_name, add_places_after_gp, add_places_after_gp_teams, show_places_all, show_places_team_all, count_top3_finishes_by_team, show_places_team_from_team_points, show_places_all_from_places
 
 async def entry_list():
     users_list: List[dict] = await get_all_users()
@@ -1744,7 +1744,6 @@ async def statistic_user_position_excel():
     places_list: List[dict] = await show_places_all(datetime.now().year)
 
     if not places_list:
-        # Создаём пустую книгу, если нет данных
         wb = Workbook()
         output = BytesIO()
         wb.save(output)
@@ -1754,14 +1753,14 @@ async def statistic_user_position_excel():
     # Определяем gp_keys (GP-аббревиатуры)
     gp_keys = [k for k in places_list[0].keys() if k not in ('User', 'Team', 'Number', 'Image') and not k.startswith('place')]
 
-    # Найдём последний заполненный этап (последний по порядку в gp_keys, где хоть у кого-то есть место)
+    # Найдём последний заполненный этап
     last_filled_gp = None
     for gp in reversed(gp_keys):
         if any(entry.get(gp) is not None for entry in places_list):
             last_filled_gp = gp
             break
 
-    # Сортировка: если есть заполненный этап — по месту на нём (None считается большим), иначе по Number
+    # Сортировка
     if last_filled_gp is None:
         places_list.sort(key=lambda e: (e.get('Number') if e.get('Number') is not None else 9999))
     else:
@@ -1770,7 +1769,14 @@ async def statistic_user_position_excel():
             return (val if val is not None else 9999)
         places_list.sort(key=sort_by_last_place)
 
-    # Создаем новый Excel файл
+    # Вспомогательная функция для изображений
+    def _make_image(path, percent):
+        im = Image(path)
+        im.width = int(im.width * (percent / 100))
+        im.height = int(im.height * (percent / 100))
+        return im
+
+    # Создаём книгу и первый лист
     wb = Workbook()
     ws = wb.active
     ws.title = "Championship Places"
@@ -1788,10 +1794,8 @@ async def statistic_user_position_excel():
     ws['D4'].alignment = Alignment(horizontal='center', vertical='center')
 
     img_path = os.path.join('logos', 'Shirokoe_logo_bez_fona_silli.png')
-    img = Image(img_path)
     resize_percentage = 7
-    img.width = int(img.width * (resize_percentage / 100))
-    img.height = int(img.height * (resize_percentage / 100))
+    img = _make_image(img_path, resize_percentage)
     img.anchor = f'C1'
     ws.add_image(img)
 
@@ -1816,7 +1820,7 @@ async def statistic_user_position_excel():
     teams_fonts: dict = await get_teams_fonts_colors()
 
     for num, entry in enumerate(places_list, 1):
-        row = [num, entry['Number'], entry['User'], entry['Team'], ''] + [entry.get(k) for k in gp_keys]
+        row = [num, entry.get('Number'), entry.get('User'), entry.get('Team'), ''] + [entry.get(k) for k in gp_keys]
         ws.append(row)
         ws.row_dimensions[ws.max_row].height = 17
         wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='000001')
@@ -1833,34 +1837,27 @@ async def statistic_user_position_excel():
                 cell.alignment = Alignment(horizontal='center', vertical='center')
             cell.fill = black_fill
 
-        if teams_fonts.get(entry['Team'], None):
-            team = teams_fonts[entry['Team']]
-            font = Font(name='Formula1 Display Bold', size=11, bold=False, color=team['text_color'])
-            fill = PatternFill(start_color=team['background_color'], end_color=team['background_color'],
-                               fill_type='solid')
+        if teams_fonts.get(entry.get('Team'), None):
+            team = teams_fonts[entry.get('Team')]
             font_number = Font(name=team['number_font'], size=14, bold=True, italic=team['number_italic'],
                                color=team['number_color'])
+            fill = PatternFill(start_color=team['background_color'], end_color=team['background_color'],
+                               fill_type='solid')
             ws.cell(row=ws.max_row, column=2).font = font_number
             ws.cell(row=ws.max_row, column=2).fill = fill
 
             if team['logo']:
-                img_path = os.path.join('logos', team['logo'])
+                t_img_path = os.path.join('logos', team['logo'])
             else:
-                img_path = os.path.join('logos', 'personal.png')
-            img = Image(img_path)
-            resize_percentage = 46
-            img.width = int(img.width * (resize_percentage / 100))
-            img.height = int(img.height * (resize_percentage / 100))
-            img.anchor = f'E{ws.max_row}'
-            ws.add_image(img)
+                t_img_path = os.path.join('logos', 'personal.png')
+            team_img = _make_image(t_img_path, 46)
+            team_img.anchor = f'E{ws.max_row}'
+            ws.add_image(team_img)
         else:
-            img_path = os.path.join('logos', 'personal.png')
-            img = Image(img_path)
-            resize_percentage = 46
-            img.width = int(img.width * (resize_percentage / 100))
-            img.height = int(img.height * (resize_percentage / 100))
-            img.anchor = f'E{ws.max_row}'
-            ws.add_image(img)
+            t_img_path = os.path.join('logos', 'personal.png')
+            team_img = _make_image(t_img_path, 46)
+            team_img.anchor = f'E{ws.max_row}'
+            ws.add_image(team_img)
 
     center_alignment = Alignment(horizontal='center', vertical='center')
     for cell in ws['A'] + ws['B'] + ws['D']:
@@ -1880,6 +1877,105 @@ async def statistic_user_position_excel():
     ws.cell(row=10, column=1).fill = PatternFill(start_color='BC5610', end_color='BC5610', fill_type='solid')
 
     ws.sheet_view.showGridLines = False
+
+    # --- Второй лист: берём данные из show_places_all_from_places(year) ---
+    places_list2: List[dict] = await show_places_all_from_places(datetime.now().year)
+    if places_list2:
+        ws2 = wb.create_sheet(title="Championship Places (All)")
+        ws2.insert_rows(1, amount=5)
+        ws2.row_dimensions[3].height = 22.5
+        ws2.merge_cells(start_row=3, start_column=4, end_row=3, end_column=25)
+        ws2.merge_cells(start_row=4, start_column=4, end_row=4, end_column=25)
+        ws2.cell(row=3, column=4).font = Font(name='Formula1 Display Bold', size=18, bold=True, color='000000')
+        ws2['D3'] = f'FORMULA 1 FANTASY SERIES BY SILLY FORMULA'
+        ws2['D3'].alignment = Alignment(horizontal='center', vertical='center')
+        ws2.cell(row=4, column=4).font = Font(name='Formula1 Display Bold', size=11, bold=True, color='000000')
+        ws2['D4'] = f"DRIVER'S CHAMPIONSHIP (ALL)"
+        ws2['D4'].alignment = Alignment(horizontal='center', vertical='center')
+
+        img_path = os.path.join('logos', 'Shirokoe_logo_bez_fona_silli.png')
+        img2 = _make_image(img_path, resize_percentage)
+        img2.anchor = f'C1'
+        ws2.add_image(img2)
+
+        header2 = ['POS', '№', 'Driver', 'Team', ''] + gp_keys
+        ws2.append(header2)
+        ws2.row_dimensions[ws2.max_row].height = 17
+
+        for cell in ws2[7]:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+            ws2.merge_cells(start_row=ws2.max_row, start_column=4, end_row=ws2.max_row, end_column=5)
+
+        # Сортировка для второго листа
+        last_filled_gp2 = None
+        for gp in reversed(gp_keys):
+            if any(entry.get(gp) is not None for entry in places_list2):
+                last_filled_gp2 = gp
+                break
+        if last_filled_gp2 is None:
+            places_list2.sort(key=lambda e: (e.get('Number') if e.get('Number') is not None else 9999))
+        else:
+            places_list2.sort(key=lambda e: (e.get(last_filled_gp2) if e.get(last_filled_gp2) is not None else 9999))
+
+        for num, entry in enumerate(places_list2, 1):
+            row = [num, entry.get('Number'), entry.get('User'), entry.get('Team'), ''] + [entry.get(k) for k in gp_keys]
+            ws2.append(row)
+            ws2.row_dimensions[ws2.max_row].height = 17
+            wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='000001')
+            if num % 2 != 0:
+                black_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+            else:
+                black_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
+            for cell in ws2[ws2.max_row]:
+                cell.alignment = Alignment(vertical='center')
+                if cell.column_letter in ['A', 'B', 'C', 'D', 'E']:
+                    cell.font = wight_font
+                else:
+                    cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
+                    cell.alignment = Alignment(horizontal='center', vertical='center')
+                cell.fill = black_fill
+
+            if teams_fonts.get(entry.get('Team'), None):
+                team = teams_fonts[entry.get('Team')]
+                font_number = Font(name=team['number_font'], size=14, bold=True, italic=team['number_italic'],
+                                   color=team['number_color'])
+                fill = PatternFill(start_color=team['background_color'], end_color=team['background_color'],
+                                   fill_type='solid')
+                ws2.cell(row=ws2.max_row, column=2).font = font_number
+                ws2.cell(row=ws2.max_row, column=2).fill = fill
+
+                if team['logo']:
+                    t_img_path = os.path.join('logos', team['logo'])
+                else:
+                    t_img_path = os.path.join('logos', 'personal.png')
+                team_img2 = _make_image(t_img_path, 46)
+                team_img2.anchor = f'E{ws2.max_row}'
+                ws2.add_image(team_img2)
+            else:
+                t_img_path = os.path.join('logos', 'personal.png')
+                team_img2 = _make_image(t_img_path, 46)
+                team_img2.anchor = f'E{ws2.max_row}'
+                ws2.add_image(team_img2)
+
+        for cell in ws2['A'] + ws2['B'] + ws2['D']:
+            cell.alignment = center_alignment
+
+        for column in ws2.columns:
+            column_letter = column[0].column_letter
+            ws2.column_dimensions[column_letter].width = 7.7
+        ws2.column_dimensions['C'].width = 35.7
+        ws2.column_dimensions['D'].width = 41.7
+        ws2.column_dimensions['E'].width = 9.2
+        ws2.column_dimensions[ws2.cell(row=7, column=ws2.max_column).column_letter].width = 11.3
+
+        ws2.cell(row=8, column=1).fill = PatternFill(start_color='FFC50D', end_color='FFC50D', fill_type='solid')
+        ws2.cell(row=9, column=1).fill = PatternFill(start_color='A3A3A3', end_color='A3A3A3', fill_type='solid')
+        ws2.cell(row=10, column=1).fill = PatternFill(start_color='BC5610', end_color='BC5610', fill_type='solid')
+
+        ws2.sheet_view.showGridLines = False
 
     output = BytesIO()
     wb.save(output)
