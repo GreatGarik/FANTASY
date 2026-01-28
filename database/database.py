@@ -1656,10 +1656,11 @@ async def add_user_predict(tg_id, gp, text, time):
             team_q = await session.execute(
                 select(Driver).where(Driver.driver_team == driver_team)
             )
-            if not team_q.scalars().first():
+            team_rows = team_q.scalars().all()
+            if not team_rows:
                 return "Нет такой команды"
 
-            # 3) проверка двигателя
+            # 3) проверка двигателя (самого указанного в поле driver_engine)
             engine_q = await session.execute(
                 select(Driver).where(Driver.driver_engine == driver_engine)
             )
@@ -1668,12 +1669,25 @@ async def add_user_predict(tg_id, gp, text, time):
 
             # 4) проверка пилотов — сообщаем, какого именно нет
             missing_drivers = []
-            for name in (first_driver, second_driver, third_driver, fourth_driver):
+            drivers = (first_driver, second_driver, third_driver, fourth_driver)
+            driver_rows = {}
+            for name in drivers:
                 q = await session.execute(select(Driver).where(Driver.driver_name == name))
-                if not q.scalars().first():
+                row = q.scalars().first()
+                if not row:
                     missing_drivers.append(name)
+                else:
+                    driver_rows[name] = row
             if missing_drivers:
                 return "Нет такого пилота: " + ", ".join(missing_drivers)
+
+            # Дополнительные проверки по позициям для third и fourth
+            third_row = driver_rows[third_driver]
+            if not (11 <= int(third_row.driver_position) <= 22):
+                return "гонщик третьего пика неверный"
+            fourth_row = driver_rows[fourth_driver]
+            if not (17 <= int(fourth_row.driver_position) <= 22):
+                return "гонщик четвертого пика неверный"
 
             # 5) проверки дуэлей: для номеров 1,2,3 проверить наличие дуэли с этим gp и участника
             for idx, sel in enumerate((select_duel1, select_duel2, select_duel3), start=1):
@@ -1682,7 +1696,41 @@ async def add_user_predict(tg_id, gp, text, time):
                 if not duel:
                     return f"Нет дуэли с номером {idx} для этого GP"
                 if sel not in (duel.participant1, duel.participant2):
-                    return f"Нет такого гонщика в дуэли {idx}"
+                    return "Нет такого пользователя в этой дуэли"
+
+            # Новая проверка двигателей:
+            # Соберём список движков: явно указанный driver_engine + двигатели у каждого выбранного пилота +
+            # для команды возьмём только один двигатель (по 1-й записи team_rows), чтобы не учитывать 2 записи одной команды.
+            engines = []
+
+            # добавляем явно указанный driver_engine
+            if driver_engine:
+                engines.append(driver_engine.strip())
+
+            # добавляем двигатели у каждого выбранного пилота
+            for name in drivers:
+                engines.append(driver_rows[name].driver_engine.strip())
+
+            # для команды берём только одну запись (например, первую) и её двигатель
+            team_engine = None
+            if team_rows:
+                first_team_row = team_rows[0]
+                if first_team_row.driver_engine:
+                    team_engine = first_team_row.driver_engine.strip()
+                    engines.append(team_engine)
+
+            # подсчёт одинаковых движков — нормализуем строки для корректного сравнения
+            norm_engines = [e for e in engines if e]
+            counts = {}
+            for e in norm_engines:
+                counts[e] = counts.get(e, 0) + 1
+
+            # Найдём движки с count >= 3 (т.е. 3 или более одинаковых)
+            repeated = [eng for eng, cnt in counts.items() if cnt >= 3]
+            if repeated:
+                # показать какие двигатели повторяются
+                repeated_str = ", ".join(repeated)
+                return f"Выбрано 3 или более одинаковых двигателей {repeated_str}"
 
             # Все проверки пройдены — сохраняем прогноз
             try:
