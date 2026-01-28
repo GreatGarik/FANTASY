@@ -155,7 +155,20 @@ admin_dialog = Dialog(
         ),
         state=AdminSG.send_no_team,
     ),
-
+    Window(
+        Const(
+            text='Введите прогноза в формате\n Команда\n Двигатель\n Пик1\n Пик2\n Пик3\n Пик4\n Дуэль1\n Дуэль2\n Дуэль3\n Круговые'),
+        Button(
+            text=Const('✕ Отмена'),
+            id='cancel_user_menu',
+            on_click=cancel_user_menu)
+        ,
+        TextInput(
+            id='send_user_predict',
+            on_success=send_user_predict,
+        ),
+        state=AdminSG.button_send_user_predict,
+    ),
     Window(
         Const(text='Введите полное имя пользователя'),
         Button(
@@ -536,6 +549,11 @@ admin_dialog = Dialog(
                 text=Const('Отправить сообщение'),
                 id='button_send_message_one',
                 on_click=button_send_all
+            ),
+            Button(
+                text=Const('Отправить прогноз за пользователя'),
+                id='button_send_user_predict',
+                on_click=button_send_user_predict
             ),
             Button(
                 text=Const('Изменить имя'),

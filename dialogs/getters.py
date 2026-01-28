@@ -16,7 +16,7 @@ from dataprocessing.excel_forms import entry_list, last_stage, process_champions
 from dataprocessing.calculation_gp_drivers import calculation_drivers
 from database.database import get_users_async, check_res, \
     clear_results, get_name_gp, get_users_by_name, change_user_name_async, change_user_number_async, get_grandprix_list, \
-    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async, change_user_banned_status, delete_team_from_db, add_scheduled_message, get_users_async_no_team, get_new_users_async, get_users_from_requests, approving_the_request, add_duel, delete_duels_by_gp, get_duel_pair, can_change_name
+    update_driver_positions, update_grandprix, get_all_teams, update_team, create_team_only_name, get_team_members, update_or_remove_team_member, select_drivers_async, update_driver_nextgp, create_f1_driver, update_driver_team, update_grandprix_result, is_sprint, get_actual_gp_async, change_user_banned_status, delete_team_from_db, add_scheduled_message, get_users_async_no_team, get_new_users_async, get_users_from_requests, approving_the_request, add_duel, delete_duels_by_gp, get_duel_pair, can_change_name, add_user_predict
 from .dop_functions import send_message
 from scheduler.scheduler import scheduler, schedule_message
 
@@ -82,6 +82,7 @@ class AdminSG(StatesGroup):
     duel2 = State()
     duel3 = State()
     statistics = State()
+    button_send_user_predict = State()
 
 current_os = platform.system()
 
@@ -112,6 +113,17 @@ async def correct_name(message: Message,widget: ManagedTextInput,dialog_manager:
     else:
         await message.answer(text=f'Я никого не нашел.')
         await dialog_manager.switch_to(AdminSG.users_menu)
+
+
+async def send_user_predict(message: Message,widget: ManagedTextInput,dialog_manager: DialogManager,text: str) -> None:
+    res = await add_user_predict(tg_id= dialog_manager.dialog_data['user_tg_id'], gp= await get_actual_gp_async(), text=text, time=datetime.now())
+    if res == 'OK':
+        await message.answer('Прогноз записан')
+        await dialog_manager.switch_to(AdminSG.start)
+    else:
+        await message.answer(res)
+        await dialog_manager.switch_to(AdminSG.button_send_user_predict)
+
 
 async def send_all(message: Message,widget: ManagedTextInput,dialog_manager: DialogManager,text: str) -> None:
     bot = dialog_manager.middleware_data.get('bot')
@@ -934,6 +946,9 @@ async def button_tables(callback: CallbackQuery, button: Button, dialog_manager:
 
 async def button_send_all(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.send_all)
+
+async def button_send_user_predict(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.switch_to(AdminSG.button_send_user_predict)
 
 async def button_send_no_team(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminSG.send_no_team)

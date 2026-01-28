@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, select, update, case, func, delete, asc, d
 from sqlalchemy.orm import sessionmaker, selectinload, aliased
 from database.models import *
 from config_data.config import Config, load_config
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, SQLAlchemyError
 '''
 # Определяем текущую операционную систему
 current_os = platform.system()
@@ -178,15 +178,8 @@ async def send_predict(tg_id, gp, first_driver, second_driver, third_driver, fou
                 await session.commit()
             except Exception as e:
                 print(e)
-'''
-async def get_predict(gp=None):
-    async with async_session() as session:
-        async with session.begin():
-            statement = select(Predict).where(Predict.gp == gp).order_by(asc(Predict.time))
-            result = await session.execute(statement)
-            db_object = result.scalars().all()
-            return db_object
-'''
+
+
 
 async def get_predict(gp=None):
     async with async_session() as session:
@@ -1628,3 +1621,92 @@ async def show_places_all_from_places(year: int) -> List[dict]:
             places_list.append(user_entry)
 
         return places_list
+
+
+async def add_user_predict(tg_id, gp, text, time):
+    async with async_session() as session:
+        async with session.begin():
+            parts = [item.strip() for item in text.splitlines() if item.strip()]
+
+            # Ожидаем 10 полей: team, engine, first, second, third, fourth, duel1, duel2, duel3, lapped
+            if len(parts) != 10:
+                return "Неверный формат входных данных"
+
+            (
+                driver_team,
+                driver_engine,
+                first_driver,
+                second_driver,
+                third_driver,
+                fourth_driver,
+                select_duel1,
+                select_duel2,
+                select_duel3,
+                lapped,
+            ) = parts
+
+            # 1) уже есть прогноз от пользователя на этот GP
+            exists_q = await session.execute(
+                select(Predict).where(Predict.user_id == int(tg_id), Predict.gp == int(gp))
+            )
+            if exists_q.scalars().first():
+                return "У пользователя уже есть прогноз на этот GP"
+
+            # 2) проверка команды
+            team_q = await session.execute(
+                select(Driver).where(Driver.driver_team == driver_team)
+            )
+            if not team_q.scalars().first():
+                return "Нет такой команды"
+
+            # 3) проверка двигателя
+            engine_q = await session.execute(
+                select(Driver).where(Driver.driver_engine == driver_engine)
+            )
+            if not engine_q.scalars().first():
+                return "Нет такого двигателя"
+
+            # 4) проверка пилотов — сообщаем, какого именно нет
+            missing_drivers = []
+            for name in (first_driver, second_driver, third_driver, fourth_driver):
+                q = await session.execute(select(Driver).where(Driver.driver_name == name))
+                if not q.scalars().first():
+                    missing_drivers.append(name)
+            if missing_drivers:
+                return "Нет такого пилота: " + ", ".join(missing_drivers)
+
+            # 5) проверки дуэлей: для номеров 1,2,3 проверить наличие дуэли с этим gp и участника
+            for idx, sel in enumerate((select_duel1, select_duel2, select_duel3), start=1):
+                q = await session.execute(select(Duel).where(Duel.num == idx, Duel.gp == int(gp)))
+                duel = q.scalars().first()
+                if not duel:
+                    return f"Нет дуэли с номером {idx} для этого GP"
+                if sel not in (duel.participant1, duel.participant2):
+                    return f"Нет такого гонщика в дуэли {idx}"
+
+            # Все проверки пройдены — сохраняем прогноз
+            try:
+                new_predict = Predict(
+                    user_id=int(tg_id),
+                    first_driver=first_driver,
+                    second_driver=second_driver,
+                    third_driver=third_driver,
+                    fourth_driver=fourth_driver,
+                    driver_team=driver_team,
+                    driver_engine=driver_engine,
+                    gap=0,
+                    lapped=int(lapped),
+                    gp=int(gp),
+                    penalty=None,
+                    time=time,
+                    select_duel1=select_duel1,
+                    select_duel2=select_duel2,
+                    select_duel3=select_duel3,
+                )
+                session.add(new_predict)
+                await session.commit()
+                return "OK"
+            except (ValueError, SQLAlchemyError) as e:
+                await session.rollback()
+                print(e)
+                return "Ошибка при сохранении"
