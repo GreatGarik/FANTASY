@@ -10,6 +10,8 @@ from openpyxl.drawing.image import Image
 from io import BytesIO
 from database.database import get_actual_gp_async, show_result, show_points_all, get_user_team, show_points_team_all, get_teams_fonts_colors, get_name_gp, get_maximus, get_all_users, get_predictions_by_gp, get_all_teams_players, get_user_places_by_year, counts_selects, get_team_places_by_name, add_places_after_gp, add_places_after_gp_teams, show_places_all, show_places_team_all, count_top3_finishes_by_team, show_places_team_from_team_points, show_places_all_from_places
 
+WIDTH_FOR_TEAM = 50.7
+
 async def entry_list():
     users_list: List[dict] = await get_all_users()
 
@@ -141,7 +143,7 @@ async def entry_list():
         column_letter = column[0].column_letter  # Получаем букву столбца
         ws.column_dimensions[column_letter].width = 7.7
     ws.column_dimensions['B'].width = 35.7  # Третий столбец
-    ws.column_dimensions['C'].width = 41.7  # Четвертый столбец
+    ws.column_dimensions['C'].width = WIDTH_FOR_TEAM  # Четвертый столбец
     ws.column_dimensions['D'].width = 9.0  # Пятый столбец
 
     # Скрываем сетку
@@ -310,7 +312,7 @@ async def last_stage():
         column_letter = column[0].column_letter  # Получаем букву столбца
         ws.column_dimensions[column_letter].width = 7.7
     ws.column_dimensions['C'].width = 35.7  # Третий столбец
-    ws.column_dimensions['D'].width = 41.7  # Четвертый столбец
+    ws.column_dimensions['D'].width = WIDTH_FOR_TEAM  # Четвертый столбец
     ws.column_dimensions['E'].width = 9.2  # Пятый столбец
     ws.column_dimensions[ws.cell(row=7, column=ws.max_column).column_letter].width = 10.7  # Последний столбец
 
@@ -512,7 +514,7 @@ async def process_championship_by_segment():
             column_letter = column[0].column_letter
             ws.column_dimensions[column_letter].width = 7.7
         ws.column_dimensions['C'].width = 35.7
-        ws.column_dimensions['D'].width = 41.7
+        ws.column_dimensions['D'].width = WIDTH_FOR_TEAM
         ws.column_dimensions['E'].width = 9.2
         for idx in range(6, ws.max_column + 1):
             ws.column_dimensions[ws.cell(row=ws.max_row, column=idx).column_letter].width = 11.3
@@ -668,7 +670,7 @@ async def process_championship_full():
         column_letter = column[0].column_letter  # Получаем букву столбца
         ws.column_dimensions[column_letter].width = 7.7
     ws.column_dimensions['C'].width = 35.7  # Третий столбец
-    ws.column_dimensions['D'].width = 41.7  # Четвертый столбец
+    ws.column_dimensions['D'].width = WIDTH_FOR_TEAM  # Четвертый столбец
     ws.column_dimensions['E'].width = 9.2  # Пятый столбец
     ws.column_dimensions[ws.cell(row=7, column=ws.max_column).column_letter].width = 11.3  # Третий столбец
 
@@ -812,7 +814,7 @@ async def statistic_team_excel():
     for column in ws.columns:
         column_letter = column[0].column_letter
         ws.column_dimensions[column_letter].width = 7.7
-    ws.column_dimensions['A'].width = 41.7
+    ws.column_dimensions['A'].width = WIDTH_FOR_TEAM
     ws.column_dimensions['B'].width = 9.2
     ws.column_dimensions['C'].width = 11.3
     ws.column_dimensions['G'].width = 11.3
@@ -873,7 +875,7 @@ async def statistic_team_excel():
     for column in ws2.columns:
         column_letter = column[0].column_letter
         ws2.column_dimensions[column_letter].width = 7.7
-    ws2.column_dimensions['A'].width = 41.7
+    ws2.column_dimensions['A'].width = WIDTH_FOR_TEAM
     ws2.column_dimensions['B'].width = 9.2
     ws2.column_dimensions['C'].width = 18
     ws2.column_dimensions['D'].width = 11.3
@@ -993,7 +995,7 @@ async def statistic_team_excel():
     for column in ws3.columns:
         column_letter = column[0].column_letter
         ws3.column_dimensions[column_letter].width = 11
-    ws3.column_dimensions['A'].width = 41.7
+    ws3.column_dimensions['A'].width = WIDTH_FOR_TEAM
     ws3.column_dimensions['B'].width = 9.2
     for cell in ws3['A'] + ws3['B']:
         cell.alignment = center_alignment
@@ -1092,7 +1094,7 @@ async def statistic_team_excel():
     for column in ws4.columns:
         column_letter = column[0].column_letter
         ws4.column_dimensions[column_letter].width = 7.7
-    ws4.column_dimensions['A'].width = 41.7
+    ws4.column_dimensions['A'].width = WIDTH_FOR_TEAM
     ws4.column_dimensions['B'].width = 9.2
     ws4.column_dimensions['C'].width = 18
     ws4.column_dimensions['D'].width = 18
@@ -1232,7 +1234,7 @@ async def championship_team_full():
         column_letter = column[0].column_letter  # Получаем букву столбца
         ws.column_dimensions[column_letter].width = 7.7
     # ws.column_dimensions['C'].width = 35.7  # Третий столбец
-    ws.column_dimensions['B'].width = 41.7  # Четвертый столбец
+    ws.column_dimensions['B'].width = WIDTH_FOR_TEAM  # Четвертый столбец
     ws.column_dimensions['C'].width = 9.2  # Пятый столбец
     ws.column_dimensions[ws.cell(row=3, column=ws.max_column).column_letter].width = 11.3  # Третий столбец
 
@@ -1569,7 +1571,7 @@ async def export_places_summary_by_year():
                 column_letter = column[0].column_letter
                 worksheet.column_dimensions[column_letter].width = 7.7
             worksheet.column_dimensions['B'].width = 35.7  # Name
-            worksheet.column_dimensions['C'].width = 41.7  # Team
+            worksheet.column_dimensions['C'].width = WIDTH_FOR_TEAM  # Team
             worksheet.column_dimensions['D'].width = 9.0   # Logo
             worksheet.column_dimensions['E'].width = 9.0   # Count (First/Podium/Top-5...)
 
@@ -1669,7 +1671,7 @@ async def export_places_summary_by_year():
             column_letter = column[0].column_letter
             worksheet.column_dimensions[column_letter].width = 7.7
         worksheet.column_dimensions['B'].width = 35.7
-        worksheet.column_dimensions['C'].width = 41.7
+        worksheet.column_dimensions['C'].width = WIDTH_FOR_TEAM
         worksheet.column_dimensions['D'].width = 9.0
         # E = Total, F = Top-50, G = Top-50 %
         worksheet.column_dimensions['E'].width = 9.0
@@ -1867,7 +1869,7 @@ async def statistic_user_position_excel():
         column_letter = column[0].column_letter
         ws.column_dimensions[column_letter].width = 7.7
     ws.column_dimensions['C'].width = 35.7
-    ws.column_dimensions['D'].width = 41.7
+    ws.column_dimensions['D'].width = WIDTH_FOR_TEAM
     ws.column_dimensions['E'].width = 9.2
     ws.column_dimensions[ws.cell(row=7, column=ws.max_column).column_letter].width = 11.3
 
@@ -1967,7 +1969,7 @@ async def statistic_user_position_excel():
             column_letter = column[0].column_letter
             ws2.column_dimensions[column_letter].width = 7.7
         ws2.column_dimensions['C'].width = 35.7
-        ws2.column_dimensions['D'].width = 41.7
+        ws2.column_dimensions['D'].width = WIDTH_FOR_TEAM
         ws2.column_dimensions['E'].width = 9.2
         ws2.column_dimensions[ws2.cell(row=7, column=ws2.max_column).column_letter].width = 11.3
 
@@ -2133,7 +2135,7 @@ async def statistic_team_position_excel():
         for column in ws.columns:
             column_letter = column[0].column_letter
             ws.column_dimensions[column_letter].width = 7.7
-        ws.column_dimensions['B'].width = 41.7
+        ws.column_dimensions['B'].width = WIDTH_FOR_TEAM
         ws.column_dimensions['C'].width = 9.2
         ws.column_dimensions[ws.cell(row=row_idx_header, column=last_col).column_letter].width = 11.3
 
