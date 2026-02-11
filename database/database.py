@@ -1028,6 +1028,7 @@ async def update_grandprix_result(grandprix_id: int, result_type: str, result_te
             if missing_drivers:
                 return f"Не найдены пилоты среди участников этапа: {', '.join(missing_drivers)}. Введите корректные результаты"
 
+
             # Определяем, какое поле обновлять
             if result_type == 'sprint':
                 column_to_update = Grandprix.sprint_result
