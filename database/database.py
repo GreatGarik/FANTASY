@@ -1024,7 +1024,7 @@ async def update_grandprix_result(grandprix_id: int, result_type: str, result_te
             existing_driver_names = {driver for driver in existing_drivers.scalars().all()}
 
             # Находим отсутствующих водителей
-            missing_drivers = set(name.rstrip('DNF:') for name in driver_names) - existing_driver_names
+            missing_drivers = set(name.lstrip('DNF:') for name in driver_names) - existing_driver_names
             if missing_drivers:
                 return f"Не найдены пилоты среди участников этапа: {', '.join(missing_drivers)}. Введите корректные результаты"
 
