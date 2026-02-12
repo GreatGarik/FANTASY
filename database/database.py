@@ -1378,7 +1378,10 @@ async def add_places_after_gp(points_list: list[dict], gp: int):
                 name = person.get('User')
 
                 # ищем user.id через экземпляр сессии
-                stmt = select(User.id).where(User.name == name)
+                stmt = select(User.id).where(
+                    User.name == name,
+                    User.active.is_(True)
+                )
                 res = await session.execute(stmt)
                 user_id = res.scalar_one_or_none()
                 if user_id is None:
