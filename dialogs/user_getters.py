@@ -344,8 +344,7 @@ async def back_select_fourth(callback: CallbackQuery, button: Button, dialog_man
 
 async def back_duel1(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     dialog_manager.dialog_data.pop('fourth_driver', None)
-    dialog_manager.dialog_data.pop('select4_engine', None)
-    dialog_manager.dialog_data.pop('select5_engine', None)
+    dialog_manager.dialog_data.pop('select6_engine', None)
 
 async def back_duel2(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     dialog_manager.dialog_data.pop('select_duel1', None)
