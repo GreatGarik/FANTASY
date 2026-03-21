@@ -10,6 +10,7 @@ class TgBot:
     db_user: str
     db_password: str
     db_name: str
+    proxy: str
 
 
 @dataclass
@@ -25,4 +26,5 @@ def load_config(path: str | None = None) -> Config:
                                all_admins=([int(i) for i in env('ALL_ADMINS').split(',')]),
                                db_user=env('DB_USERNAME'),
                                db_password=env('DB_PASSWORD'),
-                               db_name=env('DB_NAME')))
+                               db_name=env('DB_NAME'),
+                               proxy=env('PROXY')))

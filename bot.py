@@ -6,6 +6,7 @@ from config_data.config import Config, load_config
 from dialogs import user_dialog
 from keyboards.menu_button import set_main_menu
 from aiogram.fsm.storage.redis import RedisStorage, Redis, DefaultKeyBuilder
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.bot import DefaultBotProperties
 from aiogram.enums import ParseMode
 from scheduler.scheduler import start_scheduler, schedule_messages_on_start
@@ -35,7 +36,7 @@ async def main():
     storage = RedisStorage(redis=redis, key_builder=DefaultKeyBuilder(with_destiny=True))
 
     # Инициализируем бот и диспетчер
-    bot: Bot = Bot(token=config.tg_bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    bot: Bot = Bot(token=config.tg_bot.token, session = AiohttpSession(proxy=config.tg_bot.proxy), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp: Dispatcher = Dispatcher(storage=storage)
     dp.workflow_data.update({'all_admins': config.tg_bot.all_admins})
 
