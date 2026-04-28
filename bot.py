@@ -37,9 +37,9 @@ async def main():
 
     # Инициализируем бот и диспетчер
     # с прокси
-    #bot: Bot = Bot(token=config.tg_bot.token, session = AiohttpSession(proxy=config.tg_bot.proxy), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    bot: Bot = Bot(token=config.tg_bot.token, session = AiohttpSession(proxy=config.tg_bot.proxy), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     # без прокси
-    bot: Bot = Bot(token=config.tg_bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+    #bot: Bot = Bot(token=config.tg_bot.token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp: Dispatcher = Dispatcher(storage=storage)
     dp.workflow_data.update({'all_admins': config.tg_bot.all_admins})
 
