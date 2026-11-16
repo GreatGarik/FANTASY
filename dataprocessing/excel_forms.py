@@ -536,7 +536,6 @@ async def process_championship_by_segment():
 async def process_championship_full():
     points_list: List[dict] = await show_points_all(datetime.now().year)
 
-
     # Сортируем по общему количеству очков
     points_list.sort(key=sort_points, reverse=True)
 
@@ -544,7 +543,14 @@ async def process_championship_full():
 
     for entry in points_list:
         entry['CH.PTS'] = sum(
-            entry[key] for key in entry if key != 'User' and key != 'Team' and key != 'Number' and (not key.startswith('place')) and entry[key])
+            entry[key]
+            for key in entry
+            if key != 'User'
+            and key != 'Team'
+            and key != 'Number'
+            and not key.startswith('place')
+            and entry[key]
+        )
 
     # Создаем новый Excel файл
     wb = Workbook()
@@ -558,131 +564,204 @@ async def process_championship_full():
     # Объединяем ячейки в третьем и четвертом столбцах (C и D)
     ws.merge_cells(start_row=3, start_column=4, end_row=3, end_column=25)
     ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=25)
-    ws.cell(row=3, column=4).font = Font(name='Formula1 Display Bold', size=18, bold=True, color='000000')
-    ws['D3'] = f'FORMULA 1 FANTASY SERIES BY SILLY FORMULA'
+    ws.cell(row=3, column=4).font = Font(
+        name='Formula1 Display Bold', size=18, bold=True, color='000000'
+    )
+    ws['D3'] = 'FORMULA 1 FANTASY SERIES BY SILLY FORMULA'
     ws['D3'].alignment = Alignment(horizontal='center', vertical='center')
-    ws.cell(row=4, column=4).font = Font(name='Formula1 Display Bold', size=11, bold=True, color='000000')
-    ws['D4'] = f"DRIVER'S CHAMPIONSHIP"
+    ws.cell(row=4, column=4).font = Font(
+        name='Formula1 Display Bold', size=11, bold=True, color='000000'
+    )
+    ws['D4'] = "DRIVER'S CHAMPIONSHIP"
     ws['D4'].alignment = Alignment(horizontal='center', vertical='center')
 
-    img_path = os.path.join('logos', 'Shirokoe_logo_bez_fona_silli.png')  # Укажите путь к вашему изображению
+    img_path = os.path.join('logos', 'Shirokoe_logo_bez_fona_silli.png')
     img = Image(img_path)
-    # Указываем процент изменения размера
-    resize_percentage = 7  # % от оригинального размера
-    # Рассчитываем новый размер
+    resize_percentage = 7
     img.width = int(img.width * (resize_percentage / 100))
     img.height = int(img.height * (resize_percentage / 100))
-    img.anchor = f'C1'  # Устанавливаем позицию изображения
+    img.anchor = 'C1'
     ws.add_image(img)
 
     # Заголовки таблицы
-    header = ['POS'] + ['№'] + ['Driver'] + ['Team'] + [''] + [key for key in points_list[0] if
-                                                               key not in ['User', 'CH.PTS', 'Number', 'Team',
-                                                                           'Image'] and not key.startswith('place')] + ['CH.PTS']
-    ws.append(header)  # Добавляем заголовки в первую строку
+    header = (
+        ['POS'] + ['№'] + ['Driver'] + ['Team'] + ['']
+        + [
+            key for key in points_list[0]
+            if key not in ['User', 'CH.PTS', 'Number', 'Team', 'Image']
+            and not key.startswith('place')
+        ]
+        + ['CH.PTS']
+    )
+    ws.append(header)
     ws.row_dimensions[ws.max_row].height = 17
 
-    # Устанавливаем шрифт и фон для заголовков
-    header_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')  # Белый цвет
-    header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')  # Красный цвет
+    # Стиль заголовков
+    header_font = Font(
+        name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF'
+    )
+    header_fill = PatternFill(
+        start_color='FF0000', end_color='FF0000', fill_type='solid'
+    )
+    thin_border = Border(
+        left=Side(style='thin', color='FFFFFF'),
+        right=Side(style='thin', color='FFFFFF'),
+        top=Side(style='thin', color='FFFFFF')
+    )
 
-    # Создаем черную границу
-    thin_border = Border(left=Side(style='thin', color='FFFFFF'),
-                         right=Side(style='thin', color='FFFFFF'),
-                         top=Side(style='thin', color='FFFFFF'))
-                         # bottom=Side(style='thin', color='000000'))
-
-    for cell in ws[7]:  # Перебираем ячейки заголовка
+    for cell in ws[7]:
         cell.font = header_font
         cell.fill = header_fill
         cell.border = thin_border
         cell.alignment = Alignment(horizontal='center', vertical='center')
-        # Объединяем ячейки в третьем и четвертом столбцах (C и D)
-        ws.merge_cells(start_row=ws.max_row, start_column=4, end_row=ws.max_row, end_column=5)
+
+    # Объединяем ячейки D и E в заголовке
+    ws.merge_cells(
+        start_row=ws.max_row,
+        start_column=4,
+        end_row=ws.max_row,
+        end_column=5
+    )
+
     teams_fonts: dict = await get_teams_fonts_colors()
+
+    # Цвета результатов: 100 — первое место, 92 — второе, 86 — третье
+    place_fills = {
+        100: PatternFill(
+            start_color='FFC50D', end_color='FFC50D', fill_type='solid'
+        ),
+        92: PatternFill(
+            start_color='A3A3A3', end_color='A3A3A3', fill_type='solid'
+        ),
+        86: PatternFill(
+            start_color='BC5610', end_color='BC5610', fill_type='solid'
+        ),
+    }
+
     # Добавляем данные в файл
     for num, entry in enumerate(points_list, 1):
-        row = [num] + [entry['Number']] + [entry['User']] + [entry['Team']] + [''] + [entry[key] for key in header[5:] if not key.startswith('place')]
-        ws.append(row)  # Добавляем строку с данными
+        row = (
+            [num]
+            + [entry['Number']]
+            + [entry['User']]
+            + [entry['Team']]
+            + ['']
+            + [
+                entry[key]
+                for key in header[5:]
+                if not key.startswith('place')
+            ]
+        )
+        ws.append(row)
         ws.row_dimensions[ws.max_row].height = 17
-        wight_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='000001')  # Черный цвет
+
+        wight_font = Font(
+            name='Formula1 Display Bold', size=11, bold=False, color='000001'
+        )
+
         if num % 2 != 0:
-            black_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')  # Белый цвет
+            black_fill = PatternFill(
+                start_color='F2F2F2', end_color='F2F2F2', fill_type='solid'
+            )
         else:
-            black_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')  # Белый цвет
+            black_fill = PatternFill(
+                start_color='D9D9D9', end_color='D9D9D9', fill_type='solid'
+            )
+
         for cell in ws[ws.max_row]:
             cell.alignment = Alignment(vertical='center')
-            if cell.column_letter in ['A', 'B', 'C', 'D', 'E']:
-                cell.font = wight_font  # Устанавливаем белый шрифт
-            else:
-                cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
-                cell.alignment = Alignment(horizontal='center', vertical='center')
-            cell.fill = black_fill  # Устанавливаем черный фон
 
-        # Устанавливаем фон для ячейки для команд
-        if teams_fonts.get(entry['Team'], None):
-            team = teams_fonts[entry['Team']]
-            # Устанавливаем фон для ячейки, например, в колонке
-            font = Font(name='Formula1 Display Bold', size=11, bold=False, color=team['text_color'])
-            fill = PatternFill(start_color=team['background_color'], end_color=team['background_color'],
-                               fill_type='solid')
-            font_number = Font(name=team['number_font'], size=14, bold=True, italic=team['number_italic'],
-                               color=team['number_color'])
-            ws.cell(row=ws.max_row, column=2).font = font_number
-            #ws.cell(row=ws.max_row, column=3).font = font
-            #ws.cell(row=ws.max_row, column=4).font = font
-            ws.cell(row=ws.max_row, column=2).fill = fill
-            #ws.cell(row=ws.max_row, column=3).fill = fill
-            #ws.cell(row=ws.max_row, column=4).fill = fill
-            #ws.cell(row=ws.max_row, column=5).fill = fill
-            # Вставляем изображение в четвертый столбец (колонка Е)
-            if team['logo']:
-                img_path = os.path.join('logos', team['logo'])  # Укажите путь к вашему изображению
+            if cell.column_letter in ['A', 'B', 'C', 'D', 'E']:
+                cell.font = wight_font
             else:
-                img_path = os.path.join('logos', 'personal.png')  # Укажите путь к вашему изображению
+                cell.font = Font(
+                    name='Formula1 Display Regular',
+                    size=11,
+                    bold=True,
+                    color='000001'
+                )
+                cell.alignment = Alignment(
+                    horizontal='center', vertical='center'
+                )
+
+            cell.fill = black_fill
+
+            # Раскрашиваем результаты по этапам.
+            # Колонки F и далее — результаты; последняя колонка CH.PTS
+            # не раскрашивается.
+            if (
+                6 <= cell.column < ws.max_column
+                and cell.value in place_fills
+            ):
+                cell.fill = place_fills[cell.value]
+
+        # Оформляем номер и добавляем логотип команды
+        if teams_fonts.get(entry['Team']):
+            team = teams_fonts[entry['Team']]
+
+            font_number = Font(
+                name=team['number_font'],
+                size=14,
+                bold=True,
+                italic=team['number_italic'],
+                color=team['number_color']
+            )
+            fill = PatternFill(
+                start_color=team['background_color'],
+                end_color=team['background_color'],
+                fill_type='solid'
+            )
+
+            ws.cell(row=ws.max_row, column=2).font = font_number
+            ws.cell(row=ws.max_row, column=2).fill = fill
+
+            if team['logo']:
+                img_path = os.path.join('logos', team['logo'])
+            else:
+                img_path = os.path.join('logos', 'personal.png')
+
             img = Image(img_path)
-            # Указываем процент изменения размера
-            resize_percentage = 46  # % от оригинального размера
-            # Рассчитываем новый размер
+            resize_percentage = 46
             img.width = int(img.width * (resize_percentage / 100))
             img.height = int(img.height * (resize_percentage / 100))
-
-            img.anchor = f'E{ws.max_row}'  # Устанавливаем позицию изображения
+            img.anchor = f'E{ws.max_row}'
             ws.add_image(img)
         else:
-            img_path = os.path.join('logos', 'personal.png')  # Укажите путь к вашему изображению
+            img_path = os.path.join('logos', 'personal.png')
             img = Image(img_path)
-            # Указываем процент изменения размера
-            resize_percentage = 46  # % от оригинального размера
-            # Рассчитываем новый размер
+            resize_percentage = 46
             img.width = int(img.width * (resize_percentage / 100))
             img.height = int(img.height * (resize_percentage / 100))
-
-            img.anchor = f'E{ws.max_row}'  # Устанавливаем позицию изображения
+            img.anchor = f'E{ws.max_row}'
             ws.add_image(img)
 
-    # Устанавливаем выравнивание по центру для нужных колонок
+    # Выравнивание по центру для нужных колонок
     center_alignment = Alignment(horizontal='center', vertical='center')
-
     for cell in ws['A'] + ws['B'] + ws['D']:
         cell.alignment = center_alignment
 
-    # Устанавливаем ширину столбцов
+    # Ширина столбцов
     for column in ws.columns:
-        column_letter = column[0].column_letter  # Получаем букву столбца
+        column_letter = column[0].column_letter
         ws.column_dimensions[column_letter].width = 7.7
-    ws.column_dimensions['C'].width = 35.7  # Третий столбец
-    ws.column_dimensions['D'].width = WIDTH_FOR_TEAM  # Четвертый столбец
-    ws.column_dimensions['E'].width = 9.2  # Пятый столбец
-    ws.column_dimensions[ws.cell(row=7, column=ws.max_column).column_letter].width = 11.3  # Третий столбец
 
-    # Цвета 1, 2, 3 места
-    ws.cell(row=8, column=1).fill = PatternFill(start_color='FFC50D', end_color='FFC50D',
-                                                fill_type='solid')
-    ws.cell(row=9, column=1).fill = PatternFill(start_color='A3A3A3', end_color='A3A3A3',
-                                                fill_type='solid')
-    ws.cell(row=10, column=1).fill = PatternFill(start_color='BC5610', end_color='BC5610',
-                                                 fill_type='solid')
+    ws.column_dimensions['C'].width = 35.7
+    ws.column_dimensions['D'].width = WIDTH_FOR_TEAM
+    ws.column_dimensions['E'].width = 9.2
+    ws.column_dimensions[
+        ws.cell(row=7, column=ws.max_column).column_letter
+    ].width = 11.3
+
+    # Цвета 1, 2, 3 места в столбце POS
+    ws.cell(row=8, column=1).fill = PatternFill(
+        start_color='FFC50D', end_color='FFC50D', fill_type='solid'
+    )
+    ws.cell(row=9, column=1).fill = PatternFill(
+        start_color='A3A3A3', end_color='A3A3A3', fill_type='solid'
+    )
+    ws.cell(row=10, column=1).fill = PatternFill(
+        start_color='BC5610', end_color='BC5610', fill_type='solid'
+    )
 
     # Скрываем сетку
     ws.sheet_view.showGridLines = False
@@ -690,8 +769,9 @@ async def process_championship_full():
     # Сохраняем книгу в BytesIO
     output = BytesIO()
     wb.save(output)
-    output.seek(0)  # Перемещаем указатель в начало
+    output.seek(0)
     return output
+
 
 def sort_points_team(entry):
     total_points = entry['Points']
@@ -1116,11 +1196,20 @@ async def championship_team_full():
     points_list: List[dict] = await show_points_team_all(datetime.now().year)
 
     for entry in points_list:
-        entry['Points'] = sum(entry[key] for key in entry if key != 'Team' and key != 'all_res' and entry[key])
+        entry['Points'] = sum(
+            entry[key]
+            for key in entry
+            if key != 'Team'
+            and key != 'all_res'
+            and entry[key]
+        )
 
     points_list.sort(key=sort_points_team, reverse=True)
 
-    await add_places_after_gp_teams(points_list, await get_actual_gp_async())
+    await add_places_after_gp_teams(
+        points_list,
+        await get_actual_gp_async()
+    )
 
     wb = Workbook()
     ws = wb.active
@@ -1131,11 +1220,23 @@ async def championship_team_full():
 
     ws.merge_cells(start_row=3, start_column=4, end_row=3, end_column=24)
     ws.merge_cells(start_row=4, start_column=4, end_row=4, end_column=24)
-    ws.cell(row=3, column=4).font = Font(name='Formula1 Display Bold', size=18, bold=True, color='000000')
-    ws['D3'] = f'FORMULA 1 FANTASY SERIES BY SILLY FORMULA'
+
+    ws.cell(row=3, column=4).font = Font(
+        name='Formula1 Display Bold',
+        size=18,
+        bold=True,
+        color='000000'
+    )
+    ws['D3'] = 'FORMULA 1 FANTASY SERIES BY SILLY FORMULA'
     ws['D3'].alignment = Alignment(horizontal='center', vertical='center')
-    ws.cell(row=4, column=4).font = Font(name='Formula1 Display Bold', size=11, bold=True, color='000000')
-    ws['D4'] = f"TEAM STANDINGS"
+
+    ws.cell(row=4, column=4).font = Font(
+        name='Formula1 Display Bold',
+        size=11,
+        bold=True,
+        color='000000'
+    )
+    ws['D4'] = "TEAM STANDINGS"
     ws['D4'].alignment = Alignment(horizontal='center', vertical='center')
 
     img_path = os.path.join('logos', 'Shirokoe_logo_bez_fona_silli.png')
@@ -1143,49 +1244,120 @@ async def championship_team_full():
     resize_percentage = 7
     img.width = int(img.width * (resize_percentage / 100))
     img.height = int(img.height * (resize_percentage / 100))
-    img.anchor = f'B1'
+    img.anchor = 'B1'
     ws.add_image(img)
 
-    header = ['POS'] + ['Team'] + [''] + [key for key in points_list[0] if
-                                          key != 'Points' and key != 'Team' and key != 'all_res'] + ['Points']
+    header = (
+        ['POS']
+        + ['Team']
+        + ['']
+        + [
+            key for key in points_list[0]
+            if key != 'Points'
+            and key != 'Team'
+            and key != 'all_res'
+        ]
+        + ['Points']
+    )
     ws.append(header)
     ws.row_dimensions[ws.max_row].height = 17
 
-    header_font = Font(name='Formula1 Display Bold', size=11, bold=False, color='FFFFFF')
-    header_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+    header_font = Font(
+        name='Formula1 Display Bold',
+        size=11,
+        bold=False,
+        color='FFFFFF'
+    )
+    header_fill = PatternFill(
+        start_color='FF0000',
+        end_color='FF0000',
+        fill_type='solid'
+    )
 
-    thin_border = Border(left=Side(style='thin', color='FFFFFF'),
-                         right=Side(style='thin', color='FFFFFF'),
-                         top=Side(style='thin', color='FFFFFF'))
+    thin_border = Border(
+        left=Side(style='thin', color='FFFFFF'),
+        right=Side(style='thin', color='FFFFFF'),
+        top=Side(style='thin', color='FFFFFF')
+    )
 
-    # Настроим заголовок в одной строке (строка 7 в вашем исходнике — сохранить)
+    # Заголовок — строка 7
     for cell in ws[7]:
         cell.font = header_font
         cell.fill = header_fill
         cell.border = thin_border
         cell.alignment = Alignment(horizontal='center', vertical='center')
-        ws.merge_cells(start_row=ws.max_row, start_column=2, end_row=ws.max_row, end_column=3)
+
+        ws.merge_cells(
+            start_row=ws.max_row,
+            start_column=2,
+            end_row=ws.max_row,
+            end_column=3
+        )
 
     teams_fonts: dict = await get_teams_fonts_colors()
 
     for num, entry in enumerate(points_list, 1):
-        row = [num] + [entry['Team']] + [''] + [entry[key] for key in header[1:] if key != '' and key != 'Team' and key != 'all_res']
+        row = (
+            [num]
+            + [entry['Team']]
+            + ['']
+            + [
+                entry[key]
+                for key in header[1:]
+                if key != ''
+                and key != 'Team'
+                and key != 'all_res'
+            ]
+        )
+
         ws.append(row)
         ws.row_dimensions[ws.max_row].height = 17
+
         if num % 2 != 0:
-            black_fill = PatternFill(start_color='F2F2F2', end_color='F2F2F2', fill_type='solid')
+            black_fill = PatternFill(
+                start_color='F2F2F2',
+                end_color='F2F2F2',
+                fill_type='solid'
+            )
         else:
-            black_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')
+            black_fill = PatternFill(
+                start_color='D9D9D9',
+                end_color='D9D9D9',
+                fill_type='solid'
+            )
+
         for cell in ws[ws.max_row]:
             cell.alignment = Alignment(horizontal='center', vertical='center')
-            cell.font = Font(name='Formula1 Display Regular', size=11, bold=True, color='000001')
+            cell.font = Font(
+                name='Formula1 Display Regular',
+                size=11,
+                bold=True,
+                color='000001'
+            )
             cell.fill = black_fill
 
         if teams_fonts.get(entry['Team'], None):
             team = teams_fonts[entry['Team']]
-            font = Font(name='Formula1 Display Bold', size=11, bold=False, color=team['text_color'])
-            fill = PatternFill(start_color=team['background_color'], end_color=team['background_color'], fill_type='solid')
-            font_number = Font(name=team['number_font'], size=14, bold=True, italic=team['number_italic'], color=team['number_color'])
+
+            font = Font(
+                name='Formula1 Display Bold',
+                size=11,
+                bold=False,
+                color=team['text_color']
+            )
+            fill = PatternFill(
+                start_color=team['background_color'],
+                end_color=team['background_color'],
+                fill_type='solid'
+            )
+            font_number = Font(
+                name=team['number_font'],
+                size=14,
+                bold=True,
+                italic=team['number_italic'],
+                color=team['number_color']
+            )
+
             ws.cell(row=ws.max_row, column=2).font = font
             ws.cell(row=ws.max_row, column=2).fill = fill
             ws.cell(row=ws.max_row, column=3).fill = fill
@@ -1194,6 +1366,7 @@ async def championship_team_full():
                 img_path = os.path.join('logos', team['logo'])
             else:
                 img_path = os.path.join('logos', 'personal.png')
+
             img = Image(img_path)
             resize_percentage = 46
             img.width = int(img.width * (resize_percentage / 100))
@@ -1201,26 +1374,68 @@ async def championship_team_full():
             img.anchor = f'C{ws.max_row}'
             ws.add_image(img)
 
+    # Раскрашиваем результаты каждого этапа.
+    # Колонки с результатами начинаются с D;
+    # последний столбец Points пропускаем.
+    medal_colors = ['FFC50D', 'A3A3A3', 'BC5610']
+
+    for col_idx in range(4, ws.max_column):
+        rows_by_value = {}
+
+        for row_idx in range(8, ws.max_row + 1):
+            value = ws.cell(row=row_idx, column=col_idx).value
+
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                rows_by_value.setdefault(value, []).append(row_idx)
+
+        # Сначала идут наибольшие результаты.
+        sorted_values = sorted(rows_by_value.keys(), reverse=True)
+        place = 0
+
+        for value in sorted_values:
+            tied_rows = rows_by_value[value]
+            tie_count = len(tied_rows)
+
+            # Одинаковые результаты делят места подряд:
+            # два первых места — золото и серебро,
+            # следующее значение — бронза.
+            for i, row_idx in enumerate(tied_rows):
+                medal_idx = place + i
+
+                if medal_idx < len(medal_colors):
+                    color = medal_colors[medal_idx]
+                    ws.cell(row=row_idx, column=col_idx).fill = PatternFill(
+                        start_color=color,
+                        end_color=color,
+                        fill_type='solid'
+                    )
+
+            place += tie_count
+
+            if place >= len(medal_colors):
+                break
+
     center_alignment = Alignment(horizontal='center', vertical='center')
     for cell in ws['A'] + ws['B'] + ws['C']:
         cell.alignment = center_alignment
 
-    # Безопасная установка ширин столбцов
-    # 1) Базовая ширина по всем существующим столбцам
+    # Базовая ширина по всем существующим столбцам
     for idx in range(1, ws.max_column + 1):
         ws.column_dimensions[get_column_letter(idx)].width = 7.7
 
-    # 2) Явные корректировки
+    # Явные корректировки ширины
     ws.column_dimensions['B'].width = WIDTH_FOR_TEAM
     ws.column_dimensions['C'].width = 9.2
 
-    # 3) Определяем "последний" столбец через header (без использования ws.max_column напрямую)
+    # Определяем последний столбец через header
     header_len = len(header)
     last_col_idx = header_len
+
     if last_col_idx > ws.max_column:
         last_col_idx = ws.max_column
 
     cell = ws.cell(row=3, column=last_col_idx)
+
     if isinstance(cell, MergedCell):
         for merged in ws.merged_cells.ranges:
             if cell.coordinate in merged:
@@ -1229,10 +1444,22 @@ async def championship_team_full():
 
     ws.column_dimensions[get_column_letter(last_col_idx)].width = 11.3
 
-    # Цвета для 1-3 мест
-    ws.cell(row=8, column=1).fill = PatternFill(start_color='FFC50D', end_color='FFC50D', fill_type='solid')
-    ws.cell(row=9, column=1).fill = PatternFill(start_color='A3A3A3', end_color='A3A3A3', fill_type='solid')
-    ws.cell(row=10, column=1).fill = PatternFill(start_color='BC5610', end_color='BC5610', fill_type='solid')
+    # Цвета для 1-го, 2-го и 3-го места в столбце POS
+    ws.cell(row=8, column=1).fill = PatternFill(
+        start_color='FFC50D',
+        end_color='FFC50D',
+        fill_type='solid'
+    )
+    ws.cell(row=9, column=1).fill = PatternFill(
+        start_color='A3A3A3',
+        end_color='A3A3A3',
+        fill_type='solid'
+    )
+    ws.cell(row=10, column=1).fill = PatternFill(
+        start_color='BC5610',
+        end_color='BC5610',
+        fill_type='solid'
+    )
 
     ws.sheet_view.showGridLines = False
 
@@ -1240,6 +1467,7 @@ async def championship_team_full():
     wb.save(output)
     output.seek(0)
     return output
+
 
 async def process_calculation_command(data):
     # Разделяем данные на два словаря
